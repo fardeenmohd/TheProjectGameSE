@@ -3,11 +3,14 @@ from socket import *
 
 s = socket()
 host = "P21703"
-port = 6969
+port = 1922
 
-
-print("fuck off")
 s.connect((host,port))
 received = s.recv(1024)
 print(received.decode())
+message = input()
+s.send(message.encode())
+received = s.recv(1024)
+print(received.decode())
+
 s.close
