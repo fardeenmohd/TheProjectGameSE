@@ -1,18 +1,47 @@
 #!/usr/bin/python
-from socket import *           # Import socket module
+from socket import *  # Import socket module
+from threading import *
 
-socket = socket()         # Create a socket object
-host = gethostname()    # Get local machine name
-port = 6969                # Reserve a port for your service.
-socket.bind((host, port))        # Bind to the port
 
-print("Starting server.")
+class CommunicationServer:
+    def __init__(self, host=gethostname(), port=1922):
+        self.host = host
+        self.port = port
+        self.socket = socket()
+        self.socket.bind((self.host, self.port))
+        print("Starting server.")
 
-socket.listen(1)                 # Now wait for client connection.
-c, addr = socket.accept()     # Establish connection with client.
-print(c)
-message = "Welcome to my humble server."
-c.send(message.encode())
-c.close()                # Close the connection
+    def listen(self):
+        self.socket.listen(1)  # Now wait for client connection.
+        while True:
+            client, address = self.socket.accept()
+            print("New client with address " + str(address) + " connected.")
+            client.settimeout(10)
+            Thread(target=self.listen_to_client, args=(client, address)).start()
 
-print("Shutting down server.")
+    def listen_to_client(self, client, address):
+        buffer_size = 1024
+        message = "Welcome to my server :)"
+        client.send(message.encode())
+
+        while True:
+            try:
+                received_data = client.recv(buffer_size)
+                print("Received: "+received_data.decode())
+                if received_data:
+                    print("helo")
+                    response = ("Your message was: "+received_data).encode()
+                    client.send(response)
+                else:
+                    raise error('Client disconnected')
+            except:
+                client.close()
+                return False
+
+        client.close()
+
+def run():
+    server = CommunicationServer()
+    server.listen()
+
+run()
