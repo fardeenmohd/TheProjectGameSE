@@ -47,14 +47,16 @@ class player:
                 message = input()
                 if self.validate_type(message):
                     socket.send(self.socket, message.encode())
-                elif message == "close":
+                if message == "close":
                     self.socket.close()
+                    return
                 else:
                     print("Please write a valid message type:")
             except timeout:
                 print(datetime.datetime.now().time())
                 print(":Disconnected from the humble server ")
                 self.socket.close()
+                return
 
 p = player()
 p.connect()
