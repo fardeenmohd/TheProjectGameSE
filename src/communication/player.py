@@ -29,6 +29,7 @@ class player:
                 print(":Connected to the humble server")
                 received = socket.recv(self.socket, 1024)
                 self.id = received.decode()
+                print(self.id)
                 return
 
             except error:
@@ -37,21 +38,22 @@ class player:
                 time.sleep(10)
                 continue
 
-    def validate_type(self, given_type):
-        return True
+    # def validate_type(self ,given_type):
+        # return True
 
     def play(self):
         while True:
             try:
                 print("Please enter message type:")
                 message = input()
-                if self.validate_type(message):
-                    socket.send(self.socket, message.encode())
+                # if self.validate_type(self, message):
+                socket.send(self.socket, message.encode())
                 if message == "close":
                     self.socket.close()
                     return
-                else:
-                    print("Please write a valid message type:")
+                # else:
+                    # print("Please write a valid message type:")
+
             except timeout:
                 print(datetime.datetime.now().time())
                 print(":Disconnected from the humble server ")
