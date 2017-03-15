@@ -32,7 +32,7 @@ class CommunicationServer:
         buffer_size = 1024
 
         '''#I am just testing python black magic to find a given key given a value in a dictionary'''
-        message = "Hello player with id " + list(self.playerDict.keys())[list(self.playerDict.values()).index(client)]
+        message = "Hello player with id " + str(list(self.playerDict.keys())[list(self.playerDict.values()).index(client)])
         client.send(message.encode())
 
         while True:
