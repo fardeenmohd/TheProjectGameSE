@@ -39,16 +39,12 @@ class CommunicationServer:
             try:
                 received_data = client.recv(buffer_size)
                 print("Server Received: "+received_data.decode())
-                if received_data:
-                    response = ("Your message was: "+received_data).encode()
-                    client.send(response)
-                else:
-                    raise error('Client disconnected')
-            except:
+                response = ("Your message was: " + str(received_data)).encode()
+                client.send(response)
+
+            except error:
                 client.close()
                 return False
-
-        client.close()
 
 
 def run():
