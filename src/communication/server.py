@@ -26,21 +26,19 @@ class CommunicationServer:
             self.playerDict[player_id] = client
             player_id += 1
             client.settimeout(DEFAULT_TIMEOUT)
-            Thread(target=self.handle_player, args=(client, address)).start()
+            Thread(target=self.handle_player, args=(client, address, player_id)).start()
 
-    def handle_player(self, client, address):
+    def handle_player(self, client, address, player_id):
         buffer_size = 1024
-
-        '''#I am just testing python black magic to find a given key given a value in a dictionary'''
-        message = "Hello player with id " + str(list(self.playerDict.keys())[list(self.playerDict.values()).index(client)])
-        client.send(message.encode())
+        message = player_id
+        client.send(str(message).encode())
 
         while True:
             try:
-                received_data = client.recv(buffer_size)
-                print("Server Received: "+received_data.decode())
-                response = ("Your message was: " + str(received_data)).encode()
-                client.send(response)
+                received_data = client.recv(buffer_size).decode()
+                print("Server Received: " + received_data)
+                response = ("Your message was: " + str(received_data))
+                client.send(response.encode())
 
             except error:
                 client.close()
