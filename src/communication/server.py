@@ -49,6 +49,7 @@ class CommunicationServer:
 
             except error:
                 client.close()
+                self.clientCount -= 1
                 return False
 
 
