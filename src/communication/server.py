@@ -9,7 +9,6 @@ DEFAULT_CLIENT_LIMIT = 10
 
 
 class CommunicationServer:
-
     def __init__(self, host=gethostname(), port=DEFAULT_PORT):
         self.host = host
         self.port = port
@@ -20,7 +19,7 @@ class CommunicationServer:
         print("Starting server with hostname: ", self.host, " and on port ", self.port)
 
     def listen(self):
-        self.socket.listen(1)  # Now wait for client connection.
+        self.socket.listen()
         player_id = 0
         while True:
             if self.clientCount < DEFAULT_CLIENT_LIMIT:
@@ -33,7 +32,6 @@ class CommunicationServer:
                 Thread(target=self.handle_player, args=(client, address, player_id)).start()
             else:
                 time.sleep(1)
-
 
     def handle_player(self, client, address, player_id):
         buffer_size = 1024
@@ -56,5 +54,6 @@ class CommunicationServer:
 def run():
     server = CommunicationServer()
     server.listen()
+
 
 run()

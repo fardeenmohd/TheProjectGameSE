@@ -14,18 +14,18 @@ class player:
     def __init__(self):
         self.hostname = DEFAULT_HOSTNAME
         self.port = DEFAULT_PORT
+        self.socket = socket()
 
     def connect(self):
         print(datetime.datetime.now().time())
         print(":Creating a socket\n")
-        self.socket = socket()
-        self.socket.settimeout(100000)
+        self.socket.settimeout(1)
 
         while True:
             try:
                 print(datetime.datetime.now().time())
                 print(":Trying to connect to the humble server")
-                socket.connect(self.socket, (self.hostname, self.port))
+                self.socket.connect((self.hostname, self.port))
                 print(datetime.datetime.now().time())
                 print(":Connected to the humble server")
                 received = socket.recv(self.socket, 1024)
@@ -50,18 +50,16 @@ class player:
                 # if self.validate_type(self, message):
                 socket.send(self.socket, message.encode())
                 received_data = self.socket.recv(1024)
-                print(received_data.decode())
+                print(str(datetime.datetime.now().time())+" - received from server: " + received_data.decode())
                 if message == "close":
-                    self.socket.close()
-                    return
+                    raise timeout
 
                 # else:
                     # print("Please write a valid message type:")
 
             except timeout:
                 self.socket.close()
-                print(datetime.datetime.now().time())
-                print(":Disconnected from the humble server ")
+                print(str(datetime.datetime.now().time())+" - Disconnected from the humble server ")
                 return
 
 
