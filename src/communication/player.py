@@ -3,7 +3,7 @@ from socket import *
 import datetime
 import time
 
-DEFAULT_HOSTNAME = gethostname()
+DEFAULT_HOSTNAME = "P21811" # gethostname()
 DEFAULT_PORT = 420
 
 
@@ -48,9 +48,12 @@ class player:
                 message = input()
                 # if self.validate_type(self, message):
                 socket.send(self.socket, message.encode())
+                received_data = self.socket.recv(1024)
+                print(received_data.decode())
                 if message == "close":
                     self.socket.close()
                     return
+
                 # else:
                     # print("Please write a valid message type:")
 
@@ -59,6 +62,9 @@ class player:
                 print(":Disconnected from the humble server ")
                 self.socket.close()
                 return
+
+
+
 
 p = player()
 p.connect()
