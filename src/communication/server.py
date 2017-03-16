@@ -2,9 +2,10 @@
 from socket import *  # Import socket module
 from threading import *
 import time
+from datetime import datetime
 
 DEFAULT_PORT = 420
-DEFAULT_TIMEOUT = 100
+DEFAULT_TIMEOUT = 10
 DEFAULT_CLIENT_LIMIT = 10
 
 
@@ -20,6 +21,8 @@ class CommunicationServer:
 
     def listen(self):
         self.socket.listen()
+        Thread(target=self.print_state).start()
+        print("Started listening")
         player_id = 0
         while True:
             if self.clientCount < DEFAULT_CLIENT_LIMIT:
@@ -32,6 +35,11 @@ class CommunicationServer:
                 Thread(target=self.handle_player, args=(client, address, player_id)).start()
             else:
                 time.sleep(1)
+
+    def print_state(self):
+        while True:
+            print(datetime.now().time(), ": Currently there are ", self.clientCount, " clients connected")
+            time.sleep(5)
 
     def handle_player(self, client, address, player_id):
         buffer_size = 1024

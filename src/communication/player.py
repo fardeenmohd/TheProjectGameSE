@@ -19,7 +19,6 @@ class player:
     def connect(self):
         print(datetime.datetime.now().time())
         print(":Creating a socket\n")
-        self.socket.settimeout(1)
 
         while True:
             try:
@@ -52,12 +51,13 @@ class player:
                 received_data = self.socket.recv(1024)
                 print(str(datetime.datetime.now().time())+" - received from server: " + received_data.decode())
                 if message == "close":
-                    raise timeout
+                    self.socket.close()
+                    print(str(datetime.datetime.now().time()) + " - Disconnected from the humble server ")
 
                 # else:
                     # print("Please write a valid message type:")
 
-            except timeout:
+            except ConnectionAbortedError:
                 self.socket.close()
                 print(str(datetime.datetime.now().time())+" - Disconnected from the humble server ")
                 return
