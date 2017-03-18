@@ -56,7 +56,7 @@ class Player:
 				else:
 					self.verbose_debug("Attempt number " + str(
 						failed_connections) + " failed. No more attempts to connect will be made.")
-					return
+					return False
 
 	def play(self, messages_count = 1):
 		"""
@@ -108,8 +108,8 @@ def run(number_of_players = 1, verbose = True, messages_count = 1):
 
 def deploy_player(index, verbose = True, messages_count = 1):
 	p = Player(index, verbose)
-	p.connect()
-	p.play(messages_count)
+	if p.connect():
+		p.play(messages_count)
 
 
 parser = ArgumentParser()
