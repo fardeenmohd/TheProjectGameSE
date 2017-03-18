@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import socket
-import time
 from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
+from time import sleep
 
 
 class Player:
@@ -44,14 +44,14 @@ class Player:
 				received = self.socket.recv(Player.MESSAGE_BUFFER_SIZE)
 				self.id = received.decode()
 				self.verbose_debug("Received UID from server=" + str(self.id))
-				return
+				return True
 
 			except socket.error:
 				if failed_connections < Player.CONNECTION_ATTEMPTS:
 					failed_connections += 1
 					self.verbose_debug("Attempt number " + str(failed_connections) + " failed. Trying again in " + str(
 						Player.INTER_CONNECTION_TIME) + " seconds.")
-					time.sleep(Player.INTER_CONNECTION_TIME)
+					sleep(Player.INTER_CONNECTION_TIME)
 					continue
 				else:
 					self.verbose_debug("Attempt number " + str(
@@ -66,14 +66,14 @@ class Player:
 		for i in range(messages_count):
 			try:
 				# Send a message:
-				message = "Hello server."  # TODO: use a randomly-taken XML message instead
+				message = "Hello world."  # TODO: use a randomly-taken XML message instead
 				self.socket.send(message.encode())
-				self.verbose_debug("Sent to server:" + message)
+				self.verbose_debug("Sent to server: " + message)
 
 				# Receive a response:
 				received_data = self.socket.recv(Player.MESSAGE_BUFFER_SIZE)
-				self.verbose_debug("Received from server:" + received_data.decode())
-				time.sleep(Player.TIME_BETWEEN_MESSAGES)
+				self.verbose_debug("Received from server: \"" + received_data.decode() + "\"")
+				sleep(Player.TIME_BETWEEN_MESSAGES)
 
 			# below is legacy code from when messages used to be typed in from console
 			# if message == "close":
@@ -82,16 +82,16 @@ class Player:
 			# 	self.verbose_debug("Disconnected.")
 
 			except ConnectionAbortedError:
-				self.verbose_debug("Disconnected by server (or by some other issue). Shutting down.")
+				self.verbose_debug("Disconnected by server (or by some other issue). Shutting down.", important = True)
 				self.socket.close()
 				return
 
-	def verbose_debug(self, message):
+	def verbose_debug(self, message, important = False):
 		"""
 		if in verbose mode, print out the given message with player index and timestamp
-		:param message: message to be print
+		:param message: message to be printed
 		"""
-		if (self.verbose):
+		if self.verbose or important:
 			header = "P" + str(self.index) + " at " + str(datetime.now().time()) + " - "
 			print(header, message)
 
@@ -104,6 +104,7 @@ def run(number_of_players = 1, verbose = True, messages_count = 1):
 	"""
 	for i in range(number_of_players):
 		Thread(target = deploy_player, args = (i + 1, verbose, messages_count)).start()
+		sleep(1)
 
 
 def deploy_player(index, verbose = True, messages_count = 1):
@@ -114,8 +115,8 @@ def deploy_player(index, verbose = True, messages_count = 1):
 
 parser = ArgumentParser()
 parser.add_argument('-c', '--playercount', default = 1, help = 'Number of players to be deployed.')
-parser.add_argument('-v', '--verbose', action = 'store_true', default = True, help = 'Use verbose debugging mode.')
+parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
 parser.add_argument('-m', '--messagecount', default = 1, help = 'Number of messages each player should send.')
 args = vars(parser.parse_args())
 
-run(args["playercount"], args["verbose"], args["messagecount"])
+run(int(args["playercount"]), args["verbose"], int(args["messagecount"]))
