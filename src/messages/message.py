@@ -15,6 +15,7 @@ class Message:
         """
         Figure 3.2: An example of GetGames message
         """
+
         file_name = 'getgames.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
@@ -30,19 +31,22 @@ class Message:
         Figure 3.3: An example of RegisterGame message with a custom name and a two players teams setup.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <RegisterGame xmlns="http://theprojectgame.mini.pw.edu.pl/">
-                <NewGameInfo
-                    name=""" + "\"" + gamename + "\"" + """
-                    blueTeamPlayers=""" + "\"" + str(blueplayers) + "\"" + """
-                    redTeamPlayers=""" + "\"" + str(redplayers) + "\"" + """ />
-            </RegisterGame>
-        """
+        file_name = 'registergame.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for newgameinfo in root.iter('NewGameInfo'):
+            newgameinfo.set('name', gamename)
+            newgameinfo.set('blueTeamPlayers', str(blueplayers))
+            newgameinfo.set('redTeamPlayers', str(redplayers))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # ConfirmGameRegistration
-    def confirmgameregistration(self):
+    def confirmgameregistration(self, gameid):
         """
         Figure 3.4: An example of ConfirmGameRegistration message assigning id 1 to the game.
         """
@@ -51,7 +55,7 @@ class Message:
             <?xml version="1.0" encoding="utf-8" ?>
             <ConfirmGameRegistration
                    xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                   gameId="1" />
+                   gameId=""" + "\"" + str(gameid) + "\"" + """ />
         """
         return message
 
