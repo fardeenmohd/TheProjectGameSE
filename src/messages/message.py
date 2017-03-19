@@ -85,11 +85,6 @@ class Message:
             }
             registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
 
-        for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}GameInfo'):
-            registeredgames.set('name', gamename)
-            registeredgames.set('blueTeamPlayers', str(blueplayers))
-            registeredgames.set('redTeamPlayers', str(redplayers))
-
         messagetemp = ET.tostring(root, encoding='utf8', method='xml')
         message = str(messagetemp)
         return message
@@ -142,29 +137,45 @@ class Message:
         return message
 
     # GameMessage
-    def gamemessage(self):
+    def gamemessage(self, playerid, playerteam, playertype, playersid, boardwidth, tasksheight, goalsheight, x, y):
         """
         Figure 3.8: A GameMessage for Player 2.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Game xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                    playerId="2">
-                <Players>
-                    <Player team="red" type="leader" id="5" />
-                    <Player team="red" type="player" id="6" />
-                    <Player team="red" type="player" id="7" />
-                    <Player team="red" type="player" id="8" />
-                    <Player team="blue" type="leader" id="1" />
-                    <Player team="blue" type="player" id="2" />
-                    <Player team="blue" type="player" id="3" />
-                    <Player team="blue" type="player" id="4" />
-                </Players>
-                <Board width="5" tasksHeight="5" goalsHeight="3" />
-                <PlayerLocation x="0" y="3" />
-            </Game>
-        """
+        numberofplayers = len(playersid)
+
+        file_name = 'gamemessage.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Game'):
+            gamemassage.set('playerId', str(playerid))
+
+        parent = ET.SubElement(root, 'Players')
+        for i in range(0, numberofplayers):
+            myattributes = {
+                'team': str(playerteam[i]),
+                'type': str(playertype[i]),
+                'id': str(playersid[i])
+            }
+            ET.SubElement(parent, 'Player', attrib=myattributes)
+
+        myattributes = {
+            'width': str(boardwidth),
+            'tasksHeight': str(tasksheight),
+            'goalsHeight': str(goalsheight)
+        }
+        ET.SubElement(root, 'Board', attrib=myattributes)
+
+        myattributes = {
+            'x': str(x),
+            'y': str(y)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # Discover

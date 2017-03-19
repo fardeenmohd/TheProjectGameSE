@@ -70,6 +70,10 @@ class Player:
         blueteamplayers = [3, 4, 7]
         redteamplayers = [2, 1, 1]
 
+        playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
+        playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
+        playersid = [3, 4, 5, 1, 2, 5]
+
         for i in range(messages_count):
             try:
                 # Send a message:
@@ -77,11 +81,10 @@ class Player:
                 # message = Message.getgames(self)
                 # message = Message.registergame(self, 'test', 2, 3)
                 # message = Message.confirmgameregistration(self, 5)
-
-                # TODO: lists of elements
-                message = Message.registeredgames(self, gamenames, blueteamplayers, redteamplayers)
+                # message = Message.registeredgames(self, gamenames, blueteamplayers, redteamplayers)
                 # message = Message.joingame(self, 'test', 'master', 'red')
                 # message = Message.confirmjoininggame(self, 2, 3, 'aaaxxx-bbb-ccc-ddd-eeefff', 3, 'red', 'master')
+                message = Message.gamemessage(self, 3, playerteam, playertype, playersid, 7, 7, 7, 0, 0)
 
                 self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)
