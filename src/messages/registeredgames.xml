@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RegisteredGames xmlns="http://theprojectgame.mini.pw.edu.pl/">
+    <!-- Numbers of players indicate how many slots are left for each team -->
+    <GameInfo name="easyGame" blueTeamPlayers="2" redTeamPlayers="2"/>
+</RegisteredGames>

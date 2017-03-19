@@ -70,8 +70,9 @@ class Player:
                 # Send a message:
                 # message = "Hello world."  # TODO: use a randomly-taken XML message instead
                 # message = Message.getgames(self)
-                message = Message.registergame(self, 'test', 2, 3)
-                # message = Message.confirmgameregistration(self, 2)
+                # message = Message.registergame(self, 'test', 2, 3)
+                # message = Message.confirmgameregistration(self, 5)
+                message = Message.registeredgames(self, 'test', 2, 3)
 
                 self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)

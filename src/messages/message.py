@@ -51,28 +51,36 @@ class Message:
         Figure 3.4: An example of ConfirmGameRegistration message assigning id 1 to the game.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8" ?>
-            <ConfirmGameRegistration
-                   xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                   gameId=""" + "\"" + str(gameid) + "\"" + """ />
-        """
+        file_name = 'confirmgameregistration.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for newgameinfo in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmGameRegistration'):
+            newgameinfo.set('gameId', str(gameid))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # RegisteredGames
-    def registeredgames(self):
+    def registeredgames(self, gamename, blueplayers, redplayers):
         """
         Figure 3.5: An example of RegisteredGames message with two games listed.
         """
+        # TODO: Iteretion (removing and adding) GameInfo row
+        file_name = 'registeredgames.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
 
-        message = """
-            <?xml version="1.0" encoding="utf-8" ?>
-            <RegisteredGames xmlns="http://theprojectgame.mini.pw.edu.pl/">
-                <!-- Numbers of players indicate how many slots are left for each team -->
-                <GameInfo name="easyGame" blueTeamPlayers="2" redTeamPlayers="2"/>
-                <GameInfo name="hardForBlueGame" blueTeamPlayers="5" redTeamPlayers="10"/>
-            </RegisteredGames>
-        """
+        for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}GameInfo'):
+            registeredgames.set('name', gamename)
+            registeredgames.set('blueTeamPlayers', str(blueplayers))
+            registeredgames.set('redTeamPlayers', str(redplayers))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # JoinGame
