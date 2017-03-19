@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import xml.etree.ElementTree as ET
+import os
 
 
 class Message:
@@ -13,15 +15,17 @@ class Message:
         """
         Figure 3.2: An example of GetGames message
         """
+        file_name = 'getgames.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <GetGames xmlns="http://theprojectgame.mini.pw.edu.pl/" />
-        """
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # RegisterGame
-    def registergame(self):
+    def registergame(self, gamename, blueplayers, redplayers):
         """
         Figure 3.3: An example of RegisterGame message with a custom name and a two players teams setup.
         """
@@ -30,9 +34,9 @@ class Message:
             <?xml version="1.0" encoding="utf-8"?>
             <RegisterGame xmlns="http://theprojectgame.mini.pw.edu.pl/">
                 <NewGameInfo
-                   name="easyGame"
-                   blueTeamPlayers="2"
-                   redTeamPlayers="2" />s
+                    name=""" + "\"" + gamename + "\"" + """
+                    blueTeamPlayers=""" + "\"" + str(blueplayers) + "\"" + """
+                    redTeamPlayers=""" + "\"" + str(redplayers) + "\"" + """ />
             </RegisterGame>
         """
         return message

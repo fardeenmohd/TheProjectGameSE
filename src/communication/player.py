@@ -4,7 +4,8 @@ from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
-from message import Message
+
+from src.messages.message import Message
 
 
 class Player:
@@ -67,7 +68,8 @@ class Player:
         for i in range(messages_count):
             try:
                 # Send a message:
-                message = Message.registergame(self)
+                message = Message.registergame(self, 'test', 2, 3)
+                # message = Message.getgames(self)
                 # message = "Hello world."  # TODO: use a randomly-taken XML message instead
                 self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)
