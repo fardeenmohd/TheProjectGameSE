@@ -68,11 +68,22 @@ class Message:
         """
         Figure 3.5: An example of RegisteredGames message with two games listed.
         """
-        # TODO: Iteretion (removing and adding) GameInfo row
+
+        numberofelements = len(gamename)  # number of games
+        myattributes = []
+
         file_name = 'registeredgames.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
+
+        for i in range(0, numberofelements):
+            myattributes = {
+                'name': str(gamename[i]),
+                'blueTeamPlayers': str(blueplayers[i]),
+                'redTeamPlayers': str(redplayers[i])
+            }
+            registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
 
         for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}GameInfo'):
             registeredgames.set('name', gamename)
@@ -84,37 +95,50 @@ class Message:
         return message
 
     # JoinGame
-    def joingame(self):
+    def joingame(self, gamename, preferedRole, preferedTeam):
         """
         Figure 3.6: A JoinGame message with player trying to join, as the leader of a blue team,
         the game denoted as easyGame.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8" ?>
-            <JoinGame xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                gameName="easyGame"
-                preferedRole="leader"
-                preferedTeam="blue" />
-        """
+        file_name = 'joingame.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}JoinGame'):
+            registeredgames.set('gameName', gamename)
+            registeredgames.set('preferedRole', str(preferedRole))
+            registeredgames.set('preferedTeam', str(preferedTeam))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # ConfirmJoiningGame
-    def confirmjoininggame(self):
+    def confirmjoininggame(self, gameid, playerid, privateguid, id, team, type):
         """
         Figure 3.7: A ConfirmJoiningGame message setting the players unique Id and private GUID and informing
         about the Player’s role in the game.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8" ?>
-            <ConfirmJoiningGame xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                              gameId="1"
-                              playerId="2"
-                              privateGuid="c094cab7-da7b-457f-89e5-a5c51756035f">
-                <PlayerDefinition id="2" team="blue" type="player"/>
-            </ConfirmJoiningGame>
-        """
+        file_name = 'confirmjoininggame.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmJoiningGame'):
+            registeredgames.set('gameId', str(gameid))
+            registeredgames.set('playerId', str(playerid))
+            registeredgames.set('privateGuid', str(privateguid))
+
+        for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PlayerDefinition'):
+            registeredgames.set('id', str(id))
+            registeredgames.set('team', str(team))
+            registeredgames.set('type', str(type))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # GameMessage

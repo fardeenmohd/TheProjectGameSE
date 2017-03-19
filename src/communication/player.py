@@ -65,6 +65,11 @@ class Player:
         send and receive messages to/from server
         :param messages_count: how many messages should be sent from player to server
         """
+
+        gamenames = ['game1', 'game2', 'game3']
+        blueteamplayers = [3, 4, 7]
+        redteamplayers = [2, 1, 1]
+
         for i in range(messages_count):
             try:
                 # Send a message:
@@ -72,7 +77,11 @@ class Player:
                 # message = Message.getgames(self)
                 # message = Message.registergame(self, 'test', 2, 3)
                 # message = Message.confirmgameregistration(self, 5)
-                message = Message.registeredgames(self, 'test', 2, 3)
+
+                # TODO: lists of elements
+                message = Message.registeredgames(self, gamenames, blueteamplayers, redteamplayers)
+                # message = Message.joingame(self, 'test', 'master', 'red')
+                # message = Message.confirmjoininggame(self, 2, 3, 'aaaxxx-bbb-ccc-ddd-eeefff', 3, 'red', 'master')
 
                 self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)
