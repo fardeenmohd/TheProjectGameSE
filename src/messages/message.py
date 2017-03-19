@@ -36,7 +36,7 @@ class Message:
         tree = ET.parse(full_file)
         root = tree.getroot()
 
-        for newgameinfo in root.iter('NewGameInfo'):
+        for newgameinfo in root.iter('{http://theprojectgame.mini.pw.edu.pl/}NewGameInfo'):
             newgameinfo.set('name', gamename)
             newgameinfo.set('blueTeamPlayers', str(blueplayers))
             newgameinfo.set('redTeamPlayers', str(redplayers))
