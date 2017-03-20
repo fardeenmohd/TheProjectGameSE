@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
+      playerId="1"
+      gameFinished="false">
+  <GoalFields>
+    <GoalField x="0" y="0" team="red" playerId="1" timestamp="2017-02-28T14:56:21" type="non-goal"/>
+  </GoalFields>
+</Data>
