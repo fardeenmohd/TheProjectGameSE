@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import socket
+from src.communication import messages
 from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
 
-from src.messages.message import Message
 
 
 class Player:
@@ -84,7 +84,9 @@ class Player:
                 # message = Message.registeredgames(self, gamenames, blueteamplayers, redteamplayers)
                 # message = Message.joingame(self, 'test', 'master', 'red')
                 # message = Message.confirmjoininggame(self, 2, 3, 'aaaxxx-bbb-ccc-ddd-eeefff', 3, 'red', 'master')
-                message = Message.gamemessage(self, 3, playerteam, playertype, playersid, 7, 7, 7, 0, 0)
+                # message = Message.gamemessage(self, 3, playerteam, playertype, playersid, 7, 7, 7, 0, 0)
+
+                message = messages.randomMessage()
 
                 self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)

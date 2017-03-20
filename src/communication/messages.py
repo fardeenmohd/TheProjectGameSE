@@ -2,6 +2,20 @@
 # -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
 import os
+from random import randint
+
+
+def randomMessage():
+    files = [f for f in os.listdir("../messages") if f.endswith(".xml")]
+    index = randint(0, len(files)-1)
+    file_name = "../messages/"+files[index]
+    full_file = os.path.abspath(os.path.join('../messages', file_name))
+    tree = ET.parse(full_file)
+    root = tree.getroot()
+
+    messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+    message = str(messagetemp)
+    return message
 
 
 class Message:
@@ -9,6 +23,8 @@ class Message:
 
     def __init__(self):
         self.data = []
+
+
 
     # GetGames
     def getgames(self):
