@@ -7,13 +7,12 @@ from threading import Thread
 from time import sleep
 
 
-
 class Player:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by player
     INTER_CONNECTION_TIME = 10  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
-    DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
-    DEFAULT_PORT = 8000
+    DEFAULT_HOSTNAME = socket.gethostname() # keep this as socket.gethostname() if you're debugging on your own pc
+    DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 1024
 
     def __init__(self, index, verbose):
@@ -39,7 +38,7 @@ class Player:
 
         while True:
             try:
-                self.verbose_debug("Trying to connect to server...")
+                self.verbose_debug("Trying to connect to server " + str(hostname + " at port " + str(port) + "."))
                 self.socket.connect((hostname, port))
                 self.verbose_debug("Connected to server.")
 
@@ -66,19 +65,17 @@ class Player:
         :param messages_count: how many messages should be sent from player to server
         """
 
-        gamenames = ['game1', 'game2', 'game3']
-        blueteamplayers = [3, 4, 7]
-        redteamplayers = [2, 1, 1]
-
-        playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
-        playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
-        playersid = [3, 4, 5, 1, 2, 5]
+        # gamenames = ['game1', 'game2', 'game3']
+        # blueteamplayers = [3, 4, 7]
+        # redteamplayers = [2, 1, 1]
+        # playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
+        # playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
+        # playersid = [3, 4, 5, 1, 2, 5]
 
         for i in range(messages_count):
             try:
                 # Send a message:
-                # message = "Hello world."  # TODO: use a randomly-taken XML message instead
-                # message = Message.getgames(self)
+                # message = "Hello world."
                 # message = Message.registergame(self, 'test', 2, 3)
                 # message = Message.confirmgameregistration(self, 5)
                 # message = Message.registeredgames(self, gamenames, blueteamplayers, redteamplayers)
@@ -87,6 +84,7 @@ class Player:
                 # message = Message.gamemessage(self, 3, playerteam, playertype, playersid, 7, 7, 7, 0, 0)
 
                 message = messages.randomMessage()
+                # message = messages.getgames()
 
                 self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)
@@ -96,14 +94,8 @@ class Player:
                 self.verbose_debug("Received from server: \"" + received_data.decode() + "\"")
                 sleep(Player.TIME_BETWEEN_MESSAGES)
 
-            # below is legacy code from when messages used to be typed in from console
-            # if message == "close":
-            # 	self.socket.close()
-            # 	self.verbose_debug("Received a message from server: \"" + received_data.decode()) + "\""
-            # 	self.verbose_debug("Disconnected.")
-
-            except ConnectionAbortedError:
-                self.verbose_debug("Disconnected by server (or by some other issue). Shutting down.", important=True)
+            except socket.error as e:
+                self.verbose_debug("Socket error caught: " + str(e) + ". Shutting down the connection.", True)
                 self.socket.close()
                 return
 
@@ -120,6 +112,7 @@ class Player:
 def run(number_of_players=1, verbose=True, messages_count=1):
     """
     deploy client threads/
+    :param number_of_players:
     :param verbose: if the clients should operate in verbose mode.
     :param messages_count: how many messages should be sent from player to server
     """

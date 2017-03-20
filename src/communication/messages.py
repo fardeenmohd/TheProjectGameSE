@@ -7,8 +7,23 @@ from random import randint
 
 def randomMessage():
     files = [f for f in os.listdir("../messages") if f.endswith(".xml")]
-    index = randint(0, len(files)-1)
-    file_name = "../messages/"+files[index]
+    index = randint(0, len(files) - 1)
+    file_name = "../messages/" + files[index]
+    full_file = os.path.abspath(os.path.join('../messages', file_name))
+    tree = ET.parse(full_file)
+    root = tree.getroot()
+
+    messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+def getgames():
+    """
+    Figure 3.2: An example of GetGames message
+    """
+
+    file_name = 'getgames.xml'
     full_file = os.path.abspath(os.path.join('../messages', file_name))
     tree = ET.parse(full_file)
     root = tree.getroot()
@@ -24,22 +39,7 @@ class Message:
     def __init__(self):
         self.data = []
 
-
-
     # GetGames
-    def getgames(self):
-        """
-        Figure 3.2: An example of GetGames message
-        """
-
-        file_name = 'getgames.xml'
-        full_file = os.path.abspath(os.path.join('../messages', file_name))
-        tree = ET.parse(full_file)
-        root = tree.getroot()
-
-        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
-        message = str(messagetemp)
-        return message
 
     # RegisterGame
     def registergame(self, gamename, blueplayers, redplayers):

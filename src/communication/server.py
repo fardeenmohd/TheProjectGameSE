@@ -9,7 +9,7 @@ from time import sleep
 class CommunicationServer:
     INTER_PRINT_STATE_TIME = 5
     DEFAULT_BUFFER_SIZE = 1024
-    DEFAULT_PORT = 8000
+    DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
@@ -81,10 +81,16 @@ class CommunicationServer:
                 client.send(response.encode())
                 self.verbose_debug("Sent: \"" + response + "\" to player " + str(player_id))
 
-            except socket.error:
+            except ConnectionAbortedError:
                 self.verbose_debug(
-                    "Player " + str(player_id) + " disconnected (or connection error). Closing connection.",
-                    important=True)
+                    "Player " + str(player_id) + " disconnected. Closing connection.", True)
+                client.close()
+                self.clientCount -= 1
+                return False
+
+            except Exception as e:
+                self.verbose_debug(
+                    "Player " + str(player_id) + " disconnected. Closing connection.", True)
                 client.close()
                 self.clientCount -= 1
                 return False
