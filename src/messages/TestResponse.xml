@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
+      playerId="1"
+      gameFinished="false">
+  <Pieces>
+    <Piece id="2" type="sham" playerId="1" timestamp="2017-02-28T13:45:56" />
+  </Pieces>
+</Data>

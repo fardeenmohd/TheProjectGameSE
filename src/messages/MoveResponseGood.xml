@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
+      playerId="1"
+      gameFinished="false">
+  <TaskFields>
+    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11" distanceToPiece="5" />
+  </TaskFields>
+  <PlayerLocation x="1" y="5" />
+</Data>
