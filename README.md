@@ -1,13 +1,14 @@
 **Welcome to the project game thing.**
+CA/Team 5: Filip Matracki, Ksawery Jasieński, Tomek Marcińczyk, Fardeen Mohhamed
 
 *How to run the server:*
->python server.py --verbose
+'python server.py --verbose'
 
 Don't add "--verbose" if you don't want verbose mode, obviously.
 
 
 *How to run the clients:*
->python player.py --verbose -c 2 -m 3
+'python player.py --verbose -c 2 -m 3'
 
 The -c parameter specifies the number of clients to run (default is 1, if not specified).
 
