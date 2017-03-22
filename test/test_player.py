@@ -23,4 +23,4 @@ class TestPlayer:
         server_thread.start()
 
         guinea_player = player
-        assert player.run(1,True,1)
+        assert guinea_player.run()
