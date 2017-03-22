@@ -1,5 +1,6 @@
 #!/usr/bin/python
-import socket, sys
+import socket
+import sys
 from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
