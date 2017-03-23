@@ -23,7 +23,7 @@ def getgames():
     Figure 3.2: An example of GetGames message
     """
 
-    file_name = 'getgames.xml'
+    file_name = 'GetGames.xml'
     full_file = os.path.abspath(os.path.join('../messages', file_name))
     tree = ET.parse(full_file)
     root = tree.getroot()
@@ -47,7 +47,7 @@ class Message:
         Figure 3.3: An example of RegisterGame message with a custom name and a two players teams setup.
         """
 
-        file_name = 'registergame.xml'
+        file_name = 'RegisterGame.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -67,7 +67,7 @@ class Message:
         Figure 3.4: An example of ConfirmGameRegistration message assigning id 1 to the game.
         """
 
-        file_name = 'confirmgameregistration.xml'
+        file_name = 'ConfirmGameRegistration.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -88,7 +88,7 @@ class Message:
         numberofelements = len(gamename)  # number of games
         myattributes = []
 
-        file_name = 'registeredgames.xml'
+        file_name = 'RegisteredGames.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -112,7 +112,7 @@ class Message:
         the game denoted as easyGame.
         """
 
-        file_name = 'joingame.xml'
+        file_name = 'JoinGame.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -133,7 +133,7 @@ class Message:
         about the Player’s role in the game.
         """
 
-        file_name = 'confirmjoininggame.xml'
+        file_name = 'ConfirmJoinInGgame.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
