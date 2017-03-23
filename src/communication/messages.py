@@ -160,7 +160,7 @@ class Message:
 
         numberofplayers = len(playersid)
 
-        file_name = 'gamemessage.xml'
+        file_name = 'GameMessage.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
