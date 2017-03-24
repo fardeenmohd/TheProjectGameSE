@@ -131,8 +131,10 @@ class CommunicationServer:
 
     def shutdown(self):
         self.running = False
-        socket.socket(socket.AF_INET,
-                      socket.SOCK_STREAM).connect((self.DEFAULT_HOSTNAME, self.DEFAULT_PORT))
+        # I added this since I heard it's a hack to make the server shutdown but I guess it works without it
+        # See http://stackoverflow.com/questions/16734534/close-listening-socket-in-python-thread
+        # socket.socket(socket.AF_INET,
+        #               socket.SOCK_STREAM).connect((self.DEFAULT_HOSTNAME, self.DEFAULT_PORT))
         self.socket.close()
 
 if __name__ == '__main__':

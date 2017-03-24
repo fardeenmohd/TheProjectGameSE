@@ -22,8 +22,19 @@ class TestServer:
         self.close_testing_environment(mock_clients, test_server)
 
     def test_client_limit(self):
-        mock_clients, test_server = self.initialize_testing_environment(server.CommunicationServer.DEFAULT_CLIENT_LIMIT + 1)
+        """
+        We create DEFAULT_CLIENT_LIMIT amount of clients then we try to connect another client
+        This extra client should not be able to connect so we test that there is still no more than
+        DEFAULT_CLIENT_LIMIT amount of clients on the server
+        :return:
+        """
+        mock_clients, test_server = self.initialize_testing_environment(server.CommunicationServer.DEFAULT_CLIENT_LIMIT)
+        extra_mock_client = socket.socket()
+        extra_mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME,
+                                   server.CommunicationServer.DEFAULT_PORT))
+        time.sleep(0.01)
         print("Num of mock_clients: " + str(len(mock_clients)))
+
         assert test_server.clientCount == test_server.DEFAULT_CLIENT_LIMIT
         self.close_testing_environment(mock_clients, test_server)
 
@@ -37,21 +48,22 @@ class TestServer:
                                                  port=server.CommunicationServer.DEFAULT_PORT)
         server_thread = threading.Thread(target=self.run_server_to_be_tested, daemon=True, args=(test_server,))
         server_thread.start()
-        time.sleep(0.01)
         for i in range(num_of_clients):
             connected = False
             mock_client = socket.socket()
-            mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME, server.CommunicationServer.DEFAULT_PORT))
             while not connected:
                 try:
-                    mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME, server.CommunicationServer.DEFAULT_PORT))
+                    mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME,
+                                         server.CommunicationServer.DEFAULT_PORT))
                     connected = True
                 except Exception as e:
                     pass  # Do nothing, just try again
 
             mock_clients.append(mock_client)
-            # time.sleep(0.001) # sleep in order to allow client to properly connect
+            time.sleep(0.01)  # sleep in order to allow client to properly connect
 
+        while test_server.clientCount is not num_of_clients:
+            time.sleep(0.001)  # we give the server some time for the mock clients to connect
 
         return mock_clients, test_server
 
@@ -63,3 +75,6 @@ class TestServer:
             mock_client.close()
         test_server.shutdown()
 
+
+ts = TestServer()
+ts.test_client_count()
