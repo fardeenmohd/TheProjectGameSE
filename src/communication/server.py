@@ -23,6 +23,7 @@ class CommunicationServer:
         :param host:
         :param port:
         """
+        self.running = True
         self.socket = socket.socket()
         self.playerDict = {}
         self.clientCount = 0
@@ -50,7 +51,7 @@ class CommunicationServer:
         Thread(target=self.accept_clients, daemon=True).start()
 
         try:
-            while True:
+            while self.running:
                 text = input()
 
                 if text == "stop" or text == "close":
@@ -74,7 +75,7 @@ class CommunicationServer:
 
     def accept_clients(self):
         player_id = 0
-        while True:
+        while self.running:
             sock, address = self.socket.accept()
             if self.clientCount < CommunicationServer.DEFAULT_CLIENT_LIMIT:
                 new_id = player_id
@@ -91,7 +92,7 @@ class CommunicationServer:
             sleep(1)
 
     def print_state(self):
-        while True:
+        while self.running:
             self.verbose_debug("Currently there are " + str(self.clientCount) + " clients connected.")
             sleep(CommunicationServer.INTER_PRINT_STATE_TIME)
 
@@ -101,7 +102,7 @@ class CommunicationServer:
         client.send(str(message).encode())
         self.verbose_debug("Sent id to player " + str(player_id))
 
-        while True:
+        while self.running:
             try:
                 received_data = client.recv(buffer_size).decode()
                 self.verbose_debug("Received: \"" + received_data + "\" from player" + str(player_id))
@@ -129,6 +130,13 @@ class CommunicationServer:
                 self.verbose_debug("Unexpected exception: " + str(e) + ".", True)
                 raise e
 
+    def shutdown(self):
+        self.running = False
+        # I added this since I heard it's a hack to make the server shutdown but I guess it works without it
+        # See http://stackoverflow.com/questions/16734534/close-listening-socket-in-python-thread
+        # socket.socket(socket.AF_INET,
+        #               socket.SOCK_STREAM).connect((self.DEFAULT_HOSTNAME, self.DEFAULT_PORT))
+        self.socket.close()
 
 if __name__ == '__main__':
     def run(verbose):
