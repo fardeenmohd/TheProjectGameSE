@@ -3,6 +3,8 @@
 import xml.etree.ElementTree as ET
 import os
 from random import randint
+import datetime
+from datetime import datetime
 
 
 def randomMessage():
@@ -199,6 +201,7 @@ class Message:
         """
         Figure 3.10: A Discover message from Player.
         """
+
         file_name = 'Discover.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
@@ -213,37 +216,40 @@ class Message:
         return message
 
     # DataResponseForDiscover
-    def dataresponsefordiscover(self):
+    def dataresponsefordiscover(self, playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, pieceid, piecetype):
         """
         Figure 3.11: A Data message response for the discover action.
         """
+        numberoftaskfields = len(taskfieldsX)
 
-        message = """
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                    playerId="1"
-                    gameFinished="false" >
-                <TaskFields>
-                    <TaskField x="1" y="4" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="0" playerId="2" pieceId="2" />
-                    <TaskField x="1" y="6" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="0" y="4" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                    <TaskField x="0" y="5" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="0" y="6" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                    <TaskField x="2" y="4" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                    <TaskField x="2" y="5" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="2" y="6" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                </TaskFields>
-            </Data>
-        """
+        file_name = 'DiscoverResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            myattributes = {
+                'x': str(taskfieldsX[i]),
+                'y': str(taskfieldsY[i]),
+                'timestamp': str(datetime.now()),
+                'distanceToPiece': str(taskfieldsdistances[i])}
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        parent = ET.SubElement(root, 'Pieces')
+        myattributes = {
+            'id': str(pieceid),
+            'timestamp': str(datetime.now()),
+            'type': str(piecetype)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # MoveFromPlayer

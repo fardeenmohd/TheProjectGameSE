@@ -72,6 +72,9 @@ class Player:
         playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
         playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
         playersid = [3, 4, 5, 1, 2, 5]
+        taskfieldsX = [1, 1, 2, 2, 3, 3]
+        taskfieldsY = [4, 5, 6, 4, 4, 6]
+        taskfieldsdistances = [1, 1, 2, 1, 0, 1]
 
         for i in range(messages_count):
             try:
@@ -83,7 +86,8 @@ class Player:
                 # message = Message.joingame(self, 'test', 'master', 'red')
                 # message = Message.confirmjoininggame(self, 2, 3, 'aaaxxx-bbb-ccc-ddd-eeefff', 3, 'red', 'master')
                 # message = Message.gamemessage(self, 3, playerteam, playertype, playersid, 7, 7, 7, 0, 0)
-                message = Message.discover(self, 3, 'c094cab7-da7b-457f-89e5-a5c51756035f')
+                # message = Message.discover(self, 3, 'c094cab7-da7b-457f-89e5-a5c51756035f')
+                message = Message.dataresponsefordiscover(self, 3, 'false', taskfieldsX, taskfieldsY, taskfieldsdistances, 3, 'unknown')
 
                 # message = messages.randomMessage()
                 # message = messages.getgames()
