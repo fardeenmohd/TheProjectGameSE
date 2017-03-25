@@ -3,8 +3,7 @@
 import xml.etree.ElementTree as ET
 import os
 from random import randint
-import datetime
-from datetime import datetime
+from time import gmtime, strftime
 
 
 def randomMessage():
@@ -236,14 +235,14 @@ class Message:
             myattributes = {
                 'x': str(taskfieldsX[i]),
                 'y': str(taskfieldsY[i]),
-                'timestamp': str(datetime.now()),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
                 'distanceToPiece': str(taskfieldsdistances[i])}
             ET.SubElement(parent, 'TaskField', attrib=myattributes)
 
         parent = ET.SubElement(root, 'Pieces')
         myattributes = {
             'id': str(pieceid),
-            'timestamp': str(datetime.now()),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
             'type': str(piecetype)
         }
         ET.SubElement(parent, 'Piece', attrib=myattributes)
