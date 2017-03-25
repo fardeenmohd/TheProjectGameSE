@@ -251,81 +251,138 @@ class Message:
         message = str(messagetemp)
         return message
 
-    # MoveFromPlayer
-    def movefromplayer(self):
+    # Move
+    def move(self, gameid, playerguide, direction):
         """
         Figure 3.12: A Move message from Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Move xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 gameId="1"
-                 playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f"
-                 direction="up"/>
-        """
+        file_name = 'Move.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Move'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+            gamemassage.set('direction', str(direction))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForMove
-    def dataresponseformove(self):
+    # MoveResponseGood
+    def moveresponsegood(self, playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx, playerlocationy):
         """
         Figure 3.13: A Data message response for the proper move action.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 playerId="1"
-                 gameFinished="false">
-                <TaskFields>
-                    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11"
-                             distanceToPiece="5" />
-                </TaskFields>
-                <PlayerLocation x="1" y="5" />
-            </Data>
-        """
+        numberoftaskfields = 1
+
+        file_name = 'MoveResponseGood.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            myattributes = {
+                'x': str(taskfieldsX[i]),
+                'y': str(taskfieldsY[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'distanceToPiece': str(taskfieldsdistances[i])}
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        myattributes = {
+            'x': str(playerlocationx),
+            'y': str(playerlocationy)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForMoveWhenFieldIsOccupied
-    def dataresponseformovewhenfielisdoccupied(self):
+    # MoveResponsePlayer
+    def moveresponseplayer(self, playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx, playerlocationy, pieceid, piecetype):
         """
         Figure 3.14: A Data message response for the move action, when trying to enter an occupied field.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 playerId="1"
-                 gameFinished="false">
-                  <TaskFields>
-                        <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11"
-                                 distanceToPiece="0" playerId="2" pieceId="2" />
-                  </TaskFields>
-                  <Pieces>
-                        <Piece id="2" timestamp="2017-02-23T17:20:11" playerId="2"
-                              type="unknown" />
-                  </Pieces>
-                  <PlayerLocation x="1" y="4" />
-            </Data>
-        """
+        numberoftaskfields = 1
+
+        file_name = 'MoveResponsePlayer.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            myattributes = {
+                'x': str(taskfieldsX[i]),
+                'y': str(taskfieldsY[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'distanceToPiece': str(taskfieldsdistances[i]),
+                'playerId': str(playerid),
+                'pieceId': str(pieceid)}
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        myattributes = {
+            'x': str(playerlocationx),
+            'y': str(playerlocationy)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        parent = ET.SubElement(root, 'Pieces')
+        myattributes = {
+            'id': str(pieceid),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'playerId': str(playerid),
+            'type': str(piecetype)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForMoveOutOfBoard
-    def dataresponseformoveoutofboard(self):
+    # MoveResponseEdge
+    def moveresponseedge(self, playerid, gamefinished, playerlocationx, playerlocationy):
         """
         Figure 3.15: A Data message response for the move action, while trying to step out of the board.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <TaskFields>
-                  </TaskFields>
-                  <PlayerLocation x="1" y="7" />
-            </Data>
-        """
+        numberoftaskfields = 1
+
+        file_name = 'MoveResponsePlayer.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            ET.SubElement(parent, 'TaskField')
+
+        myattributes = {
+            'x': str(playerlocationx),
+            'y': str(playerlocationy)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # PickUpFromPlayer
