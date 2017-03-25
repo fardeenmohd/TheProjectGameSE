@@ -195,18 +195,21 @@ class Message:
         return message
 
     # Discover
-    def discover(self):
+    def discover(self, gameid, playerguide):
         """
         Figure 3.10: A Discover message from Player.
         """
+        file_name = 'Discover.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Discover xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                gameId="1"
-                playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f"
-            />
-        """
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Discover'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # DataResponseForDiscover

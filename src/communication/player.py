@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import socket
-from src.communication import messages
 from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
+
+from src.communication.messages import Message
 
 
 class Player:
@@ -12,7 +13,7 @@ class Player:
     INTER_CONNECTION_TIME = 10  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname() # keep this as socket.gethostname() if you're debugging on your own pc
-    DEFAULT_PORT = 420
+    DEFAULT_PORT = 8000
     MESSAGE_BUFFER_SIZE = 1024
 
     def __init__(self, index, verbose):
@@ -65,12 +66,12 @@ class Player:
         :param messages_count: how many messages should be sent from player to server
         """
 
-        # gamenames = ['game1', 'game2', 'game3']
-        # blueteamplayers = [3, 4, 7]
-        # redteamplayers = [2, 1, 1]
-        # playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
-        # playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
-        # playersid = [3, 4, 5, 1, 2, 5]
+        gamenames = ['game1', 'game2', 'game3']
+        blueteamplayers = [3, 4, 7]
+        redteamplayers = [2, 1, 1]
+        playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
+        playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
+        playersid = [3, 4, 5, 1, 2, 5]
 
         for i in range(messages_count):
             try:
@@ -82,8 +83,9 @@ class Player:
                 # message = Message.joingame(self, 'test', 'master', 'red')
                 # message = Message.confirmjoininggame(self, 2, 3, 'aaaxxx-bbb-ccc-ddd-eeefff', 3, 'red', 'master')
                 # message = Message.gamemessage(self, 3, playerteam, playertype, playersid, 7, 7, 7, 0, 0)
+                message = Message.discover(self, 3, 'c094cab7-da7b-457f-89e5-a5c51756035f')
 
-                message = messages.randomMessage()
+                # message = messages.randomMessage()
                 # message = messages.getgames()
 
                 self.socket.send(message.encode())

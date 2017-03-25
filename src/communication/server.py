@@ -10,7 +10,7 @@ class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
     DEFAULT_BUFFER_SIZE = 1024
-    DEFAULT_PORT = 420
+    DEFAULT_PORT = 8000
     DEFAULT_TIMEOUT = 10
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
