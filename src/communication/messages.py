@@ -434,17 +434,22 @@ class Message:
         return message
 
     # TestPiece
-    def testpiece(self):
+    def testpiece(self, gameid, playerguide):
         """
         Figure 3.18: A TestPiece message from a Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <TestPiece xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 gameId="1"
-                 playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f" />
-        """
+        file_name = 'TestPiece.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}TestPiece'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # DataResponseForPlacingPiece
