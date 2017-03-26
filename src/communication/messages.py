@@ -482,33 +482,42 @@ class Message:
         return message
 
     # AuthorizeKnowledgeExchange
-    def authorizeknowledgeexchange(self):
+    def authorizeknowledgeexchange(self, withplayerid, gameid, playerguid):
         """
         Figure 3.21: An AuthorizeKnowledgeExchange message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <AuthorizeKnowledgeExchange xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  withPlayerId="2"
-                  gameId="1"
-                  playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f"
-            />
-        """
+        file_name = 'AuthorizeKnowledgeExchange.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AuthorizeKnowledgeExchange'):
+            gamemassage.set('withPlayerId', str(withplayerid))
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguid))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # KnowledgeExchangeRequest
-    def knowledgeexchangerequest(self):
+    def knowledgeexchangerequest(self, playerid, senderplayerid):
         """
         Figure 3.22: A KnowledgeExchangeRequest message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <KnowledgeExchangeRequest xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  playerId="2"
-                  senderPlayerId="1" />
-        """
+        file_name = 'KnowledgeExchangeRequest.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}KnowledgeExchangeRequest'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('senderPlayerId', str(senderplayerid))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # RejectKnowledgeExchange
