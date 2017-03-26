@@ -4,6 +4,7 @@ import os
 from random import randint
 
 
+
 def randomMessage():
     files = [f for f in os.listdir("../messages") if f.endswith(".xml")]
     index = randint(0, len(files) - 1)

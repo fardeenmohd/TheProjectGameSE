@@ -9,7 +9,7 @@ from time import sleep
 
 class Player:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by player
-    INTER_CONNECTION_TIME = 10  # time in s between attemps to connect to server
+    INTER_CONNECTION_TIME = 3  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
@@ -27,6 +27,7 @@ class Player:
         self.verbose = verbose
         self.verbose_debug("Player created.")
         self.connected = False  # will be changed if connected
+        self.last_message = None
 
     def connect(self, hostname=DEFAULT_HOSTNAME, port=DEFAULT_PORT):
         """
@@ -87,8 +88,9 @@ class Player:
 
                 message = messages.randomMessage()
                 # message = messages.getgames()
+                self.last_message = message.encode()
+                self.socket.send(self.last_message)
 
-                self.socket.send(message.encode())
                 self.verbose_debug("Sent to server: " + message)
 
                 # Receive a response:
