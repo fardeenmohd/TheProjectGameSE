@@ -521,18 +521,23 @@ class Message:
         return message
 
     # RejectKnowledgeExchange
-    def rejectknowledgeexchange(self):
+    def rejectknowledgeexchange(self, permanent, playerid, senderplayerid):
         """
         Figure 3.23: A RejectKnowledgeExchange message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <RejectKnowledgeExchange xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  permanent="false"
-                  playerId="1"
-                  senderPlayerId="2" />
-        """
+        file_name = 'RejectKnowledgeExchange.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectKnowledgeExchange'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('senderPlayerId', str(senderplayerid))
+            gamemassage.set('permanent', str(permanent))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # AcceptExchangeRequest

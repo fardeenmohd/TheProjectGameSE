@@ -97,7 +97,8 @@ class Player:
                 # message = Message.testpiece(self, 4, 'c094cab7-da7b-457f-89e5-a5c5175666')
                 # message = Message.placeresponse(self, 4, 'false', 3, 'sham')
                 # message = Message.authorizeknowledgeexchange(self, 4, 3, 'c094cab7-da7b-457f-89e5-a5c5175666')
-                message = Message.knowledgeexchangerequest(self, 4, 3)
+                # message = Message.knowledgeexchangerequest(self, 4, 3)
+                message = Message.rejectknowledgeexchange(self, 4, 3, 'true')
 
 
 
