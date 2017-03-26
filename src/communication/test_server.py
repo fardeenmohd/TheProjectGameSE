@@ -44,20 +44,19 @@ class TestServer:
         :return:
         """
         mock_clients = []
-        test_server = server.CommunicationServer(verbose=True, host=server.CommunicationServer.DEFAULT_HOSTNAME,
-                                                 port=server.CommunicationServer.DEFAULT_PORT)
+        test_server = server.CommunicationServer(verbose=True)
         server_thread = threading.Thread(target=self.run_server_to_be_tested, daemon=True, args=(test_server,))
         server_thread.start()
         for i in range(num_of_clients):
             connected = False
             mock_client = socket.socket()
             while not connected:
-                try:
-                    mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME,
-                                         server.CommunicationServer.DEFAULT_PORT))
-                    connected = True
-                except Exception as e:
-                    pass  # Do nothing, just try again
+                #try:
+                mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME,
+                                     server.CommunicationServer.DEFAULT_PORT))
+                connected = True
+                #except Exception as e:
+                    #pass  # Do nothing, just try again
 
             mock_clients.append(mock_client)
             time.sleep(0.01)  # sleep in order to allow client to properly connect
@@ -76,5 +75,3 @@ class TestServer:
         test_server.shutdown()
 
 
-ts = TestServer()
-ts.test_client_count()
