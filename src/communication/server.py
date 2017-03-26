@@ -138,15 +138,16 @@ class CommunicationServer:
         self.socket.close()
 
 if __name__ == '__main__':
-    def run(verbose):
-        server = CommunicationServer(verbose)
-        server.listen()
+	def run(verbose):
+		server = CommunicationServer(verbose)
+		server.listen()
 
 
-    try:
-        parser = ArgumentParser()
-        parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
-        args = vars(parser.parse_args())
-        run(args["verbose"])
-    except KeyboardInterrupt:
-        print("AHMADABAD")
+	try:
+		parser = ArgumentParser()
+		parser.add_argument('-v', '--verbose', action = 'store_true', default = False,
+		                    help = 'Use verbose debugging mode.')
+		args = vars(parser.parse_args())
+		run(args["verbose"])
+	except KeyboardInterrupt:
+		print("AHMADABAD")
