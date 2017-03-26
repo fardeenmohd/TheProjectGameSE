@@ -385,37 +385,52 @@ class Message:
         message = str(messagetemp)
         return message
 
-    # PickUpFromPlayer
-    def pickupfromplayer(self):
+    # PickUp
+    def pickup(self, gameid, playerguide):
         """
-        Figure 3.16: A PickUp message from a Player.
+        Figure 3.16: A PickUp Piece message from a Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <PickUpPiece
-                xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                gameId="1"
-                playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f" />
-        """
+        file_name = 'PickUp.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PickUpPiece'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForPickUp
-    def dataresponseforpickup(self):
+    # PickUpResponse
+    def pickupresponse(self, playerid, gamefinished, pieceid, piecetype):
         """
         Figure 3.17: A Data message response for the piece pick up action.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <Pieces>
-                        <Piece id="2" timestamp="2017-02-27T12:00:34" playerId="1" type="unknown" />
-                  </Pieces>
-            </Data>
-        """
+        file_name = 'PickUpResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'Pieces')
+
+        myattributes = {
+            'id': str(pieceid),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'playerId': str(playerid),
+            'type': str(piecetype)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # TestPiece

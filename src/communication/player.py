@@ -91,7 +91,9 @@ class Player:
                 # message = Message.move(self, 4, 'c094cab7-da7b-457f-89e5-a5c51756035f', 'up')
                 # message = Message.moveresponsegood(self, 3, 'false', taskfieldsX, taskfieldsY, taskfieldsdistances, 3, 2)
                 # message = Message.moveresponseplayer(self, 3, 'false', taskfieldsX, taskfieldsY, taskfieldsdistances, 3, 2, 1, 'unknown')
-                message = Message.moveresponseedge(self, 3, 'false', 5, 3)
+                # message = Message.moveresponseedge(self, 3, 'false', 5, 3)
+                # message = Message.pickup(self, 4, 'c094cab7-da7b-457f-89e5-a5c51756035f')
+                message = Message.pickupresponse(self, 4, 'false', 3, 'unknown')
 
 
 
