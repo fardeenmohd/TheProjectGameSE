@@ -452,22 +452,33 @@ class Message:
         message = str(messagetemp)
         return message
 
-    # DataResponseForPlacingPiece
-    def dataresponseforplacingpiece(self):
+    # PlaceResponse
+    def placeresponse(self, playerid, gamefinished, pieceid, piecetype):
         """
         Figure 3.19: A Data message response for the placing of a piece action.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <Pieces>
-                      <Piece id="2" type="sham" playerId="1" timestamp="2017-02-28T13:45:56" />
-                  </Pieces>
-            </Data>
-        """
+        file_name = 'PickUpResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'Pieces')
+
+        myattributes = {
+            'id': str(pieceid),
+            'type': str(piecetype),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'playerId': str(playerid)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # AuthorizeKnowledgeExchange

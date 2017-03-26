@@ -94,7 +94,8 @@ class Player:
                 # message = Message.moveresponseedge(self, 3, 'false', 5, 3)
                 # message = Message.pickup(self, 4, 'c094cab7-da7b-457f-89e5-a5c51756035f')
                 # message = Message.pickupresponse(self, 4, 'false', 3, 'unknown')
-                message = Message.testpiece(self, 4, 'c094cab7-da7b-457f-89e5-a5c5175666')
+                # message = Message.testpiece(self, 4, 'c094cab7-da7b-457f-89e5-a5c5175666')
+                message = Message.placeresponse(self, 4, 'false', 3, 'sham')
 
 
 
