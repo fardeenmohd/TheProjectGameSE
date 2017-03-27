@@ -2,11 +2,11 @@
 <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
       playerId="1"
       gameFinished="false">
-  <TaskFields>
-    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11" distanceToPiece="0" playerId="2" pieceId="2" />
-  </TaskFields>
-  <Pieces>
-    <Piece id="2" timestamp="2017-02-23T17:20:11" playerId="2" type="unknown" />
-  </Pieces>
-  <PlayerLocation x="1" y="4" />
+  <!--<TaskFields>-->
+    <!--<TaskField x="1" y="5" timestamp="2017-02-23T17:20:11" distanceToPiece="0" playerId="2" pieceId="2" />-->
+  <!--</TaskFields>-->
+  <!--<Pieces>-->
+    <!--<Piece id="2" timestamp="2017-02-23T17:20:11" playerId="2" type="unknown" />-->
+  <!--</Pieces>-->
+  <!--<PlayerLocation x="1" y="4" />-->
 </Data>

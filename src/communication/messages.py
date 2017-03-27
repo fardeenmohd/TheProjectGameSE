@@ -2,6 +2,7 @@
 import xml.etree.ElementTree as ET
 import os
 from random import randint
+from time import gmtime, strftime
 
 
 
@@ -23,7 +24,7 @@ def getgames():
     Figure 3.2: An example of GetGames message
     """
 
-    file_name = 'getgames.xml'
+    file_name = 'GetGames.xml'
     full_file = os.path.abspath(os.path.join('../messages', file_name))
     tree = ET.parse(full_file)
     root = tree.getroot()
@@ -47,7 +48,7 @@ class Message:
         Figure 3.3: An example of RegisterGame message with a custom name and a two players teams setup.
         """
 
-        file_name = 'registergame.xml'
+        file_name = 'RegisterGame.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -67,7 +68,7 @@ class Message:
         Figure 3.4: An example of ConfirmGameRegistration message assigning id 1 to the game.
         """
 
-        file_name = 'confirmgameregistration.xml'
+        file_name = 'ConfirmGameRegistration.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -88,7 +89,7 @@ class Message:
         numberofelements = len(gamename)  # number of games
         myattributes = []
 
-        file_name = 'registeredgames.xml'
+        file_name = 'RegisteredGames.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -112,7 +113,7 @@ class Message:
         the game denoted as easyGame.
         """
 
-        file_name = 'joingame.xml'
+        file_name = 'JoinGame.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -133,7 +134,7 @@ class Message:
         about the Player’s role in the game.
         """
 
-        file_name = 'confirmjoininggame.xml'
+        file_name = 'ConfirmJoinInGgame.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -160,7 +161,7 @@ class Message:
 
         numberofplayers = len(playersid)
 
-        file_name = 'gamemessage.xml'
+        file_name = 'GameMessage.xml'
         full_file = os.path.abspath(os.path.join('../messages', file_name))
         tree = ET.parse(full_file)
         root = tree.getroot()
@@ -195,239 +196,348 @@ class Message:
         return message
 
     # Discover
-    def discover(self):
+    def discover(self, gameid, playerguide):
         """
         Figure 3.10: A Discover message from Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Discover xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                gameId="1"
-                playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f"
-            />
-        """
+        file_name = 'Discover.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Discover'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # DataResponseForDiscover
-    def dataresponsefordiscover(self):
+    def dataresponsefordiscover(self, playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, pieceid, piecetype):
         """
         Figure 3.11: A Data message response for the discover action.
         """
+        numberoftaskfields = len(taskfieldsX)
 
-        message = """
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                    playerId="1"
-                    gameFinished="false" >
-                <TaskFields>
-                    <TaskField x="1" y="4" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="0" playerId="2" pieceId="2" />
-                    <TaskField x="1" y="6" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="0" y="4" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                    <TaskField x="0" y="5" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="0" y="6" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                    <TaskField x="2" y="4" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                    <TaskField x="2" y="5" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="1" />
-                    <TaskField x="2" y="6" timestamp="2017-02-23T17:20:11"
-                     distanceToPiece="2" />
-                </TaskFields>
-            </Data>
-        """
+        file_name = 'DiscoverResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            myattributes = {
+                'x': str(taskfieldsX[i]),
+                'y': str(taskfieldsY[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'distanceToPiece': str(taskfieldsdistances[i])}
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        parent = ET.SubElement(root, 'Pieces')
+        myattributes = {
+            'id': str(pieceid),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'type': str(piecetype)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # MoveFromPlayer
-    def movefromplayer(self):
+    # Move
+    def move(self, gameid, playerguide, direction):
         """
         Figure 3.12: A Move message from Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Move xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 gameId="1"
-                 playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f"
-                 direction="up"/>
-        """
+        file_name = 'Move.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Move'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+            gamemassage.set('direction', str(direction))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForMove
-    def dataresponseformove(self):
+    # MoveResponseGood
+    def moveresponsegood(self, playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx, playerlocationy):
         """
         Figure 3.13: A Data message response for the proper move action.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 playerId="1"
-                 gameFinished="false">
-                <TaskFields>
-                    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11"
-                             distanceToPiece="5" />
-                </TaskFields>
-                <PlayerLocation x="1" y="5" />
-            </Data>
-        """
+        numberoftaskfields = 1
+
+        file_name = 'MoveResponseGood.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            myattributes = {
+                'x': str(taskfieldsX[i]),
+                'y': str(taskfieldsY[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'distanceToPiece': str(taskfieldsdistances[i])}
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        myattributes = {
+            'x': str(playerlocationx),
+            'y': str(playerlocationy)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForMoveWhenFieldIsOccupied
-    def dataresponseformovewhenfielisdoccupied(self):
+    # MoveResponsePlayer
+    def moveresponseplayer(self, playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx, playerlocationy, pieceid, piecetype):
         """
         Figure 3.14: A Data message response for the move action, when trying to enter an occupied field.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 playerId="1"
-                 gameFinished="false">
-                  <TaskFields>
-                        <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11"
-                                 distanceToPiece="0" playerId="2" pieceId="2" />
-                  </TaskFields>
-                  <Pieces>
-                        <Piece id="2" timestamp="2017-02-23T17:20:11" playerId="2"
-                              type="unknown" />
-                  </Pieces>
-                  <PlayerLocation x="1" y="4" />
-            </Data>
-        """
+        numberoftaskfields = 1
+
+        file_name = 'MoveResponsePlayer.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            myattributes = {
+                'x': str(taskfieldsX[i]),
+                'y': str(taskfieldsY[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'distanceToPiece': str(taskfieldsdistances[i]),
+                'playerId': str(playerid),
+                'pieceId': str(pieceid)}
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        myattributes = {
+            'x': str(playerlocationx),
+            'y': str(playerlocationy)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        parent = ET.SubElement(root, 'Pieces')
+        myattributes = {
+            'id': str(pieceid),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'playerId': str(playerid),
+            'type': str(piecetype)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForMoveOutOfBoard
-    def dataresponseformoveoutofboard(self):
+    # MoveResponseEdge
+    def moveresponseedge(self, playerid, gamefinished, playerlocationx, playerlocationy):
         """
         Figure 3.15: A Data message response for the move action, while trying to step out of the board.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <TaskFields>
-                  </TaskFields>
-                  <PlayerLocation x="1" y="7" />
-            </Data>
-        """
+        numberoftaskfields = 1
+
+        file_name = 'MoveResponsePlayer.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoftaskfields):
+            ET.SubElement(parent, 'TaskField')
+
+        myattributes = {
+            'x': str(playerlocationx),
+            'y': str(playerlocationy)
+        }
+        ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # PickUpFromPlayer
-    def pickupfromplayer(self):
+    # PickUp
+    def pickup(self, gameid, playerguide):
         """
-        Figure 3.16: A PickUp message from a Player.
+        Figure 3.16: A PickUp Piece message from a Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <PickUpPiece
-                xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                gameId="1"
-                playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f" />
-        """
+        file_name = 'PickUp.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PickUpPiece'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForPickUp
-    def dataresponseforpickup(self):
+    # PickUpResponse
+    def pickupresponse(self, playerid, gamefinished, pieceid, piecetype):
         """
         Figure 3.17: A Data message response for the piece pick up action.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <Pieces>
-                        <Piece id="2" timestamp="2017-02-27T12:00:34" playerId="1" type="unknown" />
-                  </Pieces>
-            </Data>
-        """
+        file_name = 'PickUpResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'Pieces')
+
+        myattributes = {
+            'id': str(pieceid),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'playerId': str(playerid),
+            'type': str(piecetype)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # TestPiece
-    def testpiece(self):
+    def testpiece(self, gameid, playerguide):
         """
         Figure 3.18: A TestPiece message from a Player.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <TestPiece xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                 gameId="1"
-                 playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f" />
-        """
+        file_name = 'TestPiece.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}TestPiece'):
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguide))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataResponseForPlacingPiece
-    def dataresponseforplacingpiece(self):
+    # PlaceResponse
+    def placeresponse(self, playerid, gamefinished, pieceid, piecetype):
         """
         Figure 3.19: A Data message response for the placing of a piece action.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <Pieces>
-                      <Piece id="2" type="sham" playerId="1" timestamp="2017-02-28T13:45:56" />
-                  </Pieces>
-            </Data>
-        """
+        file_name = 'PickUpResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'Pieces')
+
+        myattributes = {
+            'id': str(pieceid),
+            'type': str(piecetype),
+            'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+            'playerId': str(playerid)
+        }
+        ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # AuthorizeKnowledgeExchange
-    def authorizeknowledgeexchange(self):
+    def authorizeknowledgeexchange(self, withplayerid, gameid, playerguid):
         """
         Figure 3.21: An AuthorizeKnowledgeExchange message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <AuthorizeKnowledgeExchange xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  withPlayerId="2"
-                  gameId="1"
-                  playerGuid="c094cab7-da7b-457f-89e5-a5c51756035f"
-            />
-        """
+        file_name = 'AuthorizeKnowledgeExchange.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AuthorizeKnowledgeExchange'):
+            gamemassage.set('withPlayerId', str(withplayerid))
+            gamemassage.set('gameId', str(gameid))
+            gamemassage.set('playerGuid', str(playerguid))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # KnowledgeExchangeRequest
-    def knowledgeexchangerequest(self):
+    def knowledgeexchangerequest(self, playerid, senderplayerid):
         """
         Figure 3.22: A KnowledgeExchangeRequest message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <KnowledgeExchangeRequest xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  playerId="2"
-                  senderPlayerId="1" />
-        """
+        file_name = 'KnowledgeExchangeRequest.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}KnowledgeExchangeRequest'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('senderPlayerId', str(senderplayerid))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # RejectKnowledgeExchange
-    def rejectknowledgeexchange(self):
+    def rejectknowledgeexchange(self, permanent, playerid, senderplayerid):
         """
         Figure 3.23: A RejectKnowledgeExchange message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <RejectKnowledgeExchange xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  permanent="false"
-                  playerId="1"
-                  senderPlayerId="2" />
-        """
+        file_name = 'RejectKnowledgeExchange.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectKnowledgeExchange'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('senderPlayerId', str(senderplayerid))
+            gamemassage.set('permanent', str(permanent))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
     # AcceptExchangeRequest
