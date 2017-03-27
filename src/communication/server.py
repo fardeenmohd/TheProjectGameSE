@@ -1,9 +1,20 @@
 #!/usr/bin/python
-import socket, sys
+import socket
+import sys
 from argparse import ArgumentParser
 from datetime import datetime
+from enum import Enum, auto
 from threading import Thread
 from time import sleep
+
+
+class Communication(Enum):
+	"""
+	an Enum class for flags which will be useful later on for distinguishing between message recipients
+	"""
+	SERVER_TO_CLIENT = auto()
+	CLIENT_TO_SERVER = auto()
+	OTHER = auto()
 
 
 class CommunicationServer:
