@@ -2,16 +2,16 @@
 <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
       playerId="1"
       gameFinished="false">
-  <TaskFields>
-    <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11" distanceToPiece="5" />
-    <TaskField x="1" y="4" timestamp="2017-02-23T17:20:13" distanceToPiece="4" />
-  </TaskFields>
-  <GoalFields>
-    <GoalField x="0" y="9" timestamp="2017-02-23T17:20:17" team="blue" type="non-goal"/>
-    <GoalField x="1" y="9" timestamp="2017-02-23T17:20:19" team="blue" type="goal" playerId="2"/>
-  </GoalFields>
-  <Pieces>
-    <Piece id="1" timestamp="2017-02-23T17:20:09" type="sham" />
-    <Piece id="2" timestamp="2017-02-23T17:19:09" type="unknown" />
-  </Pieces>
+  <!--<TaskFields>-->
+    <!--<TaskField x="1" y="5" timestamp="2017-02-23T17:20:11" distanceToPiece="5" />-->
+    <!--<TaskField x="1" y="4" timestamp="2017-02-23T17:20:13" distanceToPiece="4" />-->
+  <!--</TaskFields>-->
+  <!--<GoalFields>-->
+    <!--<GoalField x="0" y="9" timestamp="2017-02-23T17:20:17" team="blue" type="non-goal"/>-->
+    <!--<GoalField x="1" y="9" timestamp="2017-02-23T17:20:19" team="blue" type="goal" playerId="2"/>-->
+  <!--</GoalFields>-->
+  <!--<Pieces>-->
+    <!--<Piece id="1" timestamp="2017-02-23T17:20:09" type="sham" />-->
+    <!--<Piece id="2" timestamp="2017-02-23T17:19:09" type="unknown" />-->
+  <!--</Pieces>-->
 </Data>

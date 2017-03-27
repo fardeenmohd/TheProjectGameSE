@@ -5,6 +5,7 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 
+from src.communication import messages
 from src.communication.messages import Message
 
 
@@ -69,7 +70,10 @@ class Player:
         gamenames = ['game1', 'game2', 'game3']
         blueteamplayers = [3, 4, 7]
         redteamplayers = [2, 1, 1]
-        playerteam = ['red', 'red', 'blue', 'blue', 'red', 'blue']
+        goalfieldsX = [1, 1]
+        goalfieldsY = [4, 6]
+        playerteam = ['red', 'red']
+        fieldstype = ['unknown', 'known']
         playertype = ['master', 'player', 'leader', 'player', 'leader', 'master']
         playersid = [3, 4, 5, 1, 2, 5]
         taskfieldsX = [1, 1, 2, 2, 3, 3]
@@ -98,9 +102,9 @@ class Player:
                 # message = Message.placeresponse(self, 4, 'false', 3, 'sham')
                 # message = Message.authorizeknowledgeexchange(self, 4, 3, 'c094cab7-da7b-457f-89e5-a5c5175666')
                 # message = Message.knowledgeexchangerequest(self, 4, 3)
-                message = Message.rejectknowledgeexchange(self, 4, 3, 'true')
-
-
+                # message = Message.rejectknowledgeexchange(self, 4, 3, 'true')
+                # message = Message.acceptexchangerequest(self, 6, 6)
+                message = Message.knowledgeexchangeresponse(self, 6, 'false', taskfieldsX, taskfieldsY, taskfieldsdistances, goalfieldsX, goalfieldsY, playerteam, fieldstype, [0,1], [2,10], ['sham', 'sham'])
 
                 # message = messages.randomMessage()
                 # message = messages.getgames()
