@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-import xml.etree.ElementTree as ET
 import os
+import xml.etree.ElementTree as ET
 from random import randint
-
 
 
 def randomMessage():
@@ -13,7 +12,7 @@ def randomMessage():
     tree = ET.parse(full_file)
     root = tree.getroot()
 
-    messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+    messagetemp = ET.tostring(root, encoding = 'unicode', method = 'xml')
     message = str(messagetemp)
     return message
 

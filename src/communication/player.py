@@ -31,7 +31,7 @@ class Player:
 		self.verbose = verbose
 		self.connected = False  # will be changed if connected
 		self.last_message = None
-		self.socket.settimeout(1)
+		# self.socket.settimeout(1)
 
 		self.verbose_debug("Player created.")
 
@@ -58,8 +58,8 @@ class Player:
 					raise socket.error
 
 			except socket.error:
+				failed_connections += 1
 				if failed_connections < self.connectionAttempts:
-					failed_connections += 1
 					self.verbose_debug("Attempt number " + str(failed_connections) + " failed. Trying again in " + str(
 						self.interConnectionTime) + " seconds.")
 					sleep(self.interConnectionTime)
@@ -81,9 +81,11 @@ class Player:
 				# Send a message:
 				message = messages.randomMessage()
 				self.send(message)
-				# Receive a response:
 
+				# Receive a response:
 				received_data = self.receive()
+				while len(received_data) < 1:
+					received_data = self.receive()
 
 				sleep(self.timeBetweenMessages)
 
@@ -92,6 +94,8 @@ class Player:
 				self.socket.close()
 				self.connected = False
 				return
+
+		self.shutdown()
 
 	def verbose_debug(self, message, important = False):
 		"""
@@ -106,10 +110,10 @@ class Player:
 	def shutdown(self):
 		self.connected = False
 		self.socket.close()
-		self.verbose_debug("Closing down the client.", True)
+		self.verbose_debug("Shutting down the client.", True)
 
 	def send(self, message):
-		self.socket.send(str(message).encode())
+		self.socket.send(message.encode())
 		self.last_message = message
 		self.verbose_debug("Sent to server: \"" + message + "\".")
 
@@ -128,7 +132,7 @@ def simulate(number_of_players = 1, verbose = True, messages_count = 1, time_bet
 	"""
 	thread_list = []
 	for i in range(number_of_players):
-		new_thread = Thread(target = deploy_player, args = (i + 1, verbose, messages_count), daemon = True)
+		new_thread = Thread(target = deploy_player, args = (i + 1, verbose, messages_count))
 		new_thread.start()
 		thread_list.append(new_thread)
 		sleep(time_between_deploys)
