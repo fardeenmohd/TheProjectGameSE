@@ -49,11 +49,12 @@ class Player:
 				if self.socket.connect_ex((hostname, port)) == 0:
 					# try to receive the initial "greeting" byte from Server
 					received = self.socket.recv(1)
-
-					# say hello to the server
-					self.send("1")
-					self.connected = True
-					return True
+					if received.decode() == '1':
+						# # say hello to the server
+						# self.send("1")
+						self.connected = True
+						return True
+					else: raise socket.error
 				else:
 					raise socket.error
 
@@ -79,7 +80,7 @@ class Player:
 		for i in range(messages_count):
 			try:
 				# Send a message:
-				message = messages.randomMessage()
+				message = messages.getgames()
 				self.send(message)
 
 				# Receive a response:

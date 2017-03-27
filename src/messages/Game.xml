@@ -1,15 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Game xmlns="http://theprojectgame.mini.pw.edu.pl/"
+<Game xmlns="https://se2.mini.pw.edu.pl/17-results/"
       playerId="2">
   <Players>
     <Player team="red" type="leader" id="5" />
-    <Player team="red" type="player" id="6" />
-    <Player team="red" type="player" id="7" />
-    <Player team="red" type="player" id="8" />
+      <Player team="red" type="member" id="6"/>
+      <Player team="red" type="member" id="7"/>
+      <Player team="red" type="member" id="8"/>
     <Player team="blue" type="leader" id="1" />
-    <Player team="blue" type="player" id="2" />
-    <Player team="blue" type="player" id="3" />
-    <Player team="blue" type="player" id="4" />
+      <Player team="blue" type="member" id="2"/>
+      <Player team="blue" type="member" id="3"/>
+      <Player team="blue" type="member" id="4"/>
   </Players>
   <Board width="5" tasksHeight="5" goalsHeight="3" />
   <PlayerLocation x="0" y="3" />

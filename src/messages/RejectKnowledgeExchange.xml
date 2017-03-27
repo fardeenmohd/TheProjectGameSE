@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<RejectKnowledgeExchange xmlns="http://theprojectgame.mini.pw.edu.pl/"
-  permanent="false"
-  playerId="1"
-  senderPlayerId="2" />
+<RejectKnowledgeExchange xmlns="https://se2.mini.pw.edu.pl/17-results/"
+                         permanent="false"
+                         playerId="1"
+                         senderPlayerId="2" />

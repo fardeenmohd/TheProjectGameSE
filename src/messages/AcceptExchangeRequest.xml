@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<AcceptExchangeRequest xmlns="http://theprojectgame.mini.pw.edu.pl/"
-  playerId="2"
-  senderPlayerId="2"
+<AcceptExchangeRequest xmlns="https://se2.mini.pw.edu.pl/17-results/"
+                       playerId="1"
+                       senderPlayerId="2"
   />

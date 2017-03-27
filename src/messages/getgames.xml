@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<GetGames xmlns="http://theprojectgame.mini.pw.edu.pl/"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://theprojectgame.mini.pw.edu.pl/ TheProjectGameCommunication.xsd"
+<GetGames xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns="https://se2.mini.pw.edu.pl/17-results/"
+          xsi:schemaLocation="https://se2.mini.pw.edu.pl/17-results/ TheProjectGameCommunication.xsd"
 />
