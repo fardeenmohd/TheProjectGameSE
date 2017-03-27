@@ -540,43 +540,74 @@ class Message:
         return message
 
     # AcceptExchangeRequest
-    def acceptexchangerequest(self):
+    def acceptexchangerequest(self, playerid, senderplayerid):
         """
         Figure 3.24: An AcceptExchangeRequest message.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <AcceptExchangeRequest xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                  playerId="2"
-                  senderPlayerId="2"
-            />
-        """
+        file_name = 'AcceptexchangeRequest.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AcceptExchangeRequest'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('senderPlayerId', str(senderplayerid))
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
 
-    # DataExchangeResponse
-    def dataexchangeresponse(self):
+    # KnowledgeExchangeResponse
+    def knowledgeexchangeresponse(self, playerid, gamefinished, xtaskfield, ytaskfield, distancetopiece, xgoalfield, ygoalfield, team, fieldtype, goalfieldplayerid, pieceid, piecetype):
         """
         Figure 3.25: A Data message with a knowledge exchange/accept exchange response data.
         """
 
-        message = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
-                     playerId="1"
-                     gameFinished="false">
-                  <TaskFields>
-                        <TaskField x="1" y="5" timestamp="2017-02-23T17:20:11" distanceToPiece="5" />
-                        <TaskField x="1" y="4" timestamp="2017-02-23T17:20:13" distanceToPiece="4" />
-                  </TaskFields>
-                  <GoalFields>
-                        <GoalField x="0" y="9" timestamp="2017-02-23T17:20:17" team="blue" type="non-goal"/>
-                        <GoalField x="1" y="9" timestamp="2017-02-23T17:20:19" team="blue" type="goal" playerId="2"/>
-                  </GoalFields>
-                  <Pieces>
-                        <Piece id="1" timestamp="2017-02-23T17:20:09" type="sham" />
-                        <Piece id="2" timestamp="2017-02-23T17:19:09" type="unknown" />
-                  </Pieces>
-            </Data>
-        """
+        numberoffields = len(xtaskfield)
+        numberofgoals = len(xgoalfield)
+        numberofpieces = len(pieceid)
+
+        file_name = 'KnowledgeExchangeResponse.xml'
+        full_file = os.path.abspath(os.path.join('../messages', file_name))
+        tree = ET.parse(full_file)
+        root = tree.getroot()
+
+        for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+            gamemassage.set('playerId', str(playerid))
+            gamemassage.set('gameFinished', str(gamefinished))
+
+        parent = ET.SubElement(root, 'TaskFields')
+        for i in range(0, numberoffields):
+            myattributes = {
+                'x': str(xtaskfield[i]),
+                'y': str(ytaskfield[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'distanceToPiece': str(distancetopiece[i])
+            }
+            ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+        parent = ET.SubElement(root, 'GoalFields')
+        for i in range(0, numberofgoals):
+            myattributes = {
+                'x': str(xgoalfield[i]),
+                'y': str(ygoalfield[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'team': str(team[i]),
+                'type': str(fieldtype[i]),
+                'playerId': str(goalfieldplayerid[i])
+            }
+            ET.SubElement(parent, 'GoalField', attrib=myattributes)
+
+        parent = ET.SubElement(root, 'Pieces')
+        for i in range(0, numberofpieces):
+            myattributes = {
+                'id': str(pieceid[i]),
+                'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                'piecetype': str(piecetype[i])
+            }
+            ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+        messagetemp = ET.tostring(root, encoding='utf8', method='xml')
+        message = str(messagetemp)
         return message
