@@ -19,6 +19,7 @@ class TestPlayer(TestCase):
 		self.mock_server.bind((player.Player.DEFAULT_HOSTNAME, player.Player.DEFAULT_PORT))
 		self.mock_server.listen()
 		client, addr = self.mock_server.accept()
+		client.send('1'.encode())
 
 	def tearDown(self):
 		self.mock_player.shutdown()
