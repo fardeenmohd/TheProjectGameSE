@@ -1,77 +1,100 @@
 #!/usr/bin/env python
-import sys, socket, threading, time
-from src.communication import server
-from multiprocessing import Process
-# from unittest.mock import MagicMock,patch,Mock TODO maybe use this library for testing
+import socket
+from threading import Thread
+from time import sleep
+from unittest import TestCase
+
+from communication import server
 
 
-class TestServer:
-
-    def run_server_to_be_tested(self, test):
-        test.listen()
-
-    def test_client_count(self):
-        mock_clients, test_server = self.initialize_testing_environment()
-        assert test_server.clientCount == 1
-        self.close_testing_environment(mock_clients, test_server)
-
-    def test_player_id(self):
-        mock_clients, test_server = self.initialize_testing_environment()
-        received = mock_clients[0].recv(test_server.DEFAULT_BUFFER_SIZE)
-        assert received.decode() == '0'
-        self.close_testing_environment(mock_clients, test_server)
-
-    def test_client_limit(self):
-        """
-        We create DEFAULT_CLIENT_LIMIT amount of clients then we try to connect another client
-        This extra client should not be able to connect so we test that there is still no more than
-        DEFAULT_CLIENT_LIMIT amount of clients on the server
-        :return:
-        """
-        mock_clients, test_server = self.initialize_testing_environment(server.CommunicationServer.DEFAULT_CLIENT_LIMIT)
-        extra_mock_client = socket.socket()
-        extra_mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME,
-                                   server.CommunicationServer.DEFAULT_PORT))
-        time.sleep(0.01)
-        print("Num of mock_clients: " + str(len(mock_clients)))
-
-        assert test_server.clientCount == test_server.DEFAULT_CLIENT_LIMIT
-        self.close_testing_environment(mock_clients, test_server)
-
-    def initialize_testing_environment(self, num_of_clients=1):
-        """
-        Creates a server that will be tested, as well as a single mock client that will connect to it. Returns both
-        :return:
-        """
-        mock_clients = []
-        test_server = server.CommunicationServer(verbose=True)
-        server_thread = threading.Thread(target=self.run_server_to_be_tested, daemon=True, args=(test_server,))
-        server_thread.start()
-        for i in range(num_of_clients):
-            connected = False
-            mock_client = socket.socket()
-            while not connected:
-                #try:
-                mock_client.connect((server.CommunicationServer.DEFAULT_HOSTNAME,
-                                     server.CommunicationServer.DEFAULT_PORT))
-                connected = True
-                #except Exception as e:
-                    #pass  # Do nothing, just try again
-
-            mock_clients.append(mock_client)
-            time.sleep(0.01)  # sleep in order to allow client to properly connect
-
-        while test_server.clientCount is not num_of_clients:
-            time.sleep(0.001)  # we give the server some time for the mock clients to connect
-
-        return mock_clients, test_server
-
-    def close_testing_environment(self, mock_clients, test_server):
-        """
-         Shuts the mock clients and server down
-        """
-        for mock_client in mock_clients:
-            mock_client.close()
-        test_server.shutdown()
+# from unittest.self.mock import Magicself.mock,patch,self.mock TODO maybe use this library for testing
 
 
+class TestServer(TestCase):
+	def test_listening(self):
+		"""
+		test if new client connections are being accepted.
+		"""
+		print("Client count test.")
+
+		listening_thread = Thread(target = self.mock_server.listen, daemon = True)
+		listening_thread.start()
+		num_of_clients = 5
+
+		for i in range(num_of_clients):
+			new_thread = Thread(target = self.connect_to_server, daemon = True)
+			new_thread.start()
+			# give the clients some time to actually connect:
+			sleep(0.01)
+
+		assert self.mock_server.clientCount == num_of_clients
+
+	def connect_to_server(self):
+		mock_client = socket.socket()
+		mock_client.connect((self.mock_server.host, self.mock_server.port))
+		while True:
+			sleep(1)
+
+	def test_send(self):
+		print("Test the send function.")
+
+		self.mock_server.socket.listen()
+
+		mock_client = socket.socket()
+		mock_client.connect((self.mock_server.host, self.mock_server.port))
+
+		client_sock, addr = self.mock_server.socket.accept()
+
+		self.mock_server.send(client_sock, "hello.")
+
+		received = mock_client.recv(1024).decode()
+		assert received == "hello."
+
+	def test_receive(self):
+		print("Test the receive function.")
+
+		self.mock_server.socket.listen()
+
+		mock_client = socket.socket()
+		mock_client.connect((self.mock_server.host, self.mock_server.port))
+
+		client_sock, addr = self.mock_server.socket.accept()
+
+		mock_client.send("hello.".encode())
+
+		received = self.mock_server.receive(client_sock)
+
+		assert received == "hello."
+
+	def test_client_limit(self):
+		"""
+		We create DEFAULT_CLIENT_LIMIT amount of clients then we try to connect another mock_client
+		This extra mock_client should not be able to connect so we test that there is still no more than
+		DEFAULT_CLIENT_LIMIT amount of clients on the server
+		:return:
+		"""
+		listening_thread = Thread(target = self.mock_server.listen, daemon = True)
+		listening_thread.start()
+
+		self.mock_server.clientLimit = 5
+		num_of_clients = 5
+
+		for i in range(num_of_clients):
+			new_thread = Thread(target = self.connect_to_server, daemon = True)
+			new_thread.start()
+			# give the clients some time to actually connect:
+			sleep(0.01)
+
+		mock_client = socket.socket()
+		mock_client.connect((self.mock_server.host, self.mock_server.port))
+
+		assert self.mock_server.clientCount == self.mock_server.clientLimit
+
+	def tearDown(self):
+		"""
+		 Shuts the self.mock clients and server down
+		"""
+		self.mock_server.shutdown()
+
+	def setUp(self):
+		self.mock_server = server.CommunicationServer(True)
