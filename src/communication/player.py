@@ -5,14 +5,14 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 
-from src.communication.messages import Message
+from src import communication
 
 
 class Player:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by player
     INTER_CONNECTION_TIME = 10  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
-    DEFAULT_HOSTNAME = socket.gethostname() # keep this as socket.gethostname() if you're debugging on your own pc
+    DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 8000
     MESSAGE_BUFFER_SIZE = 1024
 
@@ -99,8 +99,6 @@ class Player:
                 # message = Message.authorizeknowledgeexchange(self, 4, 3, 'c094cab7-da7b-457f-89e5-a5c5175666')
                 # message = Message.knowledgeexchangerequest(self, 4, 3)
                 message = Message.rejectknowledgeexchange(self, 4, 3, 'true')
-
-
 
                 # message = messages.randomMessage()
                 # message = messages.getgames()
