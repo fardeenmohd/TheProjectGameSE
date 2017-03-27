@@ -2,7 +2,7 @@
 <Data xmlns="http://theprojectgame.mini.pw.edu.pl/"
       playerId="1"
       gameFinished="false">
-  <TaskFields>
-  </TaskFields>
-  <PlayerLocation x="1" y="7" />
+  <!--<TaskFields>-->
+  <!--</TaskFields>-->
+  <!--<PlayerLocation x="1" y="7" />-->
 </Data>
