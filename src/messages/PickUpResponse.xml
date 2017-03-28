@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Data xmlns="https://se2.mini.pw.edu.pl/17-results/"
+      playerId="1"
+      gameFinished="false">
+  <Pieces>
+    <Piece id="2" timestamp="2017-02-27T12:00:34" playerId="1" type="unknown" />
+  </Pieces>
+</Data>
