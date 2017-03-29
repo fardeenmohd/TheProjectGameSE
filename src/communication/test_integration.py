@@ -3,14 +3,14 @@ from threading import Thread
 from time import sleep
 from unittest import TestCase
 
-from communication import server, player
+from communication import server, client
 
 
 class TestIntegration(TestCase):
 	def setUp(self):
 		sleep(0.5)
 
-		self.mock_client = player.Player(index = 0, verbose = True)
+		self.mock_client = client.Client(index = 0, verbose = True)
 		self.mock_server = server.CommunicationServer(verbose = False)
 
 		listening_thread = Thread(target = self.mock_server.listen, daemon = True)
@@ -46,7 +46,7 @@ class TestIntegration(TestCase):
 		self.mock_client.interConnectionTime = 1
 		self.mock_client.connectionAttempts = 3
 
-		simulation = Thread(target = player.simulate, daemon = True, args = (3, False, 5, 1))
+		simulation = Thread(target = client.simulate, daemon = True, args = (3, False, 5, 1))
 		simulation.start()
 
 		sleep(4)

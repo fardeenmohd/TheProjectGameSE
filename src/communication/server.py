@@ -37,7 +37,7 @@ class CommunicationServer:
 		self.port = port
 		self.clientLimit = client_limit
 		self.socket = socket.socket()
-		self.playerDict = {}
+		self.clientDict = {}
 		self.clientCount = 0
 		self.verbose = verbose
 
@@ -92,11 +92,11 @@ class CommunicationServer:
 
 				elif command == "clients":
 					self.verbose_debug("Currently connected clients:", True)
-					if len(self.playerDict) > 0:
-						for player_index in self.playerDict:
-							if self.playerDict[player_index] is not None:
+					if len(self.clientDict) > 0:
+						for client_index in self.clientDict:
+							if self.clientDict[client_index] is not None:
 								print(
-									" P" + str(player_index) + ": " + str(self.playerDict[player_index].getsockname()))
+									" C" + str(client_index) + ": " + str(self.clientDict[client_index].getsockname()))
 					else:
 						print(" There are no currently connected clients.")
 
@@ -121,7 +121,7 @@ class CommunicationServer:
 		"""
 		method running endlessly on a separate thread, accepts new clients and deploys threads to handle them
 		"""
-		player_index = 0
+		client_index = 0
 		while self.running:
 			# block and wait until a client connects:
 			client_socket, address = self.socket.accept()
@@ -129,80 +129,82 @@ class CommunicationServer:
 				# if client limit not exceeded, handle the new client:
 				# send a single byte which says "greetings"
 				client_socket.send('1'.encode())
-				self.register_connection(client_socket, player_index)
-				player_index += 1
+				self.register_connection(client_socket, client_index)
+				client_index += 1
 			else:
 				client_socket.send('0'.encode())
 				client_socket.close()
 				sleep(1)
 
-	def register_connection(self, client_socket, player_index):
-		# receive hello from client
-		# received = self.receive(client_socket)
-		# if received == "0":
-		# 	# client is GameMaster
-		# 	pass
-		# else:
-		# 	# client is just a Player
-		# 	pass
-
-		self.playerDict[player_index] = client_socket
+	def register_connection(self, client_socket, client_index):
+		self.clientDict[client_index] = client_socket
 		self.clientCount += 1
 
 		self.verbose_debug(
-			"New client: " + str(client_socket.getsockname()) + " with index " + str(player_index) + " connected.",
+			"New client: " + str(client_socket.getsockname()) + " with index " + str(client_index) + " connected.",
 			True)
 		if self.clientCount == self.clientLimit:
 			self.verbose_debug("Client capacity reached.")
 
-		thread = Thread(target = self.handle_player, args = (client_socket, player_index))
+		thread = Thread(target = self.handle_client, args = (client_socket, client_index))
 		thread.daemon = True
 		thread.start()
 
-	def handle_player(self, client, player_index):
+	def handle_client(self, client, client_index):
 		"""
 		Receive and send messages to/from a given client.
 		:param client: a client socket
-		:param player_index: local index, used in playerDict
+		:param client_index: local index, used in clientDict
 		:return:
 		"""
-		try:
-			# LEGACY:
-			# first, tell the player what his local index is:
-			# self.send(client, player_index, Communication.SERVER_TO_CLIENT, player_index)
-			# self.verbose_debug("Sent id to player " + str(player_index) + ".")
 
+		# TODO: put some player-specific variables here
+
+		# TODO:check what the first message from the client was
+		# if the message is a "getgames" message, then the client is a player:
+		# self.handle_player(client,client_index)
+
+		# if the message is a "registergame" message, then the client is a gamemaster:
+		# self.handle_gm(client, client_index)
+
+		# otherwise, just use the code below
+
+		try:
 			while self.running:
-				received_data = self.receive(client, Communication.CLIENT_TO_SERVER, player_index)
+				received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
 
 				response = ("Your message was: " + str(received_data))
 
-				self.send(client, response, Communication.SERVER_TO_CLIENT, player_index)
+				self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
 
 		except ConnectionAbortedError:
-			self.verbose_debug("P" + str(player_index) + " disconnected. Closing connection.", True)
-			self.disconnect_client(player_index)
+			self.verbose_debug("C" + str(client_index) + " disconnected. Closing connection.", True)
+			self.disconnect_client(client_index)
 			return False
 
 		except socket.error as e:
 			self.verbose_debug(
-				"Closing connection with P" + str(player_index) + " due to a socket error: " + str(e) + ".", True)
-			self.disconnect_client(player_index)
+				"Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
+			self.disconnect_client(client_index)
 			return False
 
 		except Exception as e:
 			self.verbose_debug("Unexpected exception: " + str(e) + ".", True)
-			self.disconnect_client(player_index)
+			self.disconnect_client(client_index)
 			raise e
 
+	def handle_player(self, client, client_index):
+		pass
+
+	def handle_gm(self, client, client_index):
+		pass
+
 	def shutdown(self):
-		# I added this since I heard it's a hack to make the server shutdown but I guess it works without it
-		# See http://stackoverflow.com/questions/16734534/close-listening-socket-in-python-thread
 		self.running = False
 		self.socket.close()
 		self.verbose_debug("Shutting down the server.", True)
 
-	def send(self, recipient, message, com_type_flag = Communication.OTHER, player_index = 0):
+	def send(self, recipient, message, com_type_flag = Communication.OTHER, client_index = 0):
 		"""
 		a truly vital method. Sends a given message to a recipient.
 		:param recipient: socket object of the recipient.
@@ -213,11 +215,11 @@ class CommunicationServer:
 		recipient.send(message.encode())
 
 		if com_type_flag == Communication.SERVER_TO_CLIENT:
-			self.verbose_debug("Message sent to P" + str(player_index) + ": \"" + message + "\".")
+			self.verbose_debug("Message sent to C" + str(client_index) + ": \"" + message + "\".")
 		else:
 			pass
 
-	def receive(self, client, com_type_flag = Communication.OTHER, player_index = 0):
+	def receive(self, client, com_type_flag = Communication.OTHER, client_index = 0):
 		"""
 		:param client:
 		:param com_type_flag: a Communication flag. I am adding this here because it might be useful later.
@@ -227,15 +229,15 @@ class CommunicationServer:
 			raise ConnectionAbortedError
 
 		if com_type_flag == Communication.CLIENT_TO_SERVER:
-			self.verbose_debug("Message received from P" + str(player_index) + ": \"" + received_data + "\".")
+			self.verbose_debug("Message received from C" + str(client_index) + ": \"" + received_data + "\".")
 		else:
 			pass
 
 		return received_data
 
-	def disconnect_client(self, player_index):
-		self.playerDict[player_index].close()
-		self.playerDict[player_index] = None
+	def disconnect_client(self, client_index):
+		self.clientDict[client_index].close()
+		self.clientDict[client_index] = None
 		self.clientCount -= 1
 
 

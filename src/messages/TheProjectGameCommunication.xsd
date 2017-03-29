@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns="https://se2.mini.pw.edu.pl/17-results/" targetNamespace="https://se2.mini.pw.edu.pl/17-results/">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns="https://se2.mini.pw.edu.pl/17-results/" targetNamespace="https://se2.mini.pw.edu.pl/17-results/">
   <xs:simpleType name="guid">
     <xs:restriction base="xs:string">
       <xs:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" />
@@ -363,7 +363,7 @@
   <xs:element name="RejectJoiningGame">
     <xs:annotation>
       <xs:documentation>
-        Used to inform Player that he cannot join a game of a given name.
+          Used to inform Client that he cannot join a game of a given name.
         The typical reason would be that the game has no vacant positions.
       </xs:documentation>
     </xs:annotation>
@@ -380,7 +380,7 @@
     <xs:annotation>
       <xs:documentation>
         A message used to inform Players that Game Master has disconnected
-        (or otherwise failed). Player should react as if the game had been
+          (or otherwise failed). Client should react as if the game had been
         properly finished: reset its state and try to join another game
         with the same name.
       </xs:documentation>
@@ -393,7 +393,7 @@
   <xs:element name="PlayerDisconnected">
     <xs:annotation>
       <xs:documentation>
-        A message used to inform Game Master that a Player has disconnected
+          A message used to inform Game Master that a Client has disconnected
         (or otherwise failed). Game Master should react by logging that fact
         as a Disconnected event in its games CSV log.
       </xs:documentation>

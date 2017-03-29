@@ -130,7 +130,7 @@ class Message:
     def confirmjoininggame(self, gameid, playerid, privateguid, id, team, type):
         """
         Figure 3.7: A ConfirmJoiningGame message setting the players unique Id and private GUID and informing
-        about the Player’s role in the game.
+        about the Client’s role in the game.
         """
 
         file_name = 'ConfirmJoinInGgame.xml'
@@ -155,7 +155,7 @@ class Message:
     # GameMessage
     def gamemessage(self, playerid, playerteam, playertype, playersid, boardwidth, tasksheight, goalsheight, x, y):
         """
-        Figure 3.8: A GameMessage for Player 2.
+        Figure 3.8: A GameMessage for Client 2.
         """
 
         numberofplayers = len(playersid)
@@ -175,7 +175,7 @@ class Message:
                 'type': str(playertype[i]),
                 'id': str(playersid[i])
             }
-            ET.SubElement(parent, 'Player', attrib=myattributes)
+            ET.SubElement(parent, 'Client', attrib = myattributes)
 
         myattributes = {
             'width': str(boardwidth),
@@ -197,7 +197,7 @@ class Message:
     # Discover
     def discover(self, gameid, playerguide):
         """
-        Figure 3.10: A Discover message from Player.
+        Figure 3.10: A Discover message from Client.
         """
 
         file_name = 'Discover.xml'
@@ -253,7 +253,7 @@ class Message:
     # Move
     def move(self, gameid, playerguide, direction):
         """
-        Figure 3.12: A Move message from Player.
+        Figure 3.12: A Move message from Client.
         """
 
         file_name = 'Move.xml'
@@ -387,7 +387,7 @@ class Message:
     # PickUp
     def pickup(self, gameid, playerguide):
         """
-        Figure 3.16: A PickUp Piece message from a Player.
+        Figure 3.16: A PickUp Piece message from a Client.
         """
 
         file_name = 'PickUp.xml'
@@ -435,7 +435,7 @@ class Message:
     # TestPiece
     def testpiece(self, gameid, playerguide):
         """
-        Figure 3.18: A TestPiece message from a Player.
+        Figure 3.18: A TestPiece message from a Client.
         """
 
         file_name = 'TestPiece.xml'

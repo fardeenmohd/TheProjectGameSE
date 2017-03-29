@@ -4,22 +4,22 @@ import threading
 import time
 from unittest import TestCase
 
-from communication import player
+from communication import client
 
 
 class TestPlayer(TestCase):
 	def setUp(self):
-		self.mock_player = player.Player(1, verbose = True)
+		self.mock_player = client.Client(1, verbose = True)
 		self.mock_server = socket.socket()
 
 		self.server_thread = threading.Thread(target = self.run_mock_server, daemon = True)
 		self.server_thread.start()
 
 	def run_mock_server(self):
-		self.mock_server.bind((player.Player.DEFAULT_HOSTNAME, player.Player.DEFAULT_PORT))
+		self.mock_server.bind((client.Client.DEFAULT_HOSTNAME, client.Client.DEFAULT_PORT))
 		self.mock_server.listen()
-		client, addr = self.mock_server.accept()
-		client.send('1'.encode())
+		sock, addr = self.mock_server.accept()
+		sock.send('1'.encode())
 
 	def tearDown(self):
 		self.mock_player.shutdown()
@@ -44,9 +44,9 @@ class TestPlayer(TestCase):
 	def test_send_message_to_server(self):
 		self.mock_player.connect()
 		time.sleep(1)
-		self.mock_player.play()
+		self.mock_player.talk()
 		time.sleep(1)
-		self.mock_player.play()
+		self.mock_player.talk()
 
 		assert self.mock_player.last_message is not None
 
