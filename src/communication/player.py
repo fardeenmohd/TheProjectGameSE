@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from communication import messages
-from communication.client import Client, ClientTypeTag
-from communication.gameinfo import GameInfo
+from src.communication import messages
+from src.communication.client import Client, ClientTypeTag
+from src.communication.gameinfo import GameInfo
 
 
 class Player(Client):

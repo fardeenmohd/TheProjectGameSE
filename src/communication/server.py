@@ -183,7 +183,7 @@ class CommunicationServer:
                     self.verbose_debug("Unknown client connected to server, disconnecting him: ", True)
                     raise ConnectionAbortedError
                 if is_player:
-                    self.verbose_debug("Server has identified client at index: " + client_index + " as a player")
+                    self.verbose_debug("Server has identified client at index: " + str(client_index) + " as a player")
                     Thread(target=self.handle_player, args=(client, client_index)).start()
                 elif not is_player:
                     self.verbose_debug("Server has identified client at index: " + str(client_index) + " as a GM")
