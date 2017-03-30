@@ -1,4 +1,4 @@
 class GameInfo():
-	pass
+    pass
 
-	# todo: fill this bad boy with stuff
+# todo: fill this bad boy with stuff
