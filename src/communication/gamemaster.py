@@ -1,5 +1,5 @@
-from communication.client import Client, ClientTypeTag
-from communication.gameinfo import GameInfo
+from src.communication.client import Client, ClientTypeTag
+from src.communication.gameinfo import GameInfo
 
 
 class GameMaster(Client):
