@@ -128,6 +128,7 @@ class CommunicationServer:
             if self.clientCount < self.clientLimit:
                 # if client limit not exceeded, handle the new client:
                 # send a single byte which says "greetings"
+                self.verbose_debug("Accepted some client, sending greeting byte...")
                 client_socket.send('1'.encode())
                 self.register_connection(client_socket, client_index)
                 client_index += 1
@@ -157,12 +158,13 @@ class CommunicationServer:
         :param client_index: local index, used in clientDict
         :return:
         """
+        '''If is_player true, then the client is a player, and if false then a GM connected.
+        Otherwise an undefined client connected and we reject him'''
 
         # TODO: put some player-specific variables here
-
+        is_player = None
         # TODO:check what the first message from the client was
-        # if the message is a "getgames" message, then the client is a player:
-        # self.handle_player(client,client_index)
+
 
         # if the message is a "registergame" message, then the client is a gamemaster:
         # self.handle_gm(client, client_index)
@@ -170,12 +172,24 @@ class CommunicationServer:
         # otherwise, just use the code below
 
         try:
-            while self.running:
+            if self.running:
                 received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
+                if "RegisterGame" in received_data:
+                    is_player = False
+                elif "GetGames" in received_data:
+                    is_player = True
 
-                response = ("Your message was: " + str(received_data))
+                if is_player is None:
+                    self.verbose_debug("Unknown client connected to server, disconnecting him: ", True)
+                    raise ConnectionAbortedError
+                if is_player:
+                    self.verbose_debug("Server has identified client at index: " + client_index + " as a player")
+                    Thread(target=self.handle_player, args=(client, client_index)).start()
+                elif not is_player:
+                    self.verbose_debug("Server has identified client at index: " + str(client_index) + " as a GM")
+                    Thread(target=self.handle_gm, args=(client, client_index)).start()
 
-                self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
+                # self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
 
         except ConnectionAbortedError:
             self.verbose_debug("C" + str(client_index) + " disconnected. Closing connection.", True)
@@ -194,10 +208,32 @@ class CommunicationServer:
             raise e
 
     def handle_player(self, client, client_index):
-        pass
+        while self.running:
+            received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
+            response = ("Your player message was: " + str(received_data))
+            self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
 
     def handle_gm(self, client, client_index):
-        pass
+        while self.running:
+            try:
+                received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
+                response = ("Your GM message was: " + str(received_data))
+                self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
+            except ConnectionAbortedError:
+                self.verbose_debug("C" + str(client_index) + " disconnected. Closing connection.", True)
+                self.disconnect_client(client_index)
+                return False
+
+            except socket.error as e:
+                self.verbose_debug(
+                    "Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
+                self.disconnect_client(client_index)
+                return False
+
+            except Exception as e:
+                self.verbose_debug("Unexpected exception: " + str(e) + ".", True)
+                self.disconnect_client(client_index)
+                raise e
 
     def shutdown(self):
         self.running = False
