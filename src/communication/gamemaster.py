@@ -22,7 +22,8 @@ def set_basic_shit():
 
     for game_attributes in root.findall("{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}GameDefinition"):
         game_name = game_attributes.find("{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}GameName").text
-        number_of_players = int(game_attributes.find('{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}NumberOfPlayersPerTeam').text)
+        number_of_players = int(game_attributes
+                                .find('{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}NumberOfPlayersPerTeam').text)
 
     print("Game name: " + game_name + " Num of players: " + str(number_of_players))
     return game_name, number_of_players
@@ -34,10 +35,11 @@ class GameMaster(Client):
 
         self.typeTag = ClientTypeTag.GAMEMASTER
         self.info = GameInfo()
-        self.gamename, self.numberofplayers = set_basic_shit()
+        self.game_name, self.number_of_players = set_basic_shit()
 
     def run(self):
-        self.send(messages.Message.registergame(messages.Message(), gamename=self.gamename, blueplayers=self.numberofplayers, redplayers=self.numberofplayers))
+        self.send(messages.Message.registergame(messages.Message(),
+                                                self.game_name, self.number_of_players, self.number_of_players))
 
 if __name__ == '__main__':
     # parser = ArgumentParser()
