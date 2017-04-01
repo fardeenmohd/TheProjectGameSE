@@ -21,7 +21,7 @@ class ClientTypeTag(Enum):
 class Client:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by client
     INTER_CONNECTION_TIME = 3  # time in s between attemps to connect to server
-    CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
+    CONNECTION_ATTEMPTS = 1  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = "192.168.1.3"  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 1024
