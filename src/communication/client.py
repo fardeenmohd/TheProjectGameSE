@@ -21,7 +21,7 @@ class ClientTypeTag(Enum):
 class Client:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by client
     INTER_CONNECTION_TIME = 3  # time in s between attemps to connect to server
-    CONNECTION_ATTEMPTS = 1  # how many times the clients will retry the attempt to connect
+    CONNECTION_ATTEMPTS = 5  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 1024
@@ -58,7 +58,7 @@ class Client:
         while True:
             try:
                 self.verbose_debug("Trying to connect to server " + str(hostname + " at port " + str(port) + "."))
-                if self.socket.connect((hostname, port)) == 0:
+                if self.socket.connect_ex((hostname, port)) == 0:
                     # try to receive the initial "greeting" byte from Server
                     received = self.socket.recv(1)
                     if received.decode() == '1':
@@ -67,6 +67,7 @@ class Client:
                         self.connected = True
                         return True
                     else:
+                        self.verbose_debug("Message was not number 1! It actually was: " + received, True)
                         raise socket.error
                 else:
                     raise socket.error
@@ -92,15 +93,17 @@ class Client:
         """
         for i in range(messages_count):
             try:
+                '''
                 # Send a message:
                 message = "Hello."
                 self.send(message)
+                '''
 
                 # Receive a response:
                 received_data = self.receive()
                 while len(received_data) < 1:
                     received_data = self.receive()
-
+                self.verbose_debug("Received from server:")
                 sleep(self.timeBetweenMessages)
 
             except socket.error as e:

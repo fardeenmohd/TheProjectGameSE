@@ -14,13 +14,9 @@ class Player(Client):
 
     def play(self):
         self.send(messages.getgames())
-
-        games = self.receive()
+        self.talk(5)
 
     # TODO: parse games: check what's open, try to join :)
-
-
-
 
 if __name__ == '__main__':
     # parser = ArgumentParser()
@@ -32,4 +28,4 @@ if __name__ == '__main__':
     p = Player(verbose=True)
     p.connect()
     p.play()
-    p.shutdown()
+    # p.shutdown()

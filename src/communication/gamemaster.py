@@ -136,6 +136,7 @@ class GameMaster(Client):
     def run(self):
         self.send(self.messages_class.registergame(gamename=self.game_name, redplayers=self.number_of_players_per_team,
                                                    blueplayers=self.number_of_players_per_team))
+        self.talk(5)
 
 
 if __name__ == '__main__':
@@ -147,4 +148,4 @@ if __name__ == '__main__':
     gm = GameMaster(verbose=True)
     gm.connect()
     gm.run()
-    gm.shutdown()
+    # gm.shutdown()

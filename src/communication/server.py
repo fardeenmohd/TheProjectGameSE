@@ -44,7 +44,7 @@ class CommunicationServer:
         self.gm_index = -1
         self.registered_games = ""  # Server updates and maintains its own RegisteredGames.xml file
         self.open_games = []  # TODO this should be a list of gameinfos or something that we maintain
-        self.xml_message_tag = "https://se2.mini.pw.edu.pl/17-results/"
+        self.xml_message_tag = "{https://se2.mini.pw.edu.pl/17-results/}"
         self.games_id_counter = 0  # For now it's just a counter like player_id used to be
         try:
             self.socket.bind((host, port))
@@ -226,13 +226,12 @@ class CommunicationServer:
     def handle_gm(self, client, client_index, first_message):
         # first_message should be a RegisterGames xml
         # Parse first register games msg
-        register_games_tree = ET.fromstring(first_message)
-        register_games_root = register_games_tree.getroot()
+        register_games_root = ET.fromstring(first_message)
         num_of_blue_players = 0
         num_of_red_players = 0
         game_name = ""
 
-        for new_game in register_games_root.findall(self.xml_message_tag + "NewGameInfo"):
+        for new_game in register_games_root.findall(self.xml_message_tag + "RegisterGame"):
             game_name = str(new_game.attrib("gameName"))
             num_of_blue_players = int(new_game.attrib("blueTeamPlayers"))
             num_of_red_players = int(new_game.attrib("redTeamPlayers"))
