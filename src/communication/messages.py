@@ -493,3 +493,7 @@ class Message:
         messagetemp = ET.tostring(root, encoding='unicode', method='xml')
         message = str(messagetemp)
         return message
+
+    def reject_game_registration(self):
+        root = ROOT_DICTIONARY["RejectGameRegistration"]
+        return str(ET.tostring(root, encoding='unicode', method='xml'))

@@ -1,12 +1,13 @@
 #!/usr/bin/python
 import socket
 import sys
+import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
 from enum import Enum, auto
 from threading import Thread
 from time import sleep
-
+from src.communication import messages
 
 class Communication(Enum):
     """
@@ -40,7 +41,11 @@ class CommunicationServer:
         self.clientDict = {}
         self.clientCount = 0
         self.verbose = verbose
-
+        self.gm_index = -1
+        self.registered_games = ""  # Server updates and maintains its own RegisteredGames.xml file
+        self.open_games = []  # TODO this should be a list of gameinfos or something that we maintain
+        self.xml_message_tag = "https://se2.mini.pw.edu.pl/17-results/"
+        self.games_id_counter = 0  # For now it's just a counter like player_id used to be
         try:
             self.socket.bind((host, port))
         # self.socket.settimeout(CommunicationServer.DEFAULT_TIMEOUT)
@@ -184,12 +189,11 @@ class CommunicationServer:
                     raise ConnectionAbortedError
                 if is_player:
                     self.verbose_debug("Server has identified client at index: " + str(client_index) + " as a player")
-                    Thread(target=self.handle_player, args=(client, client_index)).start()
+                    Thread(target=self.handle_player, args=(client, client_index, received_data)).start()
                 elif not is_player:
                     self.verbose_debug("Server has identified client at index: " + str(client_index) + " as a GM")
-                    Thread(target=self.handle_gm, args=(client, client_index)).start()
-
-                # self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
+                    self.gm_index = client_index
+                    Thread(target=self.handle_gm, args=(client, client_index, received_data)).start()
 
         except ConnectionAbortedError:
             self.verbose_debug("C" + str(client_index) + " disconnected. Closing connection.", True)
@@ -207,13 +211,44 @@ class CommunicationServer:
             self.disconnect_client(client_index)
             raise e
 
-    def handle_player(self, client, client_index):
+    def handle_player(self, client, client_index, first_message):
+        # first_message should be a GetGames xml
+        while self.registered_games == "":
+            # we wait for the registered games to be created until gm registers at least 1 game
+            sleep(0.001)
+        # We have at least 1 game
+        self.send(client, self.registered_games, Communication.SERVER_TO_CLIENT, client_index)
         while self.running:
             received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
             response = ("Your player message was: " + str(received_data))
             self.send(client, response, Communication.SERVER_TO_CLIENT, client_index)
 
-    def handle_gm(self, client, client_index):
+    def handle_gm(self, client, client_index, first_message):
+        # first_message should be a RegisterGames xml
+        # Parse first register games msg
+        register_games_tree = ET.fromstring(first_message)
+        register_games_root = register_games_tree.getroot()
+        num_of_blue_players = 0
+        num_of_red_players = 0
+        game_name = ""
+
+        for new_game in register_games_root.findall(self.xml_message_tag + "NewGameInfo"):
+            game_name = str(new_game.attrib("gameName"))
+            num_of_blue_players = int(new_game.attrib("blueTeamPlayers"))
+            num_of_red_players = int(new_game.attrib("redTeamPlayers"))
+
+        '''Done parsing RegisterGames msg'''
+        #  TODO after we parse RegisterGames.xml we should add a new GameInfo to self.open_games list
+        game_registered = self.add_game_to_registered_games(game_name=game_name, num_of_blue_players=num_of_blue_players,
+                                                            num_of_red_players=num_of_red_players)
+        if game_registered:
+            self.send(client, messages.Message().confirmgameregistration(self.games_id_counter),
+                      Communication.SERVER_TO_CLIENT, client_index)
+            self.games_id_counter += 1
+        else:
+            self.send(client, messages.Message().reject_game_registration(),
+                      Communication.SERVER_TO_CLIENT, client_index)
+
         while self.running:
             try:
                 received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
@@ -235,6 +270,50 @@ class CommunicationServer:
                 self.disconnect_client(client_index)
                 raise e
 
+    def add_game_to_registered_games(self, game_name, num_of_blue_players, num_of_red_players):
+        """
+        Updates self.register_games xml with a new game
+        Returns false if no game was added (rejection), otherwise returns true
+        :param game_name: 
+        :param num_of_blue_players: 
+        :param num_of_red_players: 
+        :return: 
+        """
+        if self.registered_games == "":
+            self.registered_games = messages.Message() \
+                .registeredgames(gamename=game_name, blueplayers=num_of_blue_players, redplayers=num_of_red_players)
+            self.verbose_debug("Current registered_games: \n" + self.registered_games)
+            return True
+        else:
+            root = ET.fromstring(self.registered_games)
+            #  Reject game registration if game with same name exists
+            for games in root.findall(self.xml_message_tag + "RegisteredGames"):
+                if game_name == str(games.get("gameName")):
+                    return False
+        my_attributes = {'name': str(game_name), 'blueTeamPlayers': str(num_of_blue_players),
+                            'redTeamPlayers': str(num_of_red_players)}
+        ET.SubElement(root, 'GameInfo', attrib=my_attributes)
+        self.registered_games = ET.tostring(root, encoding='unicode', method='xml')
+
+        return True
+
+    def wait_for_message(self, message_name, client_index, client, max_attempts=10):
+        """
+        This method blocks until it receives a certain message, it will try max_attempts amount of times to receive it
+        Then it returns the full message when it is received
+        :param message_name: 
+        :param client_index: 
+        :param client: 
+        :param max_attempts: 
+        :return: 
+        """
+        received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
+        attempts = 1
+        while message_name not in received_data and self.running and attempts <= max_attempts:
+            received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
+            attempts += 1
+        return received_data
+
     def shutdown(self):
         self.running = False
         self.socket.close()
@@ -254,6 +333,14 @@ class CommunicationServer:
             self.verbose_debug("Message sent to C" + str(client_index) + ": \"" + message + "\".")
         else:
             pass
+
+    def send_to_all_players(self, message):
+        # sends message to everyone except GM
+        for client_index, socket in self.clientDict.items():
+            if client_index != self.gm_index:
+                socket.send(message.encode())
+
+        pass
 
     def receive(self, client, com_type_flag=Communication.OTHER, client_index=0):
         """

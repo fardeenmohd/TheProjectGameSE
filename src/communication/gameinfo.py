@@ -39,9 +39,10 @@ class PieceInfo:
 
 class GameInfo:
     def __init__(self, field_infos, player_infos, task_width, task_height, goals_height, my_x, my_y):
+        # TODO maybe add game id here as well?
         self.field_infos = field_infos
         self.player_infos = player_infos
-        self.task_width = task_height
+        self.task_width = task_width
         self.task_height = task_height
         self.goals_height = goals_height
         self.my_x = my_x

@@ -10,7 +10,7 @@ class Player(Client):
         super().__init__(index, verbose)
 
         self.typeTag = ClientTypeTag.PLAYER
-        self.info = GameInfo()
+        #  self.info = GameInfo()
 
     def play(self):
         self.send(messages.getgames())
