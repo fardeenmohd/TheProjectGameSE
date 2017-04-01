@@ -46,6 +46,7 @@ class CommunicationServer:
         self.open_games = []  # TODO this should be a list of gameinfos or something that we maintain
         self.xml_message_tag = "{https://se2.mini.pw.edu.pl/17-results/}"
         self.games_id_counter = 0  # For now it's just a counter like player_id used to be
+        ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
         try:
             self.socket.bind((host, port))
         # self.socket.settimeout(CommunicationServer.DEFAULT_TIMEOUT)
@@ -288,16 +289,20 @@ class CommunicationServer:
             self.verbose_debug("Updated registered_games: \n" + self.registered_games)
             return True
         else:
+            # self.verbose_debug("Looping through: \n" + self.registered_games)
             root = ET.fromstring(self.registered_games)
             #  Reject game registration if game with same name exists
-            for games in root.findall(self.xml_message_tag + "RegisteredGames"):
-                if game_name == str(games.get("gameName")):
+            for games in root.findall(self.xml_message_tag + "GameInfo"):
+                existing_game_name = games.get("gameName")
+                self.verbose_debug("Existing_game_name: " + existing_game_name + "\n")
+                if game_name == existing_game_name:
                     self.verbose_debug("Rejecting because game name: " + game_name + "already exists")
                     return False
-        my_attributes = {'name': str(game_name), 'blueTeamPlayers': str(num_of_blue_players),
-                            'redTeamPlayers': str(num_of_red_players)}
-        ET.SubElement(root, 'GameInfo', attrib=my_attributes)
-        self.registered_games = ET.tostring(root, encoding='unicode', method='xml')
+            my_attributes = {'name': str(game_name), 'blueTeamPlayers': str(num_of_blue_players),
+                             'redTeamPlayers': str(num_of_red_players)}
+            ET.SubElement(root, 'GameInfo', attrib=my_attributes)
+            self.registered_games = ET.tostring(root, encoding='unicode', method='xml')
+            self.verbose_debug("Updated registered_games: \n" + self.registered_games)
 
         return True
 
