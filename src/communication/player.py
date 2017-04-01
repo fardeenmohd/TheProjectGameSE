@@ -28,4 +28,4 @@ if __name__ == '__main__':
     p = Player(verbose=True)
     p.connect()
     p.play()
-    # p.shutdown()
+    p.shutdown()

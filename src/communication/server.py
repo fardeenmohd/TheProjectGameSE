@@ -226,20 +226,24 @@ class CommunicationServer:
     def handle_gm(self, client, client_index, first_message):
         # first_message should be a RegisterGames xml
         # Parse first register games msg
+
         register_games_root = ET.fromstring(first_message)
         num_of_blue_players = 0
         num_of_red_players = 0
         game_name = ""
 
-        for new_game in register_games_root.findall(self.xml_message_tag + "RegisterGame"):
-            game_name = str(new_game.attrib("gameName"))
-            num_of_blue_players = int(new_game.attrib("blueTeamPlayers"))
-            num_of_red_players = int(new_game.attrib("redTeamPlayers"))
+        for register_game in register_games_root.findall(self.xml_message_tag + "NewGameInfo"):
+            game_name = register_game.get("gameName")
+            num_of_blue_players = int(register_game.get("blueTeamPlayers"))
+            num_of_red_players = int(register_game.get("redTeamPlayers"))
 
+        self.verbose_debug("game_name: " + game_name + " num of blue players: " + str(num_of_blue_players)
+                           + " num of red players: " + str(num_of_red_players))
         '''Done parsing RegisterGames msg'''
         #  TODO after we parse RegisterGames.xml we should add a new GameInfo to self.open_games list
-        game_registered = self.add_game_to_registered_games(game_name=game_name, num_of_blue_players=num_of_blue_players,
-                                                            num_of_red_players=num_of_red_players)
+        game_registered = self.add_game_to_registered_games(
+            game_name=game_name, num_of_blue_players=num_of_blue_players, num_of_red_players=num_of_red_players)
+
         if game_registered:
             self.send(client, messages.Message().confirmgameregistration(self.games_id_counter),
                       Communication.SERVER_TO_CLIENT, client_index)
@@ -281,13 +285,14 @@ class CommunicationServer:
         if self.registered_games == "":
             self.registered_games = messages.Message() \
                 .registeredgames(gamename=game_name, blueplayers=num_of_blue_players, redplayers=num_of_red_players)
-            self.verbose_debug("Current registered_games: \n" + self.registered_games)
+            self.verbose_debug("Updated registered_games: \n" + self.registered_games)
             return True
         else:
             root = ET.fromstring(self.registered_games)
             #  Reject game registration if game with same name exists
             for games in root.findall(self.xml_message_tag + "RegisteredGames"):
                 if game_name == str(games.get("gameName")):
+                    self.verbose_debug("Rejecting because game name: " + game_name + "already exists")
                     return False
         my_attributes = {'name': str(game_name), 'blueTeamPlayers': str(num_of_blue_players),
                             'redTeamPlayers': str(num_of_red_players)}

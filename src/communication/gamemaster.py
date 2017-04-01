@@ -148,4 +148,4 @@ if __name__ == '__main__':
     gm = GameMaster(verbose=True)
     gm.connect()
     gm.run()
-    # gm.shutdown()
+    gm.shutdown()

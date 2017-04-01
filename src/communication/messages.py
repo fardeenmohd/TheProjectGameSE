@@ -76,15 +76,14 @@ class Message:
         Figure 3.5: An example of RegisteredGames message with two games listed.
         """
 
-        numberofelements = len(gamename)  # number of games
+        # numberofelements = len(gamename)  # number of games
         myattributes = []
 
         root = ROOT_DICTIONARY['RegisteredGames']
 
-        for i in range(0, numberofelements):
-            myattributes = {'name': str(gamename[i]), 'blueTeamPlayers': str(blueplayers[i]),
-                            'redTeamPlayers': str(redplayers[i])}
-            registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
+        myattributes = {'gameName': str(gamename), 'blueTeamPlayers': str(blueplayers),
+                            'redTeamPlayers': str(redplayers)}
+        registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
 
         messagetemp = ET.tostring(root, encoding='unicode', method='xml')
         message = str(messagetemp)
