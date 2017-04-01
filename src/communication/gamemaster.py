@@ -18,6 +18,8 @@ def parse_game_master_settings():
 def get_game_definition():
     root = parse_game_master_settings()
 
+    keep_alive_interval = 0
+    retry_register_game_interval = 0
     red_goals = []
     blue_goals = []
     sham_probability = 0
@@ -28,6 +30,10 @@ def get_game_definition():
     goal_area_length = 0
     number_of_players_per_team = 0
     game_name = ''
+
+    for game_header in root.findall(GAME_SETTINGS_TAG + "GameMasterSettings"):
+        keep_alive_interval = int(game_header.get('KeepAliveInterval'))
+        retry_register_game_interval = int(game_header.get('RetryRegisterGameInterval'))
 
     for game_attributes in root.findall(GAME_SETTINGS_TAG + "GameDefinition"):
         for Goals in game_attributes.findall(GAME_SETTINGS_TAG + "Goals"):
@@ -40,8 +46,6 @@ def get_game_definition():
                 x = int(Goals.get("x"))
                 y = int(Goals.get("y"))
                 blue_goals.append((x, y))
-
-    for game_attributes in root.findall(GAME_SETTINGS_TAG + "GameDefinition"):
         sham_probability = float(
             game_attributes.find(GAME_SETTINGS_TAG + "ShamProbability").text)
         placing_new_pieces_frequency = int(
@@ -59,7 +63,9 @@ def get_game_definition():
         number_of_players_per_team = int(
             game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
 
-    return [red_goals,
+    return [keep_alive_interval,
+            retry_register_game_interval,
+            red_goals,
             blue_goals,
             sham_probability,
             placing_new_pieces_frequency,
@@ -107,9 +113,12 @@ class GameMaster(Client):
         super().__init__(index, verbose)
 
         self.typeTag = ClientTypeTag.GAMEMASTER
-        self.info = GameInfo()
+        # self.info = GameInfo()
         self.messages_class = messages.Message()
-        [self.red_goals,
+
+        [self.keep_alive_interval,
+         self.retry_register_game_interval,
+         self.red_goals,
          self.blue_goals,
          self.sham_probability,
          self.placing_new_pieces_frequency,
@@ -119,12 +128,16 @@ class GameMaster(Client):
          self.goal_area_length,
          self.number_of_players_per_team,
          self.game_name] = get_game_definition()
+
         [self.move_delay,
          self.discover_delay,
          self.test_delay,
          self.pickup_delay,
          self.placing_delay,
          self.knowledge_exchange_delay] = get_action_costs()
+
+        print(self.retry_register_game_interval)
+        print(self.keep_alive_interval)
 
 
 def run(self):

@@ -1,4 +1,6 @@
 from enum import Enum
+
+
 # from datetime import datetime
 
 
@@ -15,7 +17,6 @@ class PieceType(Enum):
 
 
 class FieldInfo:
-
     # Maybe default values are not necessary here but I'm just testing the class
     def __init__(self, x=0, y=0, timestamp='', distance_to_piece=1,
                  allegiance=Allegiance.NEUTRAL, is_goal_field=False, player_id=-1, piece_id=-1):
@@ -30,8 +31,7 @@ class FieldInfo:
 
 
 class PieceInfo:
-
-    def __init__(self, id=-1, timestamp='',piece_type=PieceType.LEGIT):
+    def __init__(self, id=-1, timestamp='', piece_type=PieceType.LEGIT):
         self.id = id
         self.timestamp = timestamp
         self.piece_type = piece_type
