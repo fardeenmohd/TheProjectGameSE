@@ -109,8 +109,6 @@ class GameMaster(Client):
         super().__init__(index, verbose)
 
         self.typeTag = ClientTypeTag.GAMEMASTER
-        # self.info = GameInfo()
-        self.messages_class = messages.Message()
 
         [self.keep_alive_interval,
          self.retry_register_game_interval,
@@ -132,11 +130,12 @@ class GameMaster(Client):
          self.placing_delay,
          self.knowledge_exchange_delay] = get_action_costs()
 
+        #self.info = GameInfo()
+        self.messages_class = messages.Message()
+
     def run(self):
-        self.send(
-            self.messages_class.registergame(gamename=self.game_name,
-                                             blueplayers=self.number_of_players_per_team,
-                                             redplayers=self.number_of_players_per_team))
+        self.send(self.messages_class.registergame(gamename=self.game_name, redplayers=self.number_of_players_per_team,
+                                                   blueplayers=self.number_of_players_per_team))
 
 
 if __name__ == '__main__':
