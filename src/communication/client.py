@@ -22,7 +22,7 @@ class Client:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by client
     INTER_CONNECTION_TIME = 3  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
-    DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
+    DEFAULT_HOSTNAME = "192.168.1.3"  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 1024
 
@@ -58,7 +58,7 @@ class Client:
         while True:
             try:
                 self.verbose_debug("Trying to connect to server " + str(hostname + " at port " + str(port) + "."))
-                if self.socket.connect_ex((hostname, port)) == 0:
+                if self.socket.connect((hostname, port)) == 0:
                     # try to receive the initial "greeting" byte from Server
                     received = self.socket.recv(1)
                     if received.decode() == '1':

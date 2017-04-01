@@ -4,28 +4,102 @@ from src.communication import messages
 import os
 import xml.etree.ElementTree as ET
 
+GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 
-def get_game_attributes(file_name):
-    full_file = os.getcwd() + file_name
-    print(full_file)
+
+def parse_game_master_settings():
+    full_file = os.getcwd() + "\GameMasterSettings.xml"
     tree = ET.parse(full_file)
     root = tree.getroot()
 
-    return root  # ET.tostring(root, encoding='unicode', method='xml')
+    return root
 
 
-def set_basic_shit():
-    root = get_game_attributes("\GameMasterSettings.xml")
+def get_game_definition():
+    root = parse_game_master_settings()
 
+    red_goals = []
+    blue_goals = []
+    sham_probability = 0
+    placing_new_pieces_frequency = 0
+    initial_number_of_pieces = 0
+    board_width = 0
+    task_area_length = 0
+    goal_area_length = 0
+    number_of_players_per_team = 0
     game_name = ''
-    number_of_players = 0
 
-    for game_attributes in root.findall("{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}GameDefinition"):
-        game_name = game_attributes.find("{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}GameName").text
-        number_of_players = int(game_attributes.find('{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}NumberOfPlayersPerTeam').text)
+    for game_attributes in root.findall(GAME_SETTINGS_TAG + "GameDefinition"):
+        for Goals in game_attributes.findall(GAME_SETTINGS_TAG + "Goals"):
+            colour = Goals.get("team")
+            if colour == "red":
+                x = int(Goals.get("x"))
+                y = int(Goals.get("y"))
+                red_goals.append((x, y))
+            if colour == "blue":
+                x = int(Goals.get("x"))
+                y = int(Goals.get("y"))
+                blue_goals.append((x, y))
 
-    print("Game name: " + game_name + " Num of players: " + str(number_of_players))
-    return game_name, number_of_players
+    for game_attributes in root.findall(GAME_SETTINGS_TAG + "GameDefinition"):
+        sham_probability = float(
+            game_attributes.find(GAME_SETTINGS_TAG + "ShamProbability").text)
+        placing_new_pieces_frequency = int(
+            game_attributes.find(GAME_SETTINGS_TAG + "PlacingNewPiecesFrequency").text)
+        initial_number_of_pieces = int(
+            game_attributes.find(GAME_SETTINGS_TAG + "InitialNumberOfPieces").text)
+        board_width = int(
+            game_attributes.find(GAME_SETTINGS_TAG + "BoardWidth").text)
+        task_area_length = int(
+            game_attributes.find(GAME_SETTINGS_TAG + "TaskAreaLength").text)
+        goal_area_length = int(
+            game_attributes.find(GAME_SETTINGS_TAG + "GoalAreaLength").text)
+
+        game_name = game_attributes.find(GAME_SETTINGS_TAG + "GameName").text
+        number_of_players_per_team = int(
+            game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
+
+    return [red_goals,
+            blue_goals,
+            sham_probability,
+            placing_new_pieces_frequency,
+            initial_number_of_pieces,
+            board_width,
+            task_area_length,
+            goal_area_length,
+            number_of_players_per_team,
+            game_name]
+
+
+def get_action_costs():
+    root = parse_game_master_settings()
+    move_delay = 0
+    discover_delay = 0
+    test_delay = 0
+    pickup_delay = 0
+    placing_delay = 0
+    knowledge_exchange_delay = 0
+
+    for action_costs in root.findall(GAME_SETTINGS_TAG + "ActionCosts"):
+        move_delay = int(
+            action_costs.find(GAME_SETTINGS_TAG + "MoveDelay").text)
+        discover_delay = int(
+            action_costs.find(GAME_SETTINGS_TAG + "DiscoverDelay").text)
+        test_delay = int(
+            action_costs.find(GAME_SETTINGS_TAG + "TestDelay").text)
+        pickup_delay = int(
+            action_costs.find(GAME_SETTINGS_TAG + "PickUpDelay").text)
+        placing_delay = int(
+            action_costs.find(GAME_SETTINGS_TAG + "PlacingDelay").text)
+        knowledge_exchange_delay = int(
+            action_costs.find(GAME_SETTINGS_TAG + "KnowledgeExchangeDelay").text)
+
+    return [move_delay,
+            discover_delay,
+            test_delay,
+            pickup_delay,
+            placing_delay,
+            knowledge_exchange_delay]
 
 
 class GameMaster(Client):
@@ -34,10 +108,31 @@ class GameMaster(Client):
 
         self.typeTag = ClientTypeTag.GAMEMASTER
         self.info = GameInfo()
-        self.gamename, self.numberofplayers = set_basic_shit()
+        self.messages_class = messages.Message()
+        [self.red_goals,
+         self.blue_goals,
+         self.sham_probability,
+         self.placing_new_pieces_frequency,
+         self.initial_number_of_pieces,
+         self.board_width,
+         self.task_area_length,
+         self.goal_area_length,
+         self.number_of_players_per_team,
+         self.game_name] = get_game_definition()
+        [self.move_delay,
+         self.discover_delay,
+         self.test_delay,
+         self.pickup_delay,
+         self.placing_delay,
+         self.knowledge_exchange_delay] = get_action_costs()
 
-    def run(self):
-        self.send(messages.Message.registergame(messages.Message(), gamename=self.gamename, blueplayers=self.numberofplayers, redplayers=self.numberofplayers))
+
+def run(self):
+    self.send(
+        self.messages_class.registergame(self.messages_class, gamename=self.game_name,
+                                         blueplayers=self.number_of_players_per_team,
+                                         redplayers=self.number_of_players_per_team))
+
 
 if __name__ == '__main__':
     # parser = ArgumentParser()
