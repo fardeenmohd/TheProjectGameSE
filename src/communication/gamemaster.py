@@ -18,8 +18,8 @@ def parse_game_master_settings():
 def get_game_definition():
     root = parse_game_master_settings()
 
-    keep_alive_interval = 0
-    retry_register_game_interval = 0
+    keep_alive_interval = int(root.attrib.get('KeepAliveInterval'))
+    retry_register_game_interval = int(root.attrib.get('RetryRegisterGameInterval'))
     red_goals = []
     blue_goals = []
     sham_probability = 0
@@ -30,10 +30,6 @@ def get_game_definition():
     goal_area_length = 0
     number_of_players_per_team = 0
     game_name = ''
-
-    for game_header in root.findall(GAME_SETTINGS_TAG + "GameMasterSettings"):
-        keep_alive_interval = int(game_header.get('KeepAliveInterval'))
-        retry_register_game_interval = int(game_header.get('RetryRegisterGameInterval'))
 
     for game_attributes in root.findall(GAME_SETTINGS_TAG + "GameDefinition"):
         for Goals in game_attributes.findall(GAME_SETTINGS_TAG + "Goals"):
@@ -136,10 +132,7 @@ class GameMaster(Client):
          self.placing_delay,
          self.knowledge_exchange_delay] = get_action_costs()
 
-        print(self.retry_register_game_interval)
-        print(self.keep_alive_interval)
-
-
+        
 def run(self):
     self.send(
         self.messages_class.registergame(self.messages_class, gamename=self.game_name,
