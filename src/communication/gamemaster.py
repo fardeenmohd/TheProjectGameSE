@@ -1,14 +1,15 @@
-from src.communication.client import Client, ClientTypeTag
-from src.communication.gameinfo import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType
-from src.communication import messages
-from src.communication.unexpected import UnexpectedServerMessage
-from threading import Thread
-from random import randint, random
-from time import sleep
-from argparse import ArgumentParser
-from datetime import  datetime
 import os
 import xml.etree.ElementTree as ET
+from argparse import ArgumentParser
+from datetime import datetime
+from random import random
+from threading import Thread
+from time import sleep
+
+from src.communication import messages
+from src.communication.client import Client, ClientTypeTag
+from src.communication.gameinfo import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType
+from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
@@ -92,7 +93,7 @@ class GameMaster(Client):
 
         try:
             if "RejectGameRegistration" in message:
-                time.sleep(self.retry_register_game_interval)
+                sleep(self.retry_register_game_interval)
                 self.send(register_game_message)
 
             elif "ConfirmGameRegistration" in message:
@@ -130,7 +131,7 @@ class GameMaster(Client):
         for i in range(self.initial_number_of_pieces):
             self.add_piece()
 
-        threading.Thread(target=self.add_piece(), daemon=True).start()
+        Thread(target = self.place_pieces(), daemon = True).start()
 
         self.game_on = True
 
@@ -159,8 +160,8 @@ class GameMaster(Client):
                     x = task_field.x
                     y = task_field.y
 
-        field = TaskFieldInfo(x, y, datetime.datetime.now(), 0, -1, id)
-        new_piece = PieceInfo(id, datetime.datetime.now())
+        field = TaskFieldInfo(x, y, datetime.now(), 0, -1, id)
+        new_piece = PieceInfo(id, datetime.now())
 
         if random() >= self.sham_probability:
             new_piece.piece_type = PieceType.LEGIT
@@ -172,7 +173,7 @@ class GameMaster(Client):
 
     def place_pieces(self):
         while self.game_on:
-            time.sleep(float(self.placing_pieces_frequency) / 1000)
+            sleep(float(self.placing_pieces_frequency) / 1000)
             self.add_piece()
 
 
@@ -185,7 +186,7 @@ if __name__ == '__main__':
                 gm.shutdown()
 
 
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument('-c', '--gamemastercount', default=1, help='Number of gamemasters to be deployed.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
     args = vars(parser.parse_args())
