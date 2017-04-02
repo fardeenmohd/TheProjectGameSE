@@ -24,6 +24,8 @@ def parse_games(games):
 
 def get_a_random_game(open_games):
     number_of_games = len(open_games)
+    if number_of_games is 1:
+        return open_games[0]
     random_index = random.randrange(start=0, stop=number_of_games - 1)
     return open_games[random_index]
 
@@ -35,7 +37,6 @@ class Player(Client):
         self.typeTag = ClientTypeTag.PLAYER
         #  self.info = GameInfo()
         self.open_games = []
-        self.messages_class = messages.Message()
 
     def play(self):
         self.send(messages.getgames())
@@ -44,7 +45,7 @@ class Player(Client):
 
         if len(self.open_games) > 0:
             random_game = get_a_random_game(self.open_games)
-            self.send(self.messages_class.joingame(random_game[0], 'leader', 'red'))
+            self.send(messages.joingame(random_game[0], 'leader', 'red'))
             confirmation = self.receive()
             print(confirmation)
 
