@@ -2,14 +2,13 @@ from src.communication.client import Client, ClientTypeTag
 from src.communication.gameinfo import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType
 from src.communication import messages
 from src.communication.unexpected import UnexpectedServerMessage
+from threading import Thread
+from random import randint, random
+from time import sleep
+from argparse import ArgumentParser
+from datetime import  datetime
 import os
 import xml.etree.ElementTree as ET
-import argparse
-import random
-import time
-import threading
-import datetime
-
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
