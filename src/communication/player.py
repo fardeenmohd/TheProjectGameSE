@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from argparse import ArgumentParser
 
 from src.communication import messages
 from src.communication.client import Client, ClientTypeTag
@@ -24,8 +25,9 @@ def parse_games(games):
 
 def get_a_random_game(open_games):
     number_of_games = len(open_games)
-    if number_of_games is 1:
+    if number_of_games == 1:
         return open_games[0]
+
     random_index = random.randrange(start=0, stop=number_of_games - 1)
     return open_games[random_index]
 
@@ -37,6 +39,7 @@ class Player(Client):
         self.typeTag = ClientTypeTag.PLAYER
         #  self.info = GameInfo()
         self.open_games = []
+
 
     def play(self):
         self.send(messages.getgames())
@@ -51,13 +54,16 @@ class Player(Client):
 
 
 if __name__ == '__main__':
-    # parser = ArgumentParser()
-    # parser.add_argument('-c', '--playercount', default = 1, help = 'Number of players to be deployed.')
-    # parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
-    # args = vars(parser.parse_args())
-    # simulate(int(args["playercount"]), args["verbose"]))
+    def simulate(player_count, verbose):
+        for i in range(player_count):
+            p = Player(index=i, verbose=verbose)
+            if p.connect():
+                p.play()
+                p.shutdown()
 
-    p = Player(verbose=True)
-    p.connect()
-    p.play()
-    p.shutdown()
+
+    parser = ArgumentParser()
+    parser.add_argument('-c', '--playercount', default=1, help='Number of players to be deployed.')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
+    args = vars(parser.parse_args())
+    simulate(int(args["playercount"]), args["verbose"])
