@@ -294,9 +294,9 @@ class CommunicationServer:
             #  Reject game registration if game with same name exists
             for games in root.findall(self.xml_message_tag + "GameInfo"):
                 existing_game_name = games.get("gameName")
-                self.verbose_debug("Existing_game_name: " + existing_game_name + "\n")
+                self.verbose_debug("Existing_game_name: " + existing_game_name)
                 if game_name == existing_game_name:
-                    self.verbose_debug("Rejecting because game name: " + game_name + "already exists")
+                    self.verbose_debug("Rejecting because game name: " + game_name + " already exists")
                     return False
             my_attributes = {'name': str(game_name), 'blueTeamPlayers': str(num_of_blue_players),
                              'redTeamPlayers': str(num_of_red_players)}

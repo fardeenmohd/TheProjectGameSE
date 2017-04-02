@@ -5,6 +5,7 @@ import os
 import xml.etree.ElementTree as ET
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
+ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 
 
 def parse_game_master_settings():
