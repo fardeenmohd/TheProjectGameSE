@@ -38,17 +38,17 @@ class Player(Client):
 
         self.typeTag = ClientTypeTag.PLAYER
         #  self.info = GameInfo()
-        self.open_games = []
+        self.open_gamest = []
         self.messages_class = messages
 
     def play(self):
-        self.send(messages.getgames())
+        self.send(messages.get_games())
         games = self.receive()
         self.open_games = parse_games(games)
 
         if len(self.open_games) > 0:
             random_game = get_a_random_game(self.open_games)
-            self.send(self.messages_class.joingame(random_game[0], 'leader', 'red'))
+            self.send(self.messages_class.join_game(random_game[0], 'leader', 'red'))
             confirmation = self.receive()
             print(confirmation)
 

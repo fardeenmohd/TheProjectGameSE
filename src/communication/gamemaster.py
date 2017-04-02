@@ -81,7 +81,7 @@ class GameMaster(Client):
         self.parse_action_costs()
 
     def run(self):
-        register_game_message = messages.registergame(self.game_name, redplayers = self.number_of_players_per_team,
+        register_game_message = messages.register_game(self.game_name, redplayers = self.number_of_players_per_team,
                                                       blueplayers = self.number_of_players_per_team)
         self.send(register_game_message)
 
