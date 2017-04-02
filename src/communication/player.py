@@ -6,32 +6,30 @@ from communication.client import Client, ClientTypeTag
 
 
 class Player(Client):
-	def __init__(self, index = 1, verbose = False):
-		super().__init__(index, verbose)
+    def __init__(self, index = 1, verbose = False):
+        super().__init__(index, verbose)
 
-		self.typeTag = ClientTypeTag.PLAYER
+        self.typeTag = ClientTypeTag.PLAYER
 
-	#  self.info = GameInfo()
+    #  self.info = GameInfo()
 
-	def play(self):
-		self.send(messages.getgames())
+    def play(self):
+        self.send(messages.getgames())
 
-		games = self.receive()
-
-
+        games = self.receive()
 
 
 if __name__ == '__main__':
-	def simulate(player_count, verbose):
-		for i in range(player_count):
-			p = Player(index = i, verbose = verbose)
-			if p.connect():
-				p.play()
-				p.shutdown()
+    def simulate(player_count, verbose):
+        for i in range(player_count):
+            p = Player(index = i, verbose = verbose)
+            if p.connect():
+                p.play()
+                p.shutdown()
 
 
-	parser = ArgumentParser()
-	parser.add_argument('-c', '--playercount', default = 1, help = 'Number of players to be deployed.')
-	parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
-	args = vars(parser.parse_args())
-	simulate(int(args["playercount"]), args["verbose"])
+    parser = ArgumentParser()
+    parser.add_argument('-c', '--playercount', default = 1, help = 'Number of players to be deployed.')
+    parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
+    args = vars(parser.parse_args())
+    simulate(int(args["playercount"]), args["verbose"])
