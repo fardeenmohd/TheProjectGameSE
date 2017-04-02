@@ -8,7 +8,7 @@ from enum import Enum, auto
 from threading import Thread
 from time import sleep
 
-from communication import messages
+from src.communication import messages
 
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -370,7 +370,7 @@ class CommunicationServer:
 
     def disconnect_client(self, client_index):
         self.clientDict[client_index].close()
-        self.clientDict[client_index] = None
+        # self.clientDict[client_index] = None
         self.clientCount -= 1
 
     def shutdown(self):

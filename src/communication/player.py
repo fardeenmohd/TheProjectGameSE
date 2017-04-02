@@ -25,6 +25,9 @@ def parse_games(games):
 
 def get_a_random_game(open_games):
     number_of_games = len(open_games)
+    if number_of_games == 1:
+        return open_games[0]
+
     random_index = random.randrange(start=0, stop=number_of_games - 1)
     return open_games[random_index]
 
@@ -36,7 +39,7 @@ class Player(Client):
         self.typeTag = ClientTypeTag.PLAYER
         #  self.info = GameInfo()
         self.open_games = []
-        self.messages_class = messages.Message()
+        self.messages_class = messages
 
     def play(self):
         self.send(messages.getgames())

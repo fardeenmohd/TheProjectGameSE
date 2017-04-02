@@ -1,6 +1,12 @@
 from src.communication.client import Client, ClientTypeTag
-from src.communication.gameinfo import GameInfo
+from src.communication.gameinfo import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType
 from src.communication import messages
+from src.communication.unexpected import UnexpectedServerMessage
+from threading import Thread
+from random import randint, random
+from time import sleep
+from argparse import ArgumentParser
+from datetime import  datetime
 import os
 import xml.etree.ElementTree as ET
 
