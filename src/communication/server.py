@@ -8,7 +8,7 @@ from enum import Enum, auto
 from threading import Thread
 from time import sleep
 
-from src.communication import messages
+from communication import messages
 
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -31,7 +31,7 @@ class CommunicationServer:
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
 
-    def __init__(self, verbose, host=DEFAULT_HOSTNAME, port=DEFAULT_PORT, client_limit=DEFAULT_CLIENT_LIMIT):
+    def __init__(self, verbose, host = DEFAULT_HOSTNAME, port = DEFAULT_PORT, client_limit = DEFAULT_CLIENT_LIMIT):
         """
         constructor.
         :param verbose:
@@ -63,7 +63,7 @@ class CommunicationServer:
         self.verbose_debug("Created server with hostname: " + host + " on port " + str(port), True)
         self.running = True
 
-    def verbose_debug(self, message, important=False):
+    def verbose_debug(self, message, important = False):
         """
         if in verbose mode, print out the given message with a timestamp
         :param message: message to be printed
@@ -88,8 +88,8 @@ class CommunicationServer:
         """
         self.socket.listen()
         self.verbose_debug("Started listening")
-        Thread(target=self.print_state, daemon=True).start()
-        Thread(target=self.accept_clients, daemon=True).start()
+        Thread(target = self.print_state, daemon = True).start()
+        Thread(target = self.accept_clients, daemon = True).start()
 
         # wait for and respond to user commands:
         try:
@@ -107,8 +107,7 @@ class CommunicationServer:
                     if len(self.clientDict) > 0:
                         for client_index in self.clientDict:
                             if self.clientDict[client_index] is not None:
-                                print(
-                                    " C" + str(client_index) + ": " + str(self.clientDict[client_index].getsockname()))
+                                print(" C" + str(client_index) + ": " + str(self.clientDict[client_index].getsockname()))
                     else:
                         print(" There are no currently connected clients.")
 
@@ -155,13 +154,11 @@ class CommunicationServer:
         self.clientDict[client_index] = client_socket
         self.clientCount += 1
 
-        self.verbose_debug(
-            "New client: " + str(client_socket.getsockname()) + " with index " + str(client_index) + " connected.",
-            True)
+        self.verbose_debug("New client: " + str(client_socket.getsockname()) + " with index " + str(client_index) + " connected.", True)
         if self.clientCount == self.clientLimit:
             self.verbose_debug("Client capacity reached.")
 
-        Thread(target=self.handle_client, args=(client_socket, client_index), daemon=True).start()
+        Thread(target = self.handle_client, args = (client_socket, client_index), daemon = True).start()
 
     def handle_client(self, client_socket, client_index):
         """
@@ -205,14 +202,12 @@ class CommunicationServer:
             return False
 
         except socket.error as e:
-            self.verbose_debug(
-                "Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
+            self.verbose_debug("Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
             self.disconnect_client(client_index)
             return False
 
         except Exception as e:
-            self.verbose_debug(
-                "Disconnecting C" + str(client_index) + " due to an unexpected exception: " + str(e) + ".", True)
+            self.verbose_debug("Disconnecting C" + str(client_index) + " due to an unexpected exception: " + str(e) + ".", True)
             self.disconnect_client(client_index)
             raise e
 
@@ -243,8 +238,7 @@ class CommunicationServer:
             blue_players = int(register_game.get("blueTeamPlayers"))
             red_players = int(register_game.get("redTeamPlayers"))
 
-        self.verbose_debug("GM" + str(
-            client_index) + " registered a new game, with name: " + game_name + " num of blue players: " + str(
+        self.verbose_debug("GM" + str(client_index) + " registered a new game, with name: " + game_name + " num of blue players: " + str(
             blue_players) + " num of red players: " + str(red_players))
 
         # done parsing.
@@ -252,8 +246,7 @@ class CommunicationServer:
         game_registered = self.register_game(game_name, blue_players, red_players)
 
         if game_registered:
-            self.send(client, messages.confirm_game_registration(self.games_id_counter), Communication.SERVER_TO_CLIENT,
-                      client_index)
+            self.send(client, messages.confirm_game_registration(self.games_id_counter), Communication.SERVER_TO_CLIENT, client_index)
             self.games_id_counter += 1
         else:
             self.send(client, messages.reject_game_registration(), Communication.SERVER_TO_CLIENT, client_index)
@@ -272,8 +265,7 @@ class CommunicationServer:
                 return False
 
             except socket.error as e:
-                self.verbose_debug(
-                    "Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
+                self.verbose_debug("Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
                 self.disconnect_client(client_index)
                 return False
 
@@ -304,7 +296,7 @@ class CommunicationServer:
         self.verbose_debug("Currently registered_games: \n" + str(self.open_games))
         return True
 
-    def wait_for_message(self, message_name, client_index, client, max_attempts=10):
+    def wait_for_message(self, message_name, client_index, client, max_attempts = 10):
         """
         This method blocks until it receives a certain message, it will try max_attempts amount of times to receive it
         Then it returns the full message when it is received
@@ -321,7 +313,7 @@ class CommunicationServer:
             attempts += 1
         return received_data
 
-    def send(self, recipient, message, com_type_flag=Communication.OTHER, client_index=0):
+    def send(self, recipient, message, com_type_flag = Communication.OTHER, client_index = 0):
         """
         a truly vital method. Sends a given message to a recipient.
         :param recipient: socket object of the recipient.
@@ -344,14 +336,30 @@ class CommunicationServer:
 
         pass
 
-    def receive(self, client, com_type_flag=Communication.OTHER, client_index=0):
+    def receive(self, client, com_type_flag = Communication.OTHER, client_index = 0):
         """
         :param client:
         :param com_type_flag: a Communication flag. I am adding this here because it might be useful later.
         """
-        received_data = client.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
-        if len(received_data) < 1:
-            raise ConnectionAbortedError
+        try:
+            received_data = client.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
+            if len(received_data) < 1:
+                raise ConnectionAbortedError
+        except ConnectionAbortedError:
+            self.verbose_debug("C" + str(client_index) + " disconnected. Closing connection.", True)
+            self.disconnect_client(client_index)
+            return False
+
+        except socket.error as e:
+            self.verbose_debug(
+                "Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
+            self.disconnect_client(client_index)
+            return False
+
+        except Exception as e:
+            self.verbose_debug("Unexpected exception: " + str(e) + ".", True)
+            self.disconnect_client(client_index)
+            raise e
 
         if com_type_flag == Communication.CLIENT_TO_SERVER:
             self.verbose_debug("Message received from C" + str(client_index) + ": \"" + received_data + "\".")
@@ -373,7 +381,7 @@ class CommunicationServer:
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
+    parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
     args = vars(parser.parse_args())
     server = CommunicationServer(args["verbose"])
     server.listen()

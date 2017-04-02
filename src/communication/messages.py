@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from time import gmtime, strftime
 
 ROOT_DICTIONARY = {}
+ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 data = []
 
 files = [f for f in os.listdir("../messages") if f.endswith(".xml")]
