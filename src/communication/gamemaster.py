@@ -1,18 +1,12 @@
+from src.communication.client import Client, ClientTypeTag
+from src.communication.gameinfo import GameInfo
+from src.communication import messages
 import os
 import xml.etree.ElementTree as ET
-from argparse import ArgumentParser
-from datetime import datetime
-from random import randint, random
-from threading import Thread
-from time import sleep
-
-from communication import messages
-from communication.client import Client, ClientTypeTag
-from communication.gameinfo import PieceInfo, TaskFieldInfo, GoalFieldInfo, GameInfo, PieceType, Allegiance
-from communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
+ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 
 
 def parse_game_master_settings():

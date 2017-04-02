@@ -341,9 +341,25 @@ class CommunicationServer:
         :param client:
         :param com_type_flag: a Communication flag. I am adding this here because it might be useful later.
         """
-        received_data = client.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
-        if len(received_data) < 1:
-            raise ConnectionAbortedError
+        try:
+            received_data = client.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
+            if len(received_data) < 1:
+                raise ConnectionAbortedError
+        except ConnectionAbortedError:
+            self.verbose_debug("C" + str(client_index) + " disconnected. Closing connection.", True)
+            self.disconnect_client(client_index)
+            return False
+
+        except socket.error as e:
+            self.verbose_debug(
+                "Closing connection with C" + str(client_index) + " due to a socket error: " + str(e) + ".", True)
+            self.disconnect_client(client_index)
+            return False
+
+        except Exception as e:
+            self.verbose_debug("Unexpected exception: " + str(e) + ".", True)
+            self.disconnect_client(client_index)
+            raise e
 
         if com_type_flag == Communication.CLIENT_TO_SERVER:
             self.verbose_debug("Message received from C" + str(client_index) + ": \"" + received_data + "\".")
