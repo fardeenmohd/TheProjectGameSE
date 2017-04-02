@@ -18,7 +18,6 @@ def parse_game_master_settings():
 
 def get_game_definition():
     root = parse_game_master_settings()
-
     keep_alive_interval = int(root.attrib.get('KeepAliveInterval'))
     retry_register_game_interval = int(root.attrib.get('RetryRegisterGameInterval'))
     red_goals = []
@@ -75,6 +74,7 @@ def get_game_definition():
 
 
 def get_action_costs():
+
     root = parse_game_master_settings()
     move_delay = 0
     discover_delay = 0
@@ -135,9 +135,10 @@ class GameMaster(Client):
         self.messages_class = messages.Message()
 
     def run(self):
+
         self.send(self.messages_class.registergame(gamename=self.game_name, redplayers=self.number_of_players_per_team,
                                                    blueplayers=self.number_of_players_per_team))
-        self.talk(5)
+
 
 
 if __name__ == '__main__':
