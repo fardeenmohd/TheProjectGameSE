@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 import os
 import xml.etree.ElementTree as ET
 from time import gmtime, strftime
@@ -19,33 +20,37 @@ for file in files:
 
     ROOT_DICTIONARY[message_name] = root
 
+#  **** MESSAGES ****
 
-def getgames():
+# AcceptExchangeRequest
+def accept_exchange_request(playerid, senderplayerid):
     """
-    Figure 3.2: An example of GetGames message
+    Figure 3.24: An AcceptExchangeRequest message.
     """
 
-    root = ROOT_DICTIONARY['GetGames']
+    root = ROOT_DICTIONARY['AcceptexchangeRequest']
 
-    message_temp = ET.tostring(root, encoding='unicode')
-    message = str(message_temp)
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AcceptExchangeRequest'):
+        gamemassage.set('playerId', str(playerid))
+        gamemassage.set('senderPlayerId', str(senderplayerid))
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
     return message
 
 
-# GetGames
-
-# RegisterGame
-def registergame(gamename, blueplayers, redplayers):
+# AuthorizeKnowledgeExchange
+def authorize_knowledge_exchange(withplayerid, gameid, playerguid):
     """
-    Figure 3.3: An example of RegisterGame message with a custom name and a two players teams setup.
+    Figure 3.21: An AuthorizeKnowledgeExchange message.
     """
 
-    root = ROOT_DICTIONARY['RegisterGame']
+    root = ROOT_DICTIONARY['AuthorizeKnowledgeExchange']
 
-    for newgameinfo in root.iter('{http://theprojectgame.mini.pw.edu.pl/}NewGameInfo'):
-        newgameinfo.set('name', gamename)
-        newgameinfo.set('blueTeamPlayers', str(blueplayers))
-        newgameinfo.set('redTeamPlayers', str(redplayers))
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AuthorizeKnowledgeExchange'):
+        gamemassage.set('withPlayerId', str(withplayerid))
+        gamemassage.set('gameId', str(gameid))
+        gamemassage.set('playerGuid', str(playerguid))
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
@@ -68,46 +73,8 @@ def confirm_game_registration(gameid):
     return message
 
 
-# RegisteredGames
-def registered_games(games):
-    """
-    Figure 3.5: An example of RegisteredGames message with two games listed.
-    """
-
-    root = ROOT_DICTIONARY['RegisteredGames']
-
-    for game_name, blue_players, red_players in games:
-        myattributes = {'gameName': str(game_name), 'blueTeamPlayers': str(blue_players),
-                        'redTeamPlayers': str(red_players)}
-        registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-
-    return message
-
-
-# JoinGame
-def joingame(gamename, preferedRole, preferedTeam):
-    """
-    Figure 3.6: A JoinGame message with player trying to join, as the leader of a blue team,
-    the game denoted as easyGame.
-    """
-
-    root = ROOT_DICTIONARY['JoinGame']
-
-    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}JoinGame'):
-        registeredgames.set('gameName', gamename)
-        registeredgames.set('preferedRole', str(preferedRole))
-        registeredgames.set('preferedTeam', str(preferedTeam))
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
 # ConfirmJoiningGame
-def confirmjoininggame(gameid, playerid, privateguid, id, team, type):
+def confirm_joining_game(gameid, playerid, privateguid, id, team, type):
     """
     Figure 3.7: A ConfirmJoiningGame message setting the players unique Id and private GUID and informing
     about the Client’s role in the game.
@@ -130,29 +97,24 @@ def confirmjoininggame(gameid, playerid, privateguid, id, team, type):
     return message
 
 
-# GameMessage
-def gamemessage(playerid, playerteam, playertype, playersid, boardwidth, tasksheight, goalsheight, x, y):
+# ConfirmJoiningGame
+def confirm_joining_game(gameid, playerid, privateguid, id, team, type):
     """
-    Figure 3.8: A GameMessage for Client 2.
+    Figure 3.7: A ConfirmJoiningGame message setting the players unique Id and private GUID and informing
+    about the Client’s role in the game.
     """
 
-    numberofplayers = len(playersid)
+    root = ROOT_DICTIONARY['ConfirmJoinInGgame']
 
-    root = ROOT_DICTIONARY['GameMessage']
+    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmJoiningGame'):
+        registeredgames.set('gameId', str(gameid))
+        registeredgames.set('playerId', str(playerid))
+        registeredgames.set('privateGuid', str(privateguid))
 
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Game'):
-        gamemassage.set('playerId', str(playerid))
-
-    parent = ET.SubElement(root, 'Players')
-    for i in range(0, numberofplayers):
-        myattributes = {'team': str(playerteam[i]), 'type': str(playertype[i]), 'id': str(playersid[i])}
-        ET.SubElement(parent, 'Client', attrib=myattributes)
-
-    myattributes = {'width': str(boardwidth), 'tasksHeight': str(tasksheight), 'goalsHeight': str(goalsheight)}
-    ET.SubElement(root, 'Board', attrib=myattributes)
-
-    myattributes = {'x': str(x), 'y': str(y)}
-    ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PlayerDefinition'):
+        registeredgames.set('id', str(id))
+        registeredgames.set('team', str(team))
+        registeredgames.set('type', str(type))
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
@@ -176,8 +138,8 @@ def discover(gameid, playerguide):
     return message
 
 
-# DataResponseForDiscover
-def dataresponsefordiscover(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, pieceid, piecetype):
+# DiscoverResponse (old - dataresponsefordiscover)
+def discover_response(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, pieceid, piecetype):
     """
     Figure 3.11: A Data message response for the discover action.
     """
@@ -206,47 +168,28 @@ def dataresponsefordiscover(playerid, gamefinished, taskfieldsX, taskfieldsY, ta
     return message
 
 
-# Move
-def move(gameid, playerguide, direction):
+# Game (OLD - gamemessage)
+def game(playerid, playerteam, playertype, playersid, boardwidth, tasksheight, goalsheight, x, y):
     """
-    Figure 3.12: A Move message from Client.
-    """
-
-    root = ROOT_DICTIONARY['Move']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Move'):
-        gamemassage.set('gameId', str(gameid))
-        gamemassage.set('playerGuid', str(playerguide))
-        gamemassage.set('direction', str(direction))
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# MoveResponseGood
-def moveresponsegood(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx,
-                     playerlocationy):
-    """
-    Figure 3.13: A Data message response for the proper move action.
+    Figure 3.8: A GameMessage for Client 2.
     """
 
-    numberoftaskfields = 1
+    numberofplayers = len(playersid)
 
-    root = ROOT_DICTIONARY['MoveResponseGood']
+    root = ROOT_DICTIONARY['GameMessage']
 
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Game'):
         gamemassage.set('playerId', str(playerid))
-        gamemassage.set('gameFinished', str(gamefinished))
 
-    parent = ET.SubElement(root, 'TaskFields')
-    for i in range(0, numberoftaskfields):
-        myattributes = {'x': str(taskfieldsX[i]), 'y': str(taskfieldsY[i]),
-                        'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
-                        'distanceToPiece': str(taskfieldsdistances[i])}
-        ET.SubElement(parent, 'TaskField', attrib=myattributes)
+    parent = ET.SubElement(root, 'Players')
+    for i in range(0, numberofplayers):
+        myattributes = {'team': str(playerteam[i]), 'type': str(playertype[i]), 'id': str(playersid[i])}
+        ET.SubElement(parent, 'Client', attrib=myattributes)
 
-    myattributes = {'x': str(playerlocationx), 'y': str(playerlocationy)}
+    myattributes = {'width': str(boardwidth), 'tasksHeight': str(tasksheight), 'goalsHeight': str(goalsheight)}
+    ET.SubElement(root, 'Board', attrib=myattributes)
+
+    myattributes = {'x': str(x), 'y': str(y)}
     ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
@@ -254,185 +197,40 @@ def moveresponsegood(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfield
     return message
 
 
-# MoveResponsePlayer
-def moveresponseplayer(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx,
-                       playerlocationy, pieceid, piecetype):
+# GetGames
+def get_games():
     """
-    Figure 3.14: A Data message response for the move action, when trying to enter an occupied field.
+    Figure 3.2: An example of GetGames message
     """
 
-    numberoftaskfields = 1
+    root = ROOT_DICTIONARY['GetGames']
 
-    root = ROOT_DICTIONARY['MoveResponsePlayer']
+    message_temp = ET.tostring(root, encoding='unicode')
+    message = str(message_temp)
+    return message
 
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
-        gamemassage.set('playerId', str(playerid))
-        gamemassage.set('gameFinished', str(gamefinished))
 
-    parent = ET.SubElement(root, 'TaskFields')
-    for i in range(0, numberoftaskfields):
-        myattributes = {'x': str(taskfieldsX[i]), 'y': str(taskfieldsY[i]),
-                        'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
-                        'distanceToPiece': str(taskfieldsdistances[i]), 'playerId': str(playerid),
-                        'pieceId': str(pieceid)}
-        ET.SubElement(parent, 'TaskField', attrib=myattributes)
+# JoinGame
+def join_game(gamename, preferedRole, preferedTeam):
+    """
+    Figure 3.6: A JoinGame message with player trying to join, as the leader of a blue team,
+    the game denoted as easyGame.
+    """
 
-    myattributes = {'x': str(playerlocationx), 'y': str(playerlocationy)}
-    ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+    root = ROOT_DICTIONARY['JoinGame']
 
-    parent = ET.SubElement(root, 'Pieces')
-    myattributes = {'id': str(pieceid), 'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
-                    'playerId': str(playerid), 'type': str(piecetype)}
-    ET.SubElement(parent, 'Piece', attrib=myattributes)
+    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}JoinGame'):
+        registeredgames.set('gameName', gamename)
+        registeredgames.set('preferedRole', str(preferedRole))
+        registeredgames.set('preferedTeam', str(preferedTeam))
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
     return message
 
 
-# MoveResponseEdge
-def moveresponseedge(playerid, gamefinished, playerlocationx, playerlocationy):
-    """
-    Figure 3.15: A Data message response for the move action, while trying to step out of the board.
-    """
-
-    numberoftaskfields = 1
-
-    root = ROOT_DICTIONARY['MoveResponsePlayer']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
-        gamemassage.set('playerId', str(playerid))
-        gamemassage.set('gameFinished', str(gamefinished))
-
-    parent = ET.SubElement(root, 'TaskFields')
-    for i in range(0, numberoftaskfields):
-        ET.SubElement(parent, 'TaskField')
-
-    myattributes = {'x': str(playerlocationx), 'y': str(playerlocationy)}
-    ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# PickUp
-def pickup(gameid, playerguide):
-    """
-    Figure 3.16: A PickUp Piece message from a Client.
-    """
-
-    root = ROOT_DICTIONARY['PickUp']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PickUpPiece'):
-        gamemassage.set('gameId', str(gameid))
-        gamemassage.set('playerGuid', str(playerguide))
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# PickUpResponse
-def pickupresponse(playerid, gamefinished, pieceid, piecetype):
-    """
-    Figure 3.17: A Data message response for the piece pick up action.
-    """
-
-    root = ROOT_DICTIONARY['PickUpResponse']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
-        gamemassage.set('playerId', str(playerid))
-        gamemassage.set('gameFinished', str(gamefinished))
-
-    parent = ET.SubElement(root, 'Pieces')
-
-    myattributes = {'id': str(pieceid), 'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
-                    'playerId': str(playerid), 'type': str(piecetype)}
-    ET.SubElement(parent, 'Piece', attrib=myattributes)
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# TestPiece
-def testpiece(gameid, playerguide):
-    """
-    Figure 3.18: A TestPiece message from a Client.
-    """
-
-    root = ROOT_DICTIONARY['TestPiece']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}TestPiece'):
-        gamemassage.set('gameId', str(gameid))
-        gamemassage.set('playerGuid', str(playerguide))
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# PlaceResponse
-def placeresponse(playerid, gamefinished, pieceid, piecetype):
-    """
-    Figure 3.19: A Data message response for the placing of a piece action.
-    """
-
-    root = ROOT_DICTIONARY['PickUpResponse']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
-        gamemassage.set('playerId', str(playerid))
-        gamemassage.set('gameFinished', str(gamefinished))
-
-    parent = ET.SubElement(root, 'Pieces')
-
-    myattributes = {'id': str(pieceid), 'type': str(piecetype),
-                    'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())), 'playerId': str(playerid)}
-    ET.SubElement(parent, 'Piece', attrib=myattributes)
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# AuthorizeKnowledgeExchange
-def authorizeknowledgeexchange(withplayerid, gameid, playerguid):
-    """
-    Figure 3.21: An AuthorizeKnowledgeExchange message.
-    """
-
-    root = ROOT_DICTIONARY['AuthorizeKnowledgeExchange']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AuthorizeKnowledgeExchange'):
-        gamemassage.set('withPlayerId', str(withplayerid))
-        gamemassage.set('gameId', str(gameid))
-        gamemassage.set('playerGuid', str(playerguid))
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# KnowledgeExchangeRequest
-def knowledgeexchangerequest(playerid, senderplayerid):
-    """
-    Figure 3.22: A KnowledgeExchangeRequest message.
-    """
-
-    root = ROOT_DICTIONARY['KnowledgeExchangeRequest']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}KnowledgeExchangeRequest'):
-        gamemassage.set('playerId', str(playerid))
-        gamemassage.set('senderPlayerId', str(senderplayerid))
-
-    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
-    message = str(messagetemp)
-    return message
-
-
-# RejectKnowledgeExchange
-def rejectknowledgeexchange(permanent, playerid, senderplayerid):
+# KnowledgeExchangeReject
+def knowledge_exchange_reject(permanent, playerid, senderplayerid):
     """
     Figure 3.23: A RejectKnowledgeExchange message.
     """
@@ -449,15 +247,15 @@ def rejectknowledgeexchange(permanent, playerid, senderplayerid):
     return message
 
 
-# AcceptExchangeRequest
-def acceptexchangerequest(playerid, senderplayerid):
+# KnowledgeExchangeRequest
+def knowledge_exchange_request(playerid, senderplayerid):
     """
-    Figure 3.24: An AcceptExchangeRequest message.
+    Figure 3.22: A KnowledgeExchangeRequest message.
     """
 
-    root = ROOT_DICTIONARY['AcceptexchangeRequest']
+    root = ROOT_DICTIONARY['KnowledgeExchangeRequest']
 
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}AcceptExchangeRequest'):
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}KnowledgeExchangeRequest'):
         gamemassage.set('playerId', str(playerid))
         gamemassage.set('senderPlayerId', str(senderplayerid))
 
@@ -467,7 +265,7 @@ def acceptexchangerequest(playerid, senderplayerid):
 
 
 # KnowledgeExchangeResponse
-def knowledgeexchangeresponse(playerid, gamefinished, xtaskfield, ytaskfield, distancetopiece, xgoalfield, ygoalfield,
+def knowledge_exchange_response(playerid, gamefinished, xtaskfield, ytaskfield, distancetopiece, xgoalfield, ygoalfield,
                               team, fieldtype, goalfieldplayerid, pieceid, piecetype):
     """
     Figure 3.25: A Data message with a knowledge exchange/accept exchange response data.
@@ -508,6 +306,240 @@ def knowledgeexchangeresponse(playerid, gamefinished, xtaskfield, ytaskfield, di
     return message
 
 
+# Move
+def move(gameid, playerguide, direction):
+    """
+    Figure 3.12: A Move message from Client.
+    """
+
+    root = ROOT_DICTIONARY['Move']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Move'):
+        gamemassage.set('gameId', str(gameid))
+        gamemassage.set('playerGuid', str(playerguide))
+        gamemassage.set('direction', str(direction))
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# MoveResponseEdge
+def move_response_edge(playerid, gamefinished, playerlocationx, playerlocationy):
+    """
+    Figure 3.15: A Data message response for the move action, while trying to step out of the board.
+    """
+
+    numberoftaskfields = 1
+
+    root = ROOT_DICTIONARY['MoveResponsePlayer']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+        gamemassage.set('playerId', str(playerid))
+        gamemassage.set('gameFinished', str(gamefinished))
+
+    parent = ET.SubElement(root, 'TaskFields')
+    for i in range(0, numberoftaskfields):
+        ET.SubElement(parent, 'TaskField')
+
+    myattributes = {'x': str(playerlocationx), 'y': str(playerlocationy)}
+    ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# MoveResponseGood
+def move_response_good(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx,
+                     playerlocationy):
+    """
+    Figure 3.13: A Data message response for the proper move action.
+    """
+
+    numberoftaskfields = 1
+
+    root = ROOT_DICTIONARY['MoveResponseGood']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+        gamemassage.set('playerId', str(playerid))
+        gamemassage.set('gameFinished', str(gamefinished))
+
+    parent = ET.SubElement(root, 'TaskFields')
+    for i in range(0, numberoftaskfields):
+        myattributes = {'x': str(taskfieldsX[i]), 'y': str(taskfieldsY[i]),
+                        'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                        'distanceToPiece': str(taskfieldsdistances[i])}
+        ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+    myattributes = {'x': str(playerlocationx), 'y': str(playerlocationy)}
+    ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# MoveResponsePlayer
+def move_response_player(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfieldsdistances, playerlocationx,
+                       playerlocationy, pieceid, piecetype):
+    """
+    Figure 3.14: A Data message response for the move action, when trying to enter an occupied field.
+    """
+
+    numberoftaskfields = 1
+
+    root = ROOT_DICTIONARY['MoveResponsePlayer']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+        gamemassage.set('playerId', str(playerid))
+        gamemassage.set('gameFinished', str(gamefinished))
+
+    parent = ET.SubElement(root, 'TaskFields')
+    for i in range(0, numberoftaskfields):
+        myattributes = {'x': str(taskfieldsX[i]), 'y': str(taskfieldsY[i]),
+                        'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                        'distanceToPiece': str(taskfieldsdistances[i]), 'playerId': str(playerid),
+                        'pieceId': str(pieceid)}
+        ET.SubElement(parent, 'TaskField', attrib=myattributes)
+
+    myattributes = {'x': str(playerlocationx), 'y': str(playerlocationy)}
+    ET.SubElement(root, 'PlayerLocation', attrib=myattributes)
+
+    parent = ET.SubElement(root, 'Pieces')
+    myattributes = {'id': str(pieceid), 'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                    'playerId': str(playerid), 'type': str(piecetype)}
+    ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# PickUp
+def pickup(gameid, playerguide):
+    """
+    Figure 3.16: A PickUp Piece message from a Client.
+    """
+
+    root = ROOT_DICTIONARY['PickUp']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PickUpPiece'):
+        gamemassage.set('gameId', str(gameid))
+        gamemassage.set('playerGuid', str(playerguide))
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# PickUpResponse
+def pickup_response(playerid, gamefinished, pieceid, piecetype):
+    """
+    Figure 3.17: A Data message response for the piece pick up action.
+    """
+
+    root = ROOT_DICTIONARY['PickUpResponse']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+        gamemassage.set('playerId', str(playerid))
+        gamemassage.set('gameFinished', str(gamefinished))
+
+    parent = ET.SubElement(root, 'Pieces')
+
+    myattributes = {'id': str(pieceid), 'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())),
+                    'playerId': str(playerid), 'type': str(piecetype)}
+    ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# PlaceResponse
+def place_response(playerid, gamefinished, pieceid, piecetype):
+    """
+    Figure 3.19: A Data message response for the placing of a piece action.
+    """
+
+    root = ROOT_DICTIONARY['PickUpResponse']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Data'):
+        gamemassage.set('playerId', str(playerid))
+        gamemassage.set('gameFinished', str(gamefinished))
+
+    parent = ET.SubElement(root, 'Pieces')
+
+    myattributes = {'id': str(pieceid), 'type': str(piecetype),
+                    'timestamp': str(strftime("%Y-%m-%dT%H:%M:%S", gmtime())), 'playerId': str(playerid)}
+    ET.SubElement(parent, 'Piece', attrib=myattributes)
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# RegisteredGames
+def registered_games(games):
+    """
+    Figure 3.5: An example of RegisteredGames message with two games listed.
+    """
+
+    root = ROOT_DICTIONARY['RegisteredGames']
+
+    for game_name, blue_players, red_players in games:
+        myattributes = {'gameName': str(game_name), 'blueTeamPlayers': str(blue_players),
+                        'redTeamPlayers': str(red_players)}
+        registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+
+    return message
+
+
+# RegisterGame
+def register_game(gamename, blueplayers, redplayers):
+    """
+    Figure 3.3: An example of RegisterGame message with a custom name and a two players teams setup.
+    """
+
+    root = ROOT_DICTIONARY['RegisterGame']
+
+    for newgameinfo in root.iter('{http://theprojectgame.mini.pw.edu.pl/}NewGameInfo'):
+        newgameinfo.set('name', gamename)
+        newgameinfo.set('blueTeamPlayers', str(blueplayers))
+        newgameinfo.set('redTeamPlayers', str(redplayers))
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+# TestPiece
+def test_piece(gameid, playerguide):
+    """
+    Figure 3.18: A TestPiece message from a Client.
+    """
+
+    root = ROOT_DICTIONARY['TestPiece']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}TestPiece'):
+        gamemassage.set('gameId', str(gameid))
+        gamemassage.set('playerGuid', str(playerguide))
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+
+##########################################
+# brakuje:
+# GameMasterDisconnected, GameStarted, Place, PlayerDisconnected, RejectGameRegistration, RejectJoiningGame
+
+
 def reject_game_registration():
     root = ROOT_DICTIONARY["RejectGameRegistration"]
     return str(ET.tostring(root, encoding='unicode', method='xml'))
+
+
