@@ -11,7 +11,7 @@ class ClientTypeTag(Enum):
     CLIENT = "C"
     PLAYER = "P"
     LEADER = "L"
-    GAMEMASTER = "GM"
+    GAME_MASTER = "GM"
     BLUE_PLAYER = "BP"
     BLUE_LEADER = "BL"
     RED_PLAYER = "RP"

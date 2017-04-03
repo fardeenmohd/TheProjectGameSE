@@ -1,6 +1,6 @@
 import os
-import xml.etree.ElementTree as ET
 import uuid
+import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
 from enum import Enum
@@ -10,7 +10,7 @@ from time import sleep
 
 from src.communication import messages
 from src.communication.client import Client, ClientTypeTag
-from src.communication.gameinfo import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, GoalFieldType
+from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, GoalFieldType
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -81,7 +81,7 @@ class GameMaster(Client):
 
         self.RANDOMIZATION_ATTEMPTS = 10
         self.piece_counter = 0
-        self.typeTag = ClientTypeTag.GAMEMASTER
+        self.typeTag = ClientTypeTag.GAME_MASTER
         self.game_on = False
         self.player_indexer = 0
 

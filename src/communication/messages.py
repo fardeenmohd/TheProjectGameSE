@@ -460,12 +460,14 @@ def place_response(playerid, gamefinished, pieceid, piecetype):
 def registered_games(games):
     """
     Figure 3.5: An example of RegisteredGames message with two games listed.
+    :type games: dict
     """
 
     root = ROOT_DICTIONARY['RegisteredGames']
 
-    for game_name, blue_players, red_players in games:
-        myattributes = {'gameName': str(game_name), 'blueTeamPlayers': str(blue_players), 'redTeamPlayers': str(red_players)}
+    for game_info in games:
+        myattributes = {'gameName': game_info.name, 'blueTeamPlayers': str(game_info.blue_players),
+                        'redTeamPlayers': str(game_info.red_players)}
         registeredgames = ET.SubElement(root, 'GameInfo', attrib = myattributes)
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
