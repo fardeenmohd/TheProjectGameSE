@@ -217,7 +217,7 @@ class CommunicationServer:
                 # check if game with this name exists:
                 game_name = join_game_root.attrib["gameName"]
 
-                for game_info in self.games:
+                for game_index, game_info in self.games.items():
                     if game_info.name == game_name:
                         # game found, so we will update JoinGame with player_id and send it to GM:
                         join_game_root.attrib["playerId"] = player.id
