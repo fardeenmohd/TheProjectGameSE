@@ -113,7 +113,10 @@ class GameMaster(Client):
                     if "JoinGame" in message:
                         # a player is trying to join! let's parse his message
                         joingame_root = ET.fromstring(message)
+
+                        in_game_id = int(confirmation_root.attrib.get("gameId"))
                         in_game_name = joingame_root.attrib.get("gameName")
+
                         in_pref_team = joingame_root.attrib.get("preferedTeam")
                         in_pref_role = joingame_root.attrib.get("preferedRole")
 
@@ -129,6 +132,14 @@ class GameMaster(Client):
 
                         player_id = self.player_indexer  # remember his id
 
+                        # let's generate him a UID:
+                        uid = 10  # todo
+
+                        # generating the private guid
+                        private_guid = "c094cab7-da7b-457f-89e5-a5c51756035f"  # todo
+
+                        self.send(messages.confirm_joining_game(in_game_id, player_id, private_guid, uid, in_pref_team, in_pref_role))
+
                         # add him to a team while taking into account his preferences:
                         if in_pref_team == "blue":
                             if len(self.blue_players) == self.num_of_players_per_team:
@@ -142,13 +153,11 @@ class GameMaster(Client):
                             else:
                                 self.add_player(Allegiance.RED, in_pref_role)
 
-                                # let's generate him a UID:
-                                # todo: generate UID
-
-                                # todo: send confirm joining game
 
                     elif "GameStarted" in message:
                         # good, the game has started.
+                        self.send(messages.reject_joining_game(self.game_name, self.player_indexer))
+
                         start_root = ET.fromstring(message)
                         if self.info.id != int(start_root.attrib.get("gameId")):
                             raise UnexpectedServerMessage

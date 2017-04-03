@@ -78,7 +78,7 @@ def confirm_game_registration(gameid):
 
 
 # ConfirmJoiningGame
-def confirm_joining_game(gameid, privateguid, id, team, type):
+def confirm_joining_game(gameid, playerid, privateguid, id, team, type):
     """
     Figure 3.7: A ConfirmJoiningGame message setting the players unique Id and private GUID and informing
     about the Client’s role in the game.
@@ -88,7 +88,7 @@ def confirm_joining_game(gameid, privateguid, id, team, type):
 
     for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmJoiningGame'):
         registeredgames.set('gameId', str(gameid))
-        registeredgames.set('playerId', str(id))
+        registeredgames.set('playerId', str(playerid))
         registeredgames.set('privateGuid', str(privateguid))
 
     for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PlayerDefinition'):
