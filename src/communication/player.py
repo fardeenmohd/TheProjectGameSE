@@ -1,11 +1,10 @@
 #!/usr/bin/env python
+import random
+import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
 from src.communication import messages
 from src.communication.client import Client, ClientTypeTag
-from src.communication.gameinfo import GameInfo
-import xml.etree.ElementTree as ET
-import random
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
