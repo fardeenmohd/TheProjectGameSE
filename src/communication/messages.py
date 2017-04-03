@@ -199,10 +199,9 @@ def join_game(gamename, preferedRole, preferedTeam):
 
     root = ROOT_DICTIONARY['JoinGame']
 
-    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}JoinGame'):
-        registeredgames.set('gameName', gamename)
-        registeredgames.set('preferedRole', str(preferedRole))
-        registeredgames.set('preferedTeam', str(preferedTeam))
+    root.attrib["gameName"] = gamename
+    root.attrib["preferedRole"] = preferedRole
+    root.attrib["preferedTeam"] = preferedTeam
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
