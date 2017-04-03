@@ -242,7 +242,7 @@ class CommunicationServer:
 
     def handle_gm(self, gm, first_message):
         # first_message should be a RegisterGames xml
-
+        # TODO  We should receive() in a while loop in order for the server to be notified when GM disconnects
         # Parse first register games msg
         register_games_root = ET.fromstring(first_message)
         new_blue_players = 0
@@ -276,6 +276,7 @@ class CommunicationServer:
                     new_blue_players) + " num of red players: " + str(new_red_players))
             self.send(gm, messages.confirm_game_registration(self.games_indexer))
             self.games_indexer += 1
+
 
             # after registering the game, GM will be receiving JoinGame messages from players.
             # then, he will send us a GameStarted message
