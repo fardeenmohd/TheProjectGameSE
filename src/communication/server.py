@@ -213,12 +213,8 @@ class CommunicationServer:
 
     def handle_player(self, client, client_index, first_message):
         # # first_message should be a GetGames xml
-        # while self.registered_games == "":
-        #     # we wait for the registered games to be created until gm registers at least 1 game
-        #     sleep(0.001)
-        # We have at least 1 game
         self.send(client, messages.registered_games(self.open_games), Communication.SERVER_TO_CLIENT, client_index)
-
+        # join_games_msg = self.
         while self.running:
             received_data = self.receive(client, Communication.CLIENT_TO_SERVER, client_index)
             response = ("Your player message was: " + str(received_data))
@@ -369,9 +365,14 @@ class CommunicationServer:
         return received_data
 
     def disconnect_client(self, client_index):
-        self.clientDict[client_index].close()
-        #self.clientDict[client_index] = None
-        self.clientCount -= 1
+        try:
+            if self.clientDict[client_index] is not None:
+                self.clientDict[client_index].close()
+                self.clientDict[client_index] = None
+                self.clientCount -= 1
+        except socket.error:
+            self.verbose_debug("Couldn't close socket?!", True)
+
 
     def shutdown(self):
         self.running = False
