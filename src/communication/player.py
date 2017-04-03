@@ -22,23 +22,14 @@ def parse_games(games):
     return open_games
 
 
-def get_a_random_game(open_games):
-    number_of_games = len(open_games)
-    if number_of_games == 1:
-        return open_games[0]
-
-    random_index = random.randrange(start=0, stop=number_of_games - 1)
-    return open_games[random_index]
-
-
 class Player(Client):
-    def __init__(self, index=1, verbose=False):
+    def __init__(self, index=1, verbose=False, game_name='InitialGame'):
         super().__init__(index, verbose)
 
         self.typeTag = ClientTypeTag.PLAYER
         #  self.info = GameInfo()
         self.open_games = []
-
+        self.game_name = game_name
 
     def play(self):
         self.send(messages.get_games())
@@ -46,16 +37,17 @@ class Player(Client):
         self.open_games = parse_games(games)
 
         if len(self.open_games) > 0:
-            random_game = get_a_random_game(self.open_games)
-            self.send(messages.join_game(random_game[0], 'leader', 'red'))
+            self.send(messages.join_game(self.open_games[0][0], 'leader', 'red'))
+            print("trying to join game :" + str(self.open_games[0][0]))
             confirmation = self.receive()
             print(confirmation)
 
 
 if __name__ == '__main__':
     def simulate(player_count, verbose):
+        game_name = 'InitialGame'
         for i in range(player_count):
-            p = Player(index=i, verbose=verbose)
+            p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
                 p.play()
                 p.shutdown()
