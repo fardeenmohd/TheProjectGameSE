@@ -340,7 +340,9 @@
       </xs:attribute>
       <xs:attribute name="playerId" type="xs:unsignedLong" use="optional">
         <xs:annotation>
-          <xs:documentation>Id is assigned by a communication server when player wishes to join a game and that way passed to a game master</xs:documentation>
+          <xs:documentation>Id is assigned by a communication server when player wishes to join a game and that way passed to a
+            game master
+            </xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -363,7 +365,7 @@
   <xs:element name="RejectJoiningGame">
     <xs:annotation>
       <xs:documentation>
-          Used to inform Client that he cannot join a game of a given name.
+        Used to inform Client that he cannot join a game of a given name.
         The typical reason would be that the game has no vacant positions.
       </xs:documentation>
     </xs:annotation>
@@ -380,7 +382,7 @@
     <xs:annotation>
       <xs:documentation>
         A message used to inform Players that Game Master has disconnected
-          (or otherwise failed). Client should react as if the game had been
+        (or otherwise failed). Client should react as if the game had been
         properly finished: reset its state and try to join another game
         with the same name.
       </xs:documentation>

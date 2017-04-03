@@ -11,7 +11,7 @@ class ClientTypeTag(Enum):
     CLIENT = "C"
     PLAYER = "P"
     LEADER = "L"
-    GAMEMASTER = "GM"
+    GAME_MASTER = "GM"
     BLUE_PLAYER = "BP"
     BLUE_LEADER = "BL"
     RED_PLAYER = "RP"
@@ -128,14 +128,22 @@ class Client:
         self.verbose_debug("Shutting down the client.", True)
 
     def send(self, message):
-        self.socket.send(message.encode())
-        self.last_message = message
-        self.verbose_debug("Sent to server: \"" + message + "\".")
+        try:
+            self.socket.send(message.encode())
+            self.last_message = message
+            self.verbose_debug("Sent to server: \"" + message + "\".")
+        except socket.error as e:
+            self.verbose_debug("Socket error caught: " + str(e))
+            self.shutdown()
 
     def receive(self):
-        received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
-        self.verbose_debug("Received from server: \"" + received_data + "\".")
-        return received_data
+        try:
+            received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
+            self.verbose_debug("Received from server: \"" + received_data + "\".")
+            return received_data
+        except socket.error as e:
+            self.verbose_debug("Socket error caught: " + str(e))
+            self.shutdown()
 
 
 def simulate(number_of_clients = 1, verbose = True, messages_count = 1, time_between_deploys = 1):
