@@ -220,7 +220,7 @@ class CommunicationServer:
                 for game_index, game_info in self.games.items():
                     if game_info.name == game_name:
                         # game found, so we will update JoinGame with player_id and send it to GM:
-                        join_game_root.attrib["playerId"] = player.id
+                        join_game_root.attrib["playerId"] = str(player.id)
                         message = ET.tostring(join_game_root, encoding = 'unicode', method = 'xml')
 
                         # find the right GM:
@@ -256,7 +256,7 @@ class CommunicationServer:
         # done parsing.
 
         # check if game with this name exists:
-        if len([game for game in self.games if game.name == new_game_name]) > 0:
+        if len([game for game_index, game in self.games.items() if game.name == new_game_name]) > 0:
             # reject the registration.
             self.verbose_debug(
                 gm.get_tag() + " tried to register a game with name: \"" + new_game_name + "\". Rejecting, because there "

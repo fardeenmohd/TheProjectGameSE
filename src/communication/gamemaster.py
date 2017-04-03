@@ -204,7 +204,7 @@ class GameMaster(Client):
         for i in range(self.initial_number_of_pieces):
             self.add_piece()
 
-        Thread(target = self.place_pieces(), daemon = True).start()
+        Thread(target=self.place_pieces(), daemon=True).start()
 
         self.game_on = True
         self.play()
