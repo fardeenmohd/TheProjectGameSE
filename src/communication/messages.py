@@ -78,7 +78,7 @@ def confirm_game_registration(gameid):
 
 
 # ConfirmJoiningGame
-def confirm_joining_game(gameid, playerid, privateguid, id, team, type):
+def confirm_joining_game(gameid, privateguid, id, team, type):
     """
     Figure 3.7: A ConfirmJoiningGame message setting the players unique Id and private GUID and informing
     about the Client’s role in the game.
@@ -88,7 +88,7 @@ def confirm_joining_game(gameid, playerid, privateguid, id, team, type):
 
     for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmJoiningGame'):
         registeredgames.set('gameId', str(gameid))
-        registeredgames.set('playerId', str(playerid))
+        registeredgames.set('playerId', str(id))
         registeredgames.set('privateGuid', str(privateguid))
 
     for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PlayerDefinition'):
@@ -492,6 +492,23 @@ def register_game(gamename, blueplayers, redplayers):
     return message
 
 
+def reject_game_registration():
+    root = ROOT_DICTIONARY["RejectGameRegistration"]
+    return str(ET.tostring(root, encoding='unicode', method='xml'))
+
+
+def reject_joining_game(game_name, player_id):
+    root = ROOT_DICTIONARY['RejectJoiningGame']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectJoiningGame'):
+        gamemassage.set('gameName', str(game_name))
+        gamemassage.set('plerId', str(player_id))
+
+    messagetemp = ET.tostring(root, encoding = 'unicode', method = 'xml')
+    message = str(messagetemp)
+    return message
+
+
 # TestPiece
 def test_piece(gameid, playerguide):
     """
@@ -513,19 +530,3 @@ def test_piece(gameid, playerguide):
 # brakuje:
 # GameMasterDisconnected, GameStarted, Place, PlayerDisconnected, RejectGameRegistration, RejectJoiningGame
 
-
-def reject_game_registration():
-    root = ROOT_DICTIONARY["RejectGameRegistration"]
-    return str(ET.tostring(root, encoding='unicode', method='xml'))
-
-
-def reject_joining_game(game_name, player_id):
-    root = ROOT_DICTIONARY['RejectJoiningGame']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectJoiningGame'):
-        gamemassage.set('gameName', str(game_name))
-        gamemassage.set('plerId', str(player_id))
-
-    messagetemp = ET.tostring(root, encoding = 'unicode', method = 'xml')
-    message = str(messagetemp)
-    return message

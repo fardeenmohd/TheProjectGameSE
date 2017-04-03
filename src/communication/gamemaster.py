@@ -1,5 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
+import uuid
 from argparse import ArgumentParser
 from datetime import datetime
 from enum import Enum
@@ -132,13 +133,10 @@ class GameMaster(Client):
 
                         player_id = self.player_indexer  # remember his id
 
-                        # let's generate him a UID:
-                        uid = 10  # todo
+                        # generating the private GUID
+                        private_guid = uuid.uuid4()  # todo
 
-                        # generating the private guid
-                        private_guid = "c094cab7-da7b-457f-89e5-a5c51756035f"  # todo
-
-                        self.send(messages.confirm_joining_game(in_game_id, player_id, private_guid, uid, in_pref_team, in_pref_role))
+                        self.send(messages.confirm_joining_game(in_game_id, player_id, private_guid, in_pref_role, in_pref_team))
 
                         # add him to a team while taking into account his preferences:
                         if in_pref_team == "blue":
