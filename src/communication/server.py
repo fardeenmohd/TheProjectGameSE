@@ -49,8 +49,9 @@ class CommunicationServer:
         self.verbose = verbose
         self.gm_index = -1
         self.registered_games = ""  # Server updates and maintains its own RegisteredGames.xml file
-        self.open_games = []  # this should actually be a list of tuples: name, blue players, red players
+        self.open_games = []  # this should actually be a list of tuples: id, name, blue players, red players
         self.games_id_counter = 0  # For now it's just a counter like player_id used to be
+        self.players = []  # List of players that have joined to the game
 
         ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
         try:
@@ -280,14 +281,14 @@ class CommunicationServer:
         :return:
         """
         if len(self.open_games) == 0:
-            self.open_games.append((game_name, blue_players, red_players))
+            self.open_games.append((1, game_name, blue_players, red_players))  # 1 is first game id
 
         else:
             for game in self.open_games:
                 if game[0] == game_name:
                     self.verbose_debug("Rejecting registration, because game name: " + game_name + "already exists")
                     return False
-            self.open_games.append((game_name, blue_players, red_players))
+            self.open_games.append((len(self.open_games) + 1, game_name, blue_players, red_players))
 
         self.verbose_debug("Currently registered_games: \n" + str(self.open_games))
         return True

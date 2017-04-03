@@ -492,6 +492,23 @@ def register_game(gamename, blueplayers, redplayers):
     return message
 
 
+def reject_game_registration():
+    root = ROOT_DICTIONARY["RejectGameRegistration"]
+    return str(ET.tostring(root, encoding='unicode', method='xml'))
+
+
+def reject_joining_game(game_name, player_id):
+    root = ROOT_DICTIONARY['RejectJoiningGame']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectJoiningGame'):
+        gamemassage.set('gameName', str(game_name))
+        gamemassage.set('plerId', str(player_id))
+
+    messagetemp = ET.tostring(root, encoding = 'unicode', method = 'xml')
+    message = str(messagetemp)
+    return message
+
+
 # TestPiece
 def test_piece(gameid, playerguide):
     """
@@ -513,19 +530,3 @@ def test_piece(gameid, playerguide):
 # brakuje:
 # GameMasterDisconnected, GameStarted, Place, PlayerDisconnected, RejectGameRegistration, RejectJoiningGame
 
-
-def reject_game_registration():
-    root = ROOT_DICTIONARY["RejectGameRegistration"]
-    return str(ET.tostring(root, encoding='unicode', method='xml'))
-
-
-def reject_joining_game(game_name, player_id):
-    root = ROOT_DICTIONARY['RejectJoiningGame']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectJoiningGame'):
-        gamemassage.set('gameName', str(game_name))
-        gamemassage.set('plerId', str(player_id))
-
-    messagetemp = ET.tostring(root, encoding = 'unicode', method = 'xml')
-    message = str(messagetemp)
-    return message
