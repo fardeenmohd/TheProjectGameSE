@@ -23,13 +23,6 @@ def parse_games(games):
     return open_games
 
 
-def confirmation_status(confirmation):
-    if "ConfirmJoiningGame" in confirmation:
-        return True
-    else:
-        return False
-
-
 class Player(Client):
     def __init__(self, index=1, verbose=False, game_name='InitialGame'):
         super().__init__(index, verbose)
