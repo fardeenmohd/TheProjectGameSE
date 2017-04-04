@@ -42,6 +42,7 @@ class Player(Client):
             root = ET.fromstring(confirmation_message)
             self.Guid = root.attrib.get('privateGuid')
             self.game_info.id = int(root.attrib.get('gameId'))
+            self.game_info.name = self.game_name
 
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
