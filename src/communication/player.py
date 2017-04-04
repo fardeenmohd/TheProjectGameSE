@@ -65,11 +65,18 @@ class Player(Client):
             x = player_location.attrib.get('x')
             y = player_location.attrib.get('y')
             self.location = (x, y)
-
+        red_player_count = 0
+        blue_player_count = 0
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
             for player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
                 self.all_players.append(
                     (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+                if player.attrib.get('team') == 'blue':
+                    blue_player_count += 1
+                if player.attrib.get('team') == 'red':
+                    red_player_count += 1
+        self.game_info.red_players = red_player_count
+        self.game_info.blue_players = blue_player_count
 
     def play(self):
         self.send(messages.get_games())
