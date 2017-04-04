@@ -30,13 +30,14 @@ class Player(Client):
         self.typeTag = ClientTypeTag.PLAYER
         self.Guid = 'Not Assigned'
         self.game_info = GameInfo()
-        self.task_field_info = TaskFieldInfo()
         self.open_games = []
         self.game_name = game_name
         self.team = 'Not Assigned'
         self.role = 'Not Assigned'
         self.location = (0, 0)
         self.all_players = []
+        self.blue_player_list = []
+        self.red_player_list = []
 
     def confirmation_status_handling(self, confirmation_message):
         if "ConfirmJoiningGame" in confirmation_message:
@@ -48,6 +49,9 @@ class Player(Client):
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
                 self.role = player_definition.attrib.get('type')
+
+            print(self.team)
+            print(self.role)
 
             return True
         else:
@@ -73,13 +77,21 @@ class Player(Client):
             for player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
                 self.all_players.append(
                     (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+
                 if player.attrib.get('team') == 'blue':
+                    self.blue_player_list.append(
+                        (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+                    self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     blue_player_count += 1
+
                 if player.attrib.get('team') == 'red':
+                    self.red_player_list.append(
+                        (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+                    self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     red_player_count += 1
+
         self.game_info.red_players = red_player_count
         self.game_info.blue_players = blue_player_count
-        self.task_field_info = TaskFieldInfo(self.location[0], self.location[1], player_id=self.id)
 
     def play(self):
         self.send(messages.get_games())
@@ -93,8 +105,10 @@ class Player(Client):
                 temp_preferred_role = 'leader'
                 temp_preferred_team = 'red'
                 self.send(messages.join_game(temp_game_name, temp_preferred_role, temp_preferred_team))
-                confirmation = self.receive()
-                print(confirmation)
+                confirmation = messages.confirm_joining_game(1, 'sadasdad', 1, 'red', 'member')  # self.receive()
+                self.confirmation_status_handling(confirmation)
+                game_info = messages.game(1, 'blue', 'member', [], 5, 3, 1, 1, 1)  # self.receive
+                self.game_message_handling(game_info)
 
 
 if __name__ == '__main__':
