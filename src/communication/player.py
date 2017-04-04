@@ -30,6 +30,7 @@ class Player(Client):
         self.typeTag = ClientTypeTag.PLAYER
         self.Guid = 'Not Assigned'
         self.game_info = GameInfo()
+        self.task_field_info = TaskFieldInfo()
         self.open_games = []
         self.game_name = game_name
         self.team = 'Not Assigned'
@@ -78,6 +79,7 @@ class Player(Client):
                     red_player_count += 1
         self.game_info.red_players = red_player_count
         self.game_info.blue_players = blue_player_count
+        self.task_field_info = TaskFieldInfo(self.location[0], self.location[1], player_id=self.id)
 
     def play(self):
         self.send(messages.get_games())
