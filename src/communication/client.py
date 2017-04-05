@@ -26,7 +26,7 @@ class Client:
     DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 1024
 
-    def __init__(self, index = 1, verbose = False):
+    def __init__(self, index=1, verbose=False):
         """
         constructor.
         :param index: local index used to differentiate between different clients running in threads
@@ -47,7 +47,7 @@ class Client:
 
         self.verbose_debug("Client created.")
 
-    def connect(self, hostname = DEFAULT_HOSTNAME, port = DEFAULT_PORT):
+    def connect(self, hostname=DEFAULT_HOSTNAME, port=DEFAULT_PORT):
         """
         try to connect to server and receive UID
         :param hostname: host name to connect to
@@ -76,16 +76,18 @@ class Client:
             except socket.error:
                 failed_connections += 1
                 if failed_connections < self.connectionAttempts:
-                    self.verbose_debug("Attempt number " + str(failed_connections) + " failed. Trying again in " + str(self.interConnectionTime) + " seconds.")
+                    self.verbose_debug("Attempt number " + str(failed_connections) + " failed. Trying again in " + str(
+                        self.interConnectionTime) + " seconds.")
                     sleep(self.interConnectionTime)
                     continue
                 else:
-                    self.verbose_debug("Attempt number " + str(failed_connections) + " failed. No more attempts to connect will be made.")
+                    self.verbose_debug("Attempt number " + str(
+                        failed_connections) + " failed. No more attempts to connect will be made.")
                     self.shutdown()
                     self.connected = False
                     return False
 
-    def talk(self, messages_count = 1):
+    def talk(self, messages_count=1):
         """
         send and receive messages to/from server
         :param messages_count: how many messages should be sent from client to server
@@ -111,7 +113,7 @@ class Client:
                 self.connected = False
                 return
 
-    def verbose_debug(self, message, important = False):
+    def verbose_debug(self, message, important=False):
         """
         if in verbose mode, print out the given message with client index and timestamp
         :param message: message to be printed
@@ -146,7 +148,7 @@ class Client:
             self.shutdown()
 
 
-def simulate(number_of_clients = 1, verbose = True, messages_count = 1, time_between_deploys = 1):
+def simulate(number_of_clients=1, verbose=True, messages_count=1, time_between_deploys=1):
     """
     deploy client threads/
     :param number_of_clients:
@@ -155,14 +157,14 @@ def simulate(number_of_clients = 1, verbose = True, messages_count = 1, time_bet
     """
     thread_list = []
     for i in range(number_of_clients):
-        new_thread = Thread(target = deploy_client, args = (i + 1, verbose, messages_count))
+        new_thread = Thread(target=deploy_client, args=(i + 1, verbose, messages_count))
         new_thread.start()
         thread_list.append(new_thread)
         sleep(time_between_deploys)
     return thread_list
 
 
-def deploy_client(index, verbose = True, messages_count = 1):
+def deploy_client(index, verbose=True, messages_count=1):
     c = Client(index, verbose)
     if c.connect():
         c.talk(messages_count)
@@ -171,8 +173,8 @@ def deploy_client(index, verbose = True, messages_count = 1):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('-c', '--clientcount', default = 1, help = 'Number of clients to be deployed.')
-    parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
-    parser.add_argument('-m', '--messagecount', default = 1, help = 'Number of messages each client should send.')
+    parser.add_argument('-c', '--clientcount', default=1, help='Number of clients to be deployed.')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
+    parser.add_argument('-m', '--messagecount', default=1, help='Number of messages each client should send.')
     args = vars(parser.parse_args())
     simulate(int(args["clientcount"]), args["verbose"], int(args["messagecount"]))

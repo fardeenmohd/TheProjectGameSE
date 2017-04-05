@@ -84,7 +84,7 @@ def confirm_joining_game(gameid, privateguid, id, team, type):
     about the Client’s role in the game.
     """
 
-    root = ROOT_DICTIONARY['ConfirmJoinInGgame']
+    root = ROOT_DICTIONARY['ConfirmJoiningGame']
 
     for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmJoiningGame'):
         registeredgames.set('gameId', str(gameid))
@@ -156,13 +156,13 @@ def game(playerid, playerteam, playertype, playersid, boardwidth, tasksheight, g
 
     numberofplayers = len(playersid)
 
-    root = ROOT_DICTIONARY['GameMessage']
+    root = ROOT_DICTIONARY['Game']
 
     for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}Game'):
         gamemassage.set('playerId', str(playerid))
 
     parent = ET.SubElement(root, 'Players')
-    for i in range(0, numberofplayers):
+    for i in range(0, numberofplayers - 1):
         myattributes = {'team': str(playerteam[i]), 'type': str(playertype[i]), 'id': str(playersid[i])}
         ET.SubElement(parent, 'Client', attrib=myattributes)
 
