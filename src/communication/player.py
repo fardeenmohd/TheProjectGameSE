@@ -103,9 +103,11 @@ class Player(Client):
                 temp_preferred_team = 'red'
                 self.send(messages.join_game(temp_game_name, temp_preferred_role, temp_preferred_team))
                 confirmation = self.receive()
-                self.confirmation_status_handling(confirmation)
+                if confirmation is not None:
+                    self.confirmation_status_handling(confirmation)
                 game_info = self.receive()
-                self.game_message_handling(game_info)
+                if game_info is not None:
+                    self.game_message_handling(game_info)
 
 
 if __name__ == '__main__':
