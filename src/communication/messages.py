@@ -162,7 +162,7 @@ def game(playerid, playerteam, playertype, playersid, boardwidth, tasksheight, g
         gamemassage.set('playerId', str(playerid))
 
     parent = ET.SubElement(root, 'Players')
-    for i in range(0, numberofplayers - 1):
+    for i in range(numberofplayers):
         myattributes = {'team': str(playerteam[i]), 'type': str(playertype[i]), 'id': str(playersid[i])}
         ET.SubElement(parent, 'Client', attrib=myattributes)
 
@@ -403,6 +403,21 @@ def pickup(gameid, playerguide):
     """
 
     root = ROOT_DICTIONARY['PickUp']
+
+    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PickUpPiece'):
+        gamemassage.set('gameId', str(gameid))
+        gamemassage.set('playerGuid', str(playerguide))
+
+    messagetemp = ET.tostring(root, encoding='unicode', method='xml')
+    message = str(messagetemp)
+    return message
+
+def place(gameid, playerguide):
+    """
+    Figure 3.16: A PickUp Piece message from a Client.
+    """
+
+    root = ROOT_DICTIONARY['Place']
 
     for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PickUpPiece'):
         gamemassage.set('gameId', str(gameid))

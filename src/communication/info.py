@@ -4,6 +4,13 @@ from enum import Enum
 from src.communication.client import ClientTypeTag
 
 
+class Direction(Enum):
+    UP = 'up'
+    DOWN = 'down'
+    LEFT = 'left'
+    RIGHT = 'right'
+
+
 class Allegiance(Enum):
     RED = 'R'
     BLUE = 'B'
@@ -48,8 +55,9 @@ class GoalFieldInfo:
         self.timestamp = timestamp
         self.type = type
 
-
         self.player_id = player_id
+
+
 class PieceInfo:
     def __init__(self, id=-1, timestamp=datetime.now(), piece_type=PieceType.LEGIT):
         self.id = id

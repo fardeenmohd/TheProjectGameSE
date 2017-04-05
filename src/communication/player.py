@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from src.communication import messages
 from src.communication.client import Client, ClientTypeTag
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
+from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, Direction, PieceType, \
     GoalFieldType
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
@@ -34,10 +34,11 @@ class Player(Client):
         self.game_name = game_name
         self.team = 'Not Assigned'
         self.role = 'Not Assigned'
-        self.location = {}
+        self.location = tuple()
         self.all_players = []
         self.blue_player_list = []
         self.red_player_list = []
+        self.task_field_info_list = []
 
     def confirmation_status_handling(self, confirmation_message):
         if "ConfirmJoiningGame" in confirmation_message:
@@ -65,8 +66,9 @@ class Player(Client):
             self.game_info.goals_height = board.attrib.get('goalsHeight')
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
-            self.location['x'] = player_location.attrib.get('x')
-            self.location['y'] = player_location.attrib.get('y')
+            x = int(player_location.attrib.get('x'))
+            y = int(player_location.attrib.get('y'))
+            self.location = (x, y)
         print(self.location)
         red_player_count = 0
         blue_player_count = 0
@@ -90,6 +92,68 @@ class Player(Client):
         self.game_info.red_players = red_player_count
         self.game_info.blue_players = blue_player_count
 
+        y = 2 * self.game_info.goals_height + self.game_info.task_height - 1
+        for i in range(self.game_info.goals_height):
+            for x in range(self.game_info.board_width):
+                if (x, y) not in self.game_info.goal_fields.keys():
+                    self.game_info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
+            y -= 1
+
+        for i in range(self.game_info.task_height):
+            for x in range(self.game_info.board_width):
+                self.game_info.task_fields[x, y] = TaskFieldInfo(x, y)
+            y -= 1
+
+        for i in range(self.game_info.goals_height):
+            for x in range(self.game_info.board_width):
+                if (x, y) not in self.game_info.goal_fields.keys():
+                    self.game_info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
+            y -= 1
+
+    def move_message(self, direction):
+        return messages.move(self.game_info.id, self.Guid, direction=direction)
+
+    def discover_message(self):
+        return messages.discover(self.game_info.id, self.Guid)
+
+    def pickup_message(self):
+        return messages.pickup(self.game_info.id, self.Guid)
+
+    def place_message(self):
+        return messages.place(self.game_info.id, self.Guid)
+
+    def test_piece_message(self):
+        return messages.test_piece(self.game_info.id, self.Guid)
+
+    def handle_data(self, response_data):
+        root = ET.fromstring(response_data)
+
+        for task_field_list in root.findall(REGISTERED_GAMES_TAG + "TaskFields"):
+            if task_field_list is not None:
+                for task_field in task_field_list.findall(REGISTERED_GAMES_TAG + "TaskField"):
+                    x = int(task_field.attrib.get('x'))
+                    y = int(task_field.attrib.get('y'))
+                    self.game_info.task_fields[x, y].timestamp = task_field.attrib.get('timestamp')
+                    self.game_info.task_fields[x, y].distance_to_piece = int(task_field.attrib.get('distanceToPiece'))
+                    if task_field.attrib.get('playerId') is not None:
+                        self.game_info.task_fields[x, y].player_id = int(task_field.attrib.get('playerId'))
+                    if task_field.attrib.get('pieceId') is not None:
+                        self.game_info.task_fields[x, y].piece_id = int(task_field.attrib.get('pieceId'))
+
+        for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
+            if piece_list is not None:
+                for piece in piece_list.findall(REGISTERED_GAMES_TAG + "Piece"):
+                    id = int(task_field.attrib.get('id'))
+                    timestamp = task_field.attrib.get('timestamp')
+                    type = task_field.attrib.get('type')
+                    self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
+
+        for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
+            if player_location is not None:
+                x = int(task_field.attrib.get('x'))
+                y = int(task_field.attrib.get('y'))
+                self.location = (x, y)
+
     def play(self):
         self.send(messages.get_games())
         games = self.receive()
@@ -108,6 +172,34 @@ class Player(Client):
                 game_info = self.receive()
                 if game_info is not None:
                     self.game_message_handling(game_info)
+
+
+                """ ----------message handling for future --------
+                self.send(self.move_message(Direction.UP))
+                move_response = self.receive()
+                if move_response is not None:
+                    self.handle_data(move_response)
+
+                self.send(self.discover_message())
+                discover_response = self.receive()
+                if discover_response is not None:
+                    self.handle_data(discover_response)
+
+                self.send(self.pickup_message())
+                pickup_response = self.receive()
+                if pickup_response is not None:
+                    self.handle_data(pickup_response)
+
+                self.send(self.place_message())
+                place_response = self.receive()
+                if place_response is not None:
+                    self.handle_data(place_response)
+
+                self.send(self.test_piece_message())
+                test_piece_response = self.receive()
+                if test_piece_response is not None:
+                    self.handle_data(test_piece_response)
+                """
 
 
 if __name__ == '__main__':
