@@ -45,11 +45,11 @@ class GoalFieldInfo:
         self.x = x
         self.y = y
         self.allegiance = allegiance
-        self.player_id = player_id
         self.timestamp = timestamp
         self.type = type
 
 
+        self.player_id = player_id
 class PieceInfo:
     def __init__(self, id=-1, timestamp=datetime.now(), piece_type=PieceType.LEGIT):
         self.id = id

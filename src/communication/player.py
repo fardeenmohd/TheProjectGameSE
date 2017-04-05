@@ -50,9 +50,6 @@ class Player(Client):
                 self.team = player_definition.attrib.get('team')
                 self.role = player_definition.attrib.get('type')
 
-            print(self.team)
-            print(self.role)
-
             return True
         else:
             print("Got rejected by the server so shutting down")
@@ -105,9 +102,9 @@ class Player(Client):
                 temp_preferred_role = 'leader'
                 temp_preferred_team = 'red'
                 self.send(messages.join_game(temp_game_name, temp_preferred_role, temp_preferred_team))
-                confirmation = messages.confirm_joining_game(1, 'sadasdad', 1, 'red', 'member')  # self.receive()
+                confirmation = self.receive()
                 self.confirmation_status_handling(confirmation)
-                game_info = messages.game(1, 'blue', 'member', [], 5, 3, 1, 1, 1)  # self.receive
+                game_info = self.receive()
                 self.game_message_handling(game_info)
 
 
