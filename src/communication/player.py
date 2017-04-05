@@ -34,7 +34,7 @@ class Player(Client):
         self.game_name = game_name
         self.team = 'Not Assigned'
         self.role = 'Not Assigned'
-        self.location = (0, 0)
+        self.location = {}
         self.all_players = []
         self.blue_player_list = []
         self.red_player_list = []
@@ -65,9 +65,9 @@ class Player(Client):
             self.game_info.goals_height = board.attrib.get('goalsHeight')
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
-            x = player_location.attrib.get('x')
-            y = player_location.attrib.get('y')
-            self.location = (x, y)
+            self.location['x'] = player_location.attrib.get('x')
+            self.location['y'] = player_location.attrib.get('y')
+        print(self.location)
         red_player_count = 0
         blue_player_count = 0
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
