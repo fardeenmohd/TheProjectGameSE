@@ -24,7 +24,13 @@ def parse_games(games):
 
 
 class Player(Client):
-    def __init__(self, index=1, verbose=False, game_name='InitialGame'):
+    def __init__(self, index=1, verbose=False, game_name='ez pz'):
+        """
+
+        :param index: Player index for the server
+        :param verbose: Verbose functionality boolean
+        :param game_name: Game name for player to join
+        """
         super().__init__(index, verbose)
 
         self.typeTag = ClientTypeTag.PLAYER
@@ -41,6 +47,11 @@ class Player(Client):
         self.task_field_info_list = []
 
     def confirmation_status_handling(self, confirmation_message):
+        """
+
+        :param confirmation_message:
+        :return: Parses the confirmation message and extracts game information
+        """
         if "ConfirmJoiningGame" in confirmation_message:
             root = ET.fromstring(confirmation_message)
             self.Guid = root.attrib.get('privateGuid')
@@ -58,6 +69,11 @@ class Player(Client):
             return False
 
     def game_message_handling(self, game_message):
+        """
+
+        :param game_message:
+        :return: Parses the game message and extracts game information
+        """
         root = ET.fromstring(game_message)
 
         for board in root.findall(REGISTERED_GAMES_TAG + "Board"):
@@ -111,6 +127,10 @@ class Player(Client):
             y -= 1
 
     def move_message(self, direction):
+        """
+        :param direction: Move direction
+        :return: Move direction message
+        """
         return messages.move(self.game_info.id, self.Guid, direction=direction)
 
     def discover_message(self):
@@ -172,7 +192,6 @@ class Player(Client):
                 game_info = self.receive()
                 if game_info is not None:
                     self.game_message_handling(game_info)
-
 
                 """ ----------message handling for future --------
                 self.send(self.move_message(Direction.UP))
