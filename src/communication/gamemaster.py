@@ -122,6 +122,7 @@ class GameMaster(Client):
                         in_pref_role = joingame_root.attrib.get("preferedRole")
 
                         # in theory, received gamename has to be the same as our game, it should be impossible otherwise
+                        self.verbose_debug("in_game_name is: " + in_game_name + " self.gamename: " + self.game_name)
                         if in_game_name != self.game_name:
                             raise UnexpectedServerMessage
 

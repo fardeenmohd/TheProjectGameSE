@@ -33,7 +33,7 @@ class CommunicationServer:
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
 
-    def __init__(self, verbose, host = DEFAULT_HOSTNAME, port = DEFAULT_PORT, client_limit = DEFAULT_CLIENT_LIMIT):
+    def __init__(self, verbose, host=DEFAULT_HOSTNAME, port=DEFAULT_PORT, client_limit=DEFAULT_CLIENT_LIMIT):
         """
         constructor.
         :param verbose:
@@ -63,7 +63,7 @@ class CommunicationServer:
 
         self.verbose_debug("Created server with hostname: " + host + " on port " + str(port), True)
 
-    def verbose_debug(self, message, important = False):
+    def verbose_debug(self, message, important=False):
         """
         if in verbose mode, print out the given message with a timestamp
         :param message: message to be printed
@@ -89,8 +89,8 @@ class CommunicationServer:
         self.socket.listen()
         self.verbose_debug("Started listening")
 
-        Thread(target = self.print_state, daemon = True).start()
-        Thread(target = self.accept_clients, daemon = True).start()
+        Thread(target=self.print_state, daemon=True).start()
+        Thread(target=self.accept_clients, daemon=True).start()
 
         # wait for and respond to user commands:
         try:
@@ -150,7 +150,7 @@ class CommunicationServer:
                 sleep(1)
 
     def register_connection(self, client_socket, client_id):
-        new_client = ClientInfo(client_id, socket = client_socket)
+        new_client = ClientInfo(client_id, socket=client_socket)
         self.clients[client_id] = new_client
 
         self.verbose_debug(
@@ -158,7 +158,7 @@ class CommunicationServer:
         if len(self.clients) == self.clientLimit:
             self.verbose_debug("Client capacity reached.")
 
-        Thread(target = self.handle_client, args = [new_client], daemon = True).start()
+        Thread(target=self.handle_client, args=[new_client], daemon=True).start()
 
     def handle_client(self, new_client):
         """
@@ -194,11 +194,13 @@ class CommunicationServer:
             self.disconnect_client(new_client.id)
 
         except socket.error as e:
-            self.verbose_debug("Closing connection with " + new_client.get_tag() + " due to a socket error: " + str(e), True)
+            self.verbose_debug("Closing connection with " + new_client.get_tag() + " due to a socket error: " + str(e),
+                               True)
             self.disconnect_client(new_client.id)
 
         except Exception as e:
-            self.verbose_debug("Disconnecting " + new_client.get_tag() + " due to an unexpected exception: " + str(e) + ".", True)
+            self.verbose_debug(
+                "Disconnecting " + new_client.get_tag() + " due to an unexpected exception: " + str(e) + ".", True)
             self.disconnect_client(new_client.id)
             raise e
 
@@ -221,7 +223,7 @@ class CommunicationServer:
                     if game_info.name == game_name:
                         # game found, so we will update JoinGame with player_id and send it to GM:
                         join_game_root.attrib["playerId"] = str(player.id)
-                        message = ET.tostring(join_game_root, encoding = 'unicode', method = 'xml')
+                        message = ET.tostring(join_game_root, encoding='unicode', method='xml')
 
                         # find the right GM:
                         for client_index, client in self.clients.items():
@@ -269,7 +271,7 @@ class CommunicationServer:
 
         else:
             # create the new game:
-            self.games[self.games_indexer] = GameInfo(id = self.games_indexer, name = new_game_name, open = True)
+            self.games[self.games_indexer] = GameInfo(id=self.games_indexer, name=new_game_name, open=True)
             gm.game_name = new_game_name
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
@@ -277,14 +279,27 @@ class CommunicationServer:
             self.send(gm, messages.confirm_game_registration(self.games_indexer))
             self.games_indexer += 1
 
+            ###############REGISTERING GAME DONE###################
+            # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
+            while self.running:
+                #TODO move this code to a handle_gm_msg function?
+                gm_msg = self.receive(gm)
+                if "ConfirmJoiningGame" in gm_msg:
+                    confirm_root = ET.fromstring(gm_msg)
+                    self.send(self.clients[int(confirm_root.attrib.get("playerId"))], gm_msg)
+                elif "RejectJoiningGame" in gm_msg:
+                    reject_root = ET.fromstring(gm_msg)
+                    self.send(self.clients[int(reject_root.attrib.get("playerId"))], gm_msg)
+                else:
+                    # TODO handle other messages here
+                    gm_msg = self.receive(gm)
+                    self.send_to_all_players("Relaying this message to all players: \n" + gm_msg)
+                    # then, he will send us a GameStarted message
+                    # TODO: parse a GameStarted message
 
-            # after registering the game, GM will be receiving JoinGame messages from players.
-            # then, he will send us a GameStarted message
-            # TODO: parse a GameStarted message
+                    # TODO: relay other messages to players etc.
 
-            # TODO: relay other messages to players etc.
-
-    def wait_for_message(self, message_name, client, max_attempts = 10):
+    def wait_for_message(self, message_name, client, max_attempts=10):
         """
         This method blocks until it receives a certain message, it will try max_attempts amount of times to receive it
         Then it returns the full message when it is received
@@ -347,7 +362,7 @@ class CommunicationServer:
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'Use verbose debugging mode.')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
     args = vars(parser.parse_args())
 
     try:
