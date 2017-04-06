@@ -147,6 +147,8 @@ class Player(Client):
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
 
+        self.game_info.open = not root.attrib.get('gameFinished')
+
         for task_field_list in root.findall(REGISTERED_GAMES_TAG + "TaskFields"):
             if task_field_list is not None:
                 for task_field in task_field_list.findall(REGISTERED_GAMES_TAG + "TaskField"):
@@ -159,12 +161,26 @@ class Player(Client):
                     if task_field.attrib.get('pieceId') is not None:
                         self.game_info.task_fields[x, y].piece_id = int(task_field.attrib.get('pieceId'))
 
+        for goal_field_list in root.findall(REGISTERED_GAMES_TAG + "GoalFields"):
+            if goal_field_list is not None:
+                for goal_field in goal_field_list.findall(REGISTERED_GAMES_TAG + "GoalField"):
+                    x = int(goal_field.attrib.get('x'))
+                    y = int(goal_field.attrib.get('y'))
+                    self.game_info.goal_fields[x, y].timestamp = goal_field.attrib.get('timestamp')
+                    if goal_field.attrib.get('playerId') is not None:
+                        self.game_info.goal_fields[x, y].player_id = int(goal_field.attrib.get('playerId'))
+                    if goal_field.attrib.get('team') == 'red':
+                        self.game_info.goal_fields[x, y].allegiance = Allegiance.RED
+                    if goal_field.attrib.get('team') == 'blue':
+                        self.game_info.goal_fields[x, y].allegiance = Allegiance.BLUE
+                    self.game_info.goal_fields[x, y].type = goal_field.attrib.get('type')
+
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
             if piece_list is not None:
                 for piece in piece_list.findall(REGISTERED_GAMES_TAG + "Piece"):
-                    id = int(task_field.attrib.get('id'))
-                    timestamp = task_field.attrib.get('timestamp')
-                    type = task_field.attrib.get('type')
+                    id = int(piece.attrib.get('id'))
+                    timestamp = piece.attrib.get('timestamp')
+                    type = piece.attrib.get('type')
                     self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
