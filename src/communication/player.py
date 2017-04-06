@@ -182,7 +182,7 @@ class Player(Client):
                         type = GoalFieldType.GOAL
                     if type == 'unknown':
                         type = GoalFieldType.UNKNOWN
-                    self.game_info.goal_fields[x, y].type = goal_field.attrib.get('type')
+                    self.game_info.goal_fields[x, y].type = type
 
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
             if piece_list is not None:
