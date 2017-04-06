@@ -2,7 +2,7 @@
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
-from src.communication import messages_old
+from src.communication import messages_old, messages_new
 from src.communication.client import Client
 from src.communication.info import GameInfo, GoalFieldType, PieceType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
     PieceInfo, ClientTypeTag
@@ -42,9 +42,6 @@ class Player(Client):
         self.role = 'Not Assigned'
         self.location = tuple()
         self.all_players = []
-        self.blue_player_list = []
-        self.red_player_list = []
-        self.task_field_info_list = []
 
     def confirmation_status_handling(self, confirmation_message):
         """
@@ -94,14 +91,12 @@ class Player(Client):
                     (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
 
                 if player.attrib.get('team') == 'blue':
-                    self.blue_player_list.append(
-                        (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+
                     self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     blue_player_count += 1
 
                 if player.attrib.get('team') == 'red':
-                    self.red_player_list.append(
-                        (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+
                     self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     red_player_count += 1
 
@@ -248,8 +243,9 @@ class Player(Client):
                 test_piece_response = self.receive()
                 if test_piece_response is not None:
                     self.handle_data(test_piece_response)
-                """
 
+                """
+                # TODO: add knowledge exchange sending and receiving when needed
 
 if __name__ == '__main__':
     def simulate(player_count, verbose):
