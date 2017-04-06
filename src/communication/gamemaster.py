@@ -8,9 +8,11 @@ from random import random
 from threading import Thread
 from time import sleep
 
-from src.communication import messages
-from src.communication.client import Client, ClientTypeTag
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, GoalFieldType
+from src.communication import messages_old
+from src.communication.client import Client
+from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
+    GoalFieldType, \
+    ClientTypeTag
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -92,7 +94,8 @@ class GameMaster(Client):
         self.parse_action_costs()
 
     def run(self):
-        register_game_message = messages.register_game(self.game_name, self.num_of_players_per_team, self.num_of_players_per_team)
+        register_game_message = messages_old.register_game(self.game_name, self.num_of_players_per_team,
+                                                           self.num_of_players_per_team)
         self.send(register_game_message)
 
         message = self.receive()
@@ -129,7 +132,7 @@ class GameMaster(Client):
                         # let's see if we can fit the player at all:
                         if len(self.blue_players) == self.num_of_players_per_team and len(self.red_players) == self.num_of_players_per_team:
                             # he can't fit in, send a rejection message :(
-                            self.send(messages.reject_joining_game(self.game_name, self.player_indexer))
+                            self.send(messages_old.reject_joining_game(self.game_name, self.player_indexer))
                             continue
 
                         player_id = self.player_indexer  # remember his id
@@ -137,7 +140,8 @@ class GameMaster(Client):
                         # generating the private GUID
                         private_guid = uuid.uuid4()  # todo
 
-                        self.send(messages.confirm_joining_game(in_game_id, private_guid, player_id, in_pref_team, in_pref_role))
+                        self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, in_pref_team,
+                                                                    in_pref_role))
 
                         # add him to a team while taking into account his preferences:
                         if in_pref_team == "blue":
@@ -155,7 +159,7 @@ class GameMaster(Client):
 
                     elif "GameStarted" in message:
                         # good, the game has started.
-                        self.send(messages.reject_joining_game(self.game_name, self.player_indexer))
+                        self.send(messages_old.reject_joining_game(self.game_name, self.player_indexer))
 
                         start_root = ET.fromstring(message)
                         if self.info.id != int(start_root.attrib.get("gameId")):

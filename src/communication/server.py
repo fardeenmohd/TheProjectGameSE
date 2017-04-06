@@ -7,9 +7,8 @@ from enum import Enum, auto
 from threading import Thread
 from time import sleep
 
-from src.communication import messages
-from src.communication.client import ClientTypeTag
-from src.communication.info import ClientInfo, GameInfo
+from src.communication import messages_old
+from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
@@ -206,7 +205,7 @@ class CommunicationServer:
 
     def handle_player(self, player):
         # first_message was a GetGames xml
-        self.send(player, messages.registered_games(self.games))
+        self.send(player, messages_old.registered_games(self.games))
 
         while self.running:
             received = self.receive(player)
@@ -232,7 +231,7 @@ class CommunicationServer:
 
                     else:
                         # no game with this name, send rejection
-                        self.send(player, messages.reject_joining_game(game_name, player.id))
+                        self.send(player, messages_old.reject_joining_game(game_name, player.id))
 
             elif "KnowledgeExchangeRequest" in received or "Data" in received:
                 # TODO: parse the message and send it to the correct player (NOT THE GAME MASTER)
@@ -264,7 +263,7 @@ class CommunicationServer:
                 gm.get_tag() + " tried to register a game with name: \"" + new_game_name + "\". Rejecting, because there "
                                                                                            "already is a game with this "
                                                                                            "name.")
-            self.send(gm, messages.reject_game_registration())
+            self.send(gm, messages_old.reject_game_registration())
 
             # GM will be trying again, so let's wait for his second attempt:
             self.receive(gm)
@@ -276,7 +275,7 @@ class CommunicationServer:
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
-            self.send(gm, messages.confirm_game_registration(self.games_indexer))
+            self.send(gm, messages_old.confirm_game_registration(self.games_indexer))
             self.games_indexer += 1
 
             ###############REGISTERING GAME DONE###################

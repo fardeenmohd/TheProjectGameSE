@@ -2,20 +2,10 @@
 import socket
 from argparse import ArgumentParser
 from datetime import datetime
-from enum import Enum
 from threading import Thread
 from time import sleep
 
-
-class ClientTypeTag(Enum):
-    CLIENT = "C"
-    PLAYER = "P"
-    LEADER = "L"
-    GAME_MASTER = "GM"
-    BLUE_PLAYER = "BP"
-    BLUE_LEADER = "BL"
-    RED_PLAYER = "RP"
-    RED_LEADER = "RL"
+from src.communication.info import ClientTypeTag
 
 
 class Client:

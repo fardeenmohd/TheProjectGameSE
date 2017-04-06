@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-import random
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
-from src.communication import messages
-from src.communication.client import Client, ClientTypeTag
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, Direction, PieceType, \
-    GoalFieldType
+
+from src.communication import messages_old
+from src.communication.client import Client
+from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, ClientTypeTag
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -131,19 +130,19 @@ class Player(Client):
         :param direction: Move direction
         :return: Move direction message
         """
-        return messages.move(self.game_info.id, self.Guid, direction=direction)
+        return messages_old.move(self.game_info.id, self.Guid, direction)
 
     def discover_message(self):
-        return messages.discover(self.game_info.id, self.Guid)
+        return messages_old.discover(self.game_info.id, self.Guid)
 
     def pickup_message(self):
-        return messages.pickup(self.game_info.id, self.Guid)
+        return messages_old.pickup(self.game_info.id, self.Guid)
 
     def place_message(self):
-        return messages.place(self.game_info.id, self.Guid)
+        return messages_old.place(self.game_info.id, self.Guid)
 
     def test_piece_message(self):
-        return messages.test_piece(self.game_info.id, self.Guid)
+        return messages_old.test_piece(self.game_info.id, self.Guid)
 
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
@@ -175,7 +174,7 @@ class Player(Client):
                 self.location = (x, y)
 
     def play(self):
-        self.send(messages.get_games())
+        self.send(messages_old.get_games())
         games = self.receive()
 
         if 'RegisteredGames' in games:
@@ -185,7 +184,7 @@ class Player(Client):
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = 'leader'
                 temp_preferred_team = 'red'
-                self.send(messages.join_game(temp_game_name, temp_preferred_role, temp_preferred_team))
+                self.send(messages_old.join_game(temp_game_name, temp_preferred_role, temp_preferred_team))
                 confirmation = self.receive()
                 if confirmation is not None:
                     self.confirmation_status_handling(confirmation)

@@ -1,7 +1,16 @@
 from datetime import datetime
 from enum import Enum
 
-from src.communication.client import ClientTypeTag
+
+class ClientTypeTag(Enum):
+    CLIENT = "C"
+    PLAYER = "P"
+    LEADER = "L"
+    GAME_MASTER = "GM"
+    BLUE_PLAYER = "BP"
+    BLUE_LEADER = "BL"
+    RED_PLAYER = "RP"
+    RED_LEADER = "RL"
 
 
 class Direction(Enum):

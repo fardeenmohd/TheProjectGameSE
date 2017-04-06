@@ -1,8 +1,8 @@
-class UnexpectedServerMessage(Exception):
-	# nice custom exception.
-	pass
+class UnexpectedServerMessage(BaseException):
+    # we received a message from the server which we didn't expect
+    pass
 
 
-class InvalidClientMessage(Exception):
-	# another one.
-	pass
+class UnexpectedClientMessage(BaseException):
+    # server received an unexpected message from client
+    pass
