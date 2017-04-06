@@ -188,10 +188,6 @@ class CommunicationServer:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
-        except ConnectionAbortedError:
-            self.verbose_debug(new_client.get_tag() + " disconnected. Closing connection.", True)
-            self.disconnect_client(new_client.id)
-
         except socket.error as e:
             self.verbose_debug("Closing connection with " + new_client.get_tag() + " due to a socket error: " + str(e),
                                True)
@@ -281,7 +277,7 @@ class CommunicationServer:
             ###############REGISTERING GAME DONE###################
             # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
             while self.running:
-                #TODO move this code to a handle_gm_msg function?
+                # TODO move this code to a handle_gm_msg function?
                 gm_msg = self.receive(gm)
                 if "ConfirmJoiningGame" in gm_msg:
                     confirm_root = ET.fromstring(gm_msg)
@@ -335,11 +331,16 @@ class CommunicationServer:
         """
         :type client: ClientInfo
         """
-        received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
-        if len(received_data) < 1:
-            raise ConnectionAbortedError
-        self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
-        return received_data
+        try:
+            received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
+            if len(received_data) < 1:
+                raise ConnectionAbortedError
+            self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
+            return received_data
+
+        except ConnectionAbortedError:
+            self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
+            self.disconnect_client(client.id)
 
     def disconnect_client(self, client_index):
         try:

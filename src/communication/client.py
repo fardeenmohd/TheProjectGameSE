@@ -118,6 +118,7 @@ class Client:
         self.connected = False
         self.socket.close()
         self.verbose_debug("Shutting down the client.", True)
+        quit()
 
     def send(self, message):
         try:
@@ -131,8 +132,15 @@ class Client:
     def receive(self):
         try:
             received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
+            if len(received_data) < 1 or received_data is None:
+                raise ConnectionAbortedError
             self.verbose_debug("Received from server: \"" + received_data + "\".")
             return received_data
+
+        except ConnectionAbortedError:
+            self.verbose_debug("Server has shut down. Shutting down the client as well.", True)
+            self.shutdown()
+
         except socket.error as e:
             self.verbose_debug("Socket error caught: " + str(e))
             self.shutdown()
