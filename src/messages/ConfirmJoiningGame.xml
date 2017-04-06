@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ConfirmJoiningGame xmlns="https://se2.mini.pw.edu.pl/17-results/"
                     gameId="1"
-                    playerId="2"
+                    playerId="1"
                     privateGuid="c094cab7-da7b-457f-89e5-a5c51756035f">
-  <PlayerDefinition id="2" team="blue" type="member"/>
+    <PlayerDefinition id="2" team="blue" type="member"/>
 </ConfirmJoiningGame>

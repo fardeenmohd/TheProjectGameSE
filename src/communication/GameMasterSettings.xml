@@ -12,7 +12,7 @@
         <TaskAreaLength>4</TaskAreaLength>
         <GoalAreaLength>1</GoalAreaLength>
         <NumberOfPlayersPerTeam>3</NumberOfPlayersPerTeam>
-        <GameName>Initial game</GameName>
+        <GameName>ez pz</GameName>
     </GameDefinition>
     <ActionCosts>
         <MoveDelay>100</MoveDelay>

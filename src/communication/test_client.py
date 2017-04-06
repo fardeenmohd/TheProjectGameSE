@@ -7,7 +7,7 @@ from unittest import TestCase
 from communication import client
 
 
-class TestPlayer(TestCase):
+class TestClient(TestCase):
     def setUp(self):
         self.mock_player = client.Client(1, verbose=True)
         self.mock_server = socket.socket()

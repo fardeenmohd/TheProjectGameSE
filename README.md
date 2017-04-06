@@ -1,4 +1,4 @@
-**Welcome to the project game thing.**
+**Welcome to the project set_up_game thing.**
 
 CA/Team 5: Filip Matracki, Ksawery Jasieński, Tomek Marcińczyk, Fardin Mohammed
 
@@ -23,7 +23,6 @@ After starting the server, it will wait for and handle client connections. It is
 
 Possible parameters: 
 * -c (--playercount) specifies the number of clients to run (default is 1)
-* -m (--messagecount) specifies the number of messages each player will send to the server (default is 1)
 * -v (--verbose) runs the client in verbose mode
 
-After running, the script deploys the specified number of clients. Each of the clients will send the specified number of messages to the server (and await a response) before disconnecting.
+        After running, the script deploys the specified number of clients.
