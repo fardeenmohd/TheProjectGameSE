@@ -60,19 +60,23 @@ def __between_players_message(message_name, player_id, sender_player_id) -> etre
 # TODO: change message-method names (e.g. move, pickup) in this file to CamelCase (use PyCharm's Refactor->Rename tool)
 # (so, after refactoring the names should be e.g. Move, PickUp, JoinGame...)
 
-def move(game_id, player_guid, direction):
+def Move(game_id, player_guid, direction):
     root = __game_message("Move", game_id, player_guid)
     root.set("direction", direction)
     return __validate_encode(root)
 
 
-def pickup(game_id, player_guid):
+def PickUp(game_id, player_guid):
     root = __game_message("PickUp", game_id, player_guid)
     return __validate_encode(root)
 
 
-def get_games():
+def GetGames():
     root = __base_message("GetGames")
     return __validate_encode(root)
 
-    # TODO: other messages
+
+def Place(game_id, player_guid):
+    root = __game_message("Place", game_id, player_guid)
+    return __validate_encode(root)
+

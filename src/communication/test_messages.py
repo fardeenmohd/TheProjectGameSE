@@ -14,16 +14,32 @@ class TestClass(TestCase):
 
         flag = False  # will be set to True if there is an error with the message.
         try:
-            move(game_id, player_guid, direction)
+            Move(game_id, player_guid, direction)
         except DocumentInvalid:
             flag = True
 
         assert flag
 
+
     def test_getgames(self):
         # check if generated GetGames xml is the same as the example
 
-        generated_xml = get_games()
+        generated_xml = GetGames()
         sample_xml = open("../messages/GetGames.xml").read()
 
         assert generated_xml == sample_xml
+
+
+
+    def test_place(self):
+        # check if generated GetGames xml is the same as the example
+        game_id = 4
+        player_guid = 12-21
+
+        flag = False  # will be set to True if there is an error with the message.
+        try:
+            Place(game_id, player_guid)
+        except DocumentInvalid:
+            flag = True
+
+        assert flag
