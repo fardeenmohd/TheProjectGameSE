@@ -9,6 +9,7 @@ from time import gmtime, strftime
 
 ROOT_DICTIONARY = {}
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
+XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 data = []
 
 files = [f for f in os.listdir("../messages") if f.endswith(".xml")]
@@ -68,9 +69,7 @@ def confirm_game_registration(gameid):
     """
 
     root = ROOT_DICTIONARY['ConfirmGameRegistration']
-
-    for new_game in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmGameRegistration'):
-        new_game.set('gameId', str(gameid))
+    root.attrib["gameId"] = str(gameid)
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
@@ -85,16 +84,15 @@ def confirm_joining_game(gameid, privateguid, id, team, type):
     """
 
     root = ROOT_DICTIONARY['ConfirmJoiningGame']
+    root.attrib["gameId"] = str(gameid)
+    root.attrib["privateGuid"] = str(privateguid)
+    root.attrib["playerId"] = str(id)
 
-    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}ConfirmJoiningGame'):
-        registeredgames.set('gameId', str(gameid))
-        registeredgames.set('playerId', str(id))
-        registeredgames.set('privateGuid', str(privateguid))
 
-    for registeredgames in root.iter('{http://theprojectgame.mini.pw.edu.pl/}PlayerDefinition'):
-        registeredgames.set('id', str(id))
-        registeredgames.set('team', str(team))
-        registeredgames.set('type', str(type))
+    for registeredgames in root.findall(XML_MESSAGE_TAG + 'PlayerDefinition'):
+        registeredgames.attrib["id"] = str(id)
+        registeredgames.attrib["team"] = str(team)
+        registeredgames.attrib["type"] = str(type)
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
@@ -519,11 +517,8 @@ def reject_game_registration():
 
 def reject_joining_game(game_name, player_id):
     root = ROOT_DICTIONARY['RejectJoiningGame']
-
-    for gamemassage in root.iter('{http://theprojectgame.mini.pw.edu.pl/}RejectJoiningGame'):
-        gamemassage.set('gameName', str(game_name))
-        gamemassage.set('plerId', str(player_id))
-
+    root.attrib["gameName"] = str(game_name)
+    root.attrib["playerId"] = str(player_id)
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
     return message

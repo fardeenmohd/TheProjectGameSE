@@ -137,7 +137,7 @@ class GameMaster(Client):
                         # generating the private GUID
                         private_guid = uuid.uuid4()  # todo
 
-                        self.send(messages.confirm_joining_game(in_game_id, player_id, private_guid, in_pref_role, in_pref_team))
+                        self.send(messages.confirm_joining_game(in_game_id, private_guid, player_id, in_pref_team, in_pref_role))
 
                         # add him to a team while taking into account his preferences:
                         if in_pref_team == "blue":
