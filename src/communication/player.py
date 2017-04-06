@@ -207,6 +207,7 @@ class Player(Client):
             self.open_games = parse_games(games)
 
             if len(self.open_games) > 0:
+                # TODO : remove temp fields after new messages in action
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = 'leader'
                 temp_preferred_team = 'red'
