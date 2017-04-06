@@ -4,7 +4,8 @@ from argparse import ArgumentParser
 
 from src.communication import messages_old
 from src.communication.client import Client
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, ClientTypeTag
+from src.communication.info import GameInfo, GoalFieldType, PieceType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
+    PieceInfo, ClientTypeTag
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -173,6 +174,14 @@ class Player(Client):
                         self.game_info.goal_fields[x, y].allegiance = Allegiance.RED
                     if goal_field.attrib.get('team') == 'blue':
                         self.game_info.goal_fields[x, y].allegiance = Allegiance.BLUE
+
+                    type = goal_field.attrib.get('type')
+                    if type == 'non-goal':
+                        type = GoalFieldType.NON_GOAL
+                    if type == 'goal':
+                        type = GoalFieldType.GOAL
+                    if type == 'unknown':
+                        type = GoalFieldType.UNKNOWN
                     self.game_info.goal_fields[x, y].type = goal_field.attrib.get('type')
 
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
@@ -181,6 +190,12 @@ class Player(Client):
                     id = int(piece.attrib.get('id'))
                     timestamp = piece.attrib.get('timestamp')
                     type = piece.attrib.get('type')
+                    if type == 'sham':
+                        type = PieceType.SHAM
+                    if type == 'unknown':
+                        type = PieceType.UNKNOWN
+                    if type == 'legit':
+                        type = PieceType.LEGIT
                     self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
