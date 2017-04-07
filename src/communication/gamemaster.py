@@ -249,13 +249,13 @@ class GameMaster(Client):
         if not self.info.check_for_empty_fields():
             return False
 
-        x = random.randint(0, self.info.board_width)
-        y = random.randint(0, self.info.task_height)
+        x = random.randint(0, self.info.board_width - 1)
+        y = random.randint(0, self.info.task_height - 1)
 
         i = 0
         while self.info.has_piece(x, y) and i < self.RANDOMIZATION_ATTEMPTS:
-            x = random.randint(0, self.info.board_width)
-            y = random.randint(0, self.info.task_height)
+            x = random.randint(0, self.info.board_width - 1)
+            y = random.randint(0, self.info.task_height - 1)
 
         if self.info.has_piece(x, y):
             for task_field in self.info.task_fields:
