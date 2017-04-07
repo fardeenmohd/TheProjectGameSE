@@ -135,7 +135,7 @@ class GameMaster(Client):
                             self.send(messages_old.reject_joining_game(self.game_name, self.player_indexer))
                             continue
 
-                        player_id = self.player_indexer  # remember his id
+                        player_id = joingame_root.attrib["playerId"]
 
                         # generating the private GUID
                         private_guid = uuid.uuid4()  # todo
