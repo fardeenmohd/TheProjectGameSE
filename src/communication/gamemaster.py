@@ -194,6 +194,7 @@ class GameMaster(Client):
             for x in range(self.info.board_width):
                 if (x, y) not in self.info.goal_fields.keys():
                     self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
+
             y -= 1
 
         for i in range(self.info.task_height):
@@ -213,15 +214,23 @@ class GameMaster(Client):
             x = random.randint(0, self.info.board_width - 1)
             y = random.randint(0, self.info.goals_height)
             random_red_goal_field = self.info.goal_fields[x, y]
-            if not random_red_goal_field.is_occupied and random_red_goal_field.type is GoalFieldType.NON_GOAL:
-                self.info.goal_fields[x, y].player_id = int(i)
+            while not random_red_goal_field.is_occupied and random_red_goal_field.type is GoalFieldType.NON_GOAL:
+                x = random.randint(0, self.info.board_width - 1)
+                y = random.randint(0, self.info.goals_height)
+                random_red_goal_field = self.info.goal_fields[x, y]
+
+            self.info.goal_fields[x, y].player_id = int(i)
 
         for i in self.blue_players:
             x = random.randint(self.info.board_width - 1)
             y = random.randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
-            if not random_blue_goal_field.is_occupied and random_blue_goal_field[x, y].type is GoalFieldType.NON_GOAL:
-                self.info.goal_fields[x, y].player_id = int(i)
+            while not random_blue_goal_field.is_occupied and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
+                x = random.randint(self.info.board_width - 1)
+                y = random.randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
+                random_blue_goal_field = self.info.goal_fields[x, y]
+
+            self.info.goal_fields[x, y].player_id = int(i)
 
         # create the first pieces:
         for i in range(self.initial_number_of_pieces):
