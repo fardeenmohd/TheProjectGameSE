@@ -8,6 +8,7 @@ from time import sleep
 
 from src.communication import messages_old
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
+from src.communication.unexpected import UnexpectedClientMessage
 
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
@@ -227,16 +228,60 @@ class CommunicationServer:
 
     def handle_gm(self, gm, first_message):
         # first_message should be a RegisterGames xml
-        # Parse first register games msg
-        register_games_root = ET.fromstring(first_message)
-        new_blue_players = 0
-        new_red_players = 0
-        new_game_name = ""
 
-        for register_game in register_games_root.findall(XML_MESSAGE_TAG + "NewGameInfo"):
-            new_game_name = register_game.get("gameName")
-            new_blue_players = int(register_game.get("blueTeamPlayers"))
-            new_red_players = int(register_game.get("redTeamPlayers"))
+        if not self.try_register_game(gm, first_message):
+            # registration failed. send rejection:
+            self.send(gm, messages_old.reject_game_registration())
+
+            # GM will be trying again, so let's wait for his second attempt:
+            second_attempt_message = self.receive(gm)
+            if not self.try_register_game(gm, second_attempt_message):
+                # registration failed, again. send rejection:
+                self.send(gm, messages_old.reject_game_registration())
+                # gm should not try to register anymore, so if we receive any message now then it's an error:
+                should_not_be_a_message = self.receive(gm)
+                if len(should_not_be_a_message) > 0:
+                    raise UnexpectedClientMessage(
+                        "GameMaster tried to register a game again, while he should have switched off!")
+
+        ###############REGISTERING GAME DONE###################
+        # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
+        while self.running:
+            # TODO move this code to a handle_gm_msg function?
+            gm_msg = self.receive(gm)
+
+            if gm_msg is None:
+                raise ConnectionAbortedError
+
+            if "ConfirmJoiningGame" in gm_msg:
+                confirm_root = ET.fromstring(gm_msg)
+                self.send(self.clients[int(confirm_root.attrib.get("playerId"))], gm_msg)
+            elif "RejectJoiningGame" in gm_msg:
+                reject_root = ET.fromstring(gm_msg)
+                self.send(self.clients[int(reject_root.attrib.get("playerId"))], gm_msg)
+            else:
+                # TODO handle other messages here
+                gm_msg = self.receive(gm)
+                self.send_to_all_players("Relaying this message to all players: \n" + gm_msg)
+                # then, he will send us a GameStarted message
+                # TODO: parse a GameStarted message
+
+                # TODO: relay other messages to players etc.
+
+    def try_register_game(self, gm, register_game_message):
+        """
+        Read a RegisterGame message, try to add it to our games list if no game with the same name exists.
+        :type gm: ClientInfo
+        :param register_game_message: string containing a RegisterGame message
+        :returns True, if succeeded, False if it didnt
+        """
+        register_games_root = ET.fromstring(register_game_message)
+
+        new_game_info = register_games_root[0]  # access index 0 because info is in the first (and only) child of root
+
+        new_game_name = new_game_info.attrib["gameName"]
+        new_blue_players = new_game_info.attrib["blueTeamPlayers"]
+        new_red_players = new_game_info.attrib["redTeamPlayers"]
         # done parsing.
 
         # check if game with this name exists:
@@ -246,10 +291,7 @@ class CommunicationServer:
                 gm.get_tag() + " tried to register a game with name: \"" + new_game_name + "\". Rejecting, because there "
                                                                                            "already is a game with this "
                                                                                            "name.")
-            self.send(gm, messages_old.reject_game_registration())
-
-            # GM will be trying again, so let's wait for his second attempt:
-            self.receive(gm)
+            return False
 
         else:
             # create the new game:
@@ -260,30 +302,6 @@ class CommunicationServer:
                     new_blue_players) + " num of red players: " + str(new_red_players))
             self.send(gm, messages_old.confirm_game_registration(self.games_indexer))
             self.games_indexer += 1
-
-            ###############REGISTERING GAME DONE###################
-            # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
-            while self.running:
-                # TODO move this code to a handle_gm_msg function?
-                gm_msg = self.receive(gm)
-
-                if gm_msg is None:
-                    raise ConnectionAbortedError
-
-                if "ConfirmJoiningGame" in gm_msg:
-                    confirm_root = ET.fromstring(gm_msg)
-                    self.send(self.clients[int(confirm_root.attrib.get("playerId"))], gm_msg)
-                elif "RejectJoiningGame" in gm_msg:
-                    reject_root = ET.fromstring(gm_msg)
-                    self.send(self.clients[int(reject_root.attrib.get("playerId"))], gm_msg)
-                else:
-                    # TODO handle other messages here
-                    gm_msg = self.receive(gm)
-                    self.send_to_all_players("Relaying this message to all players: \n" + gm_msg)
-                    # then, he will send us a GameStarted message
-                    # TODO: parse a GameStarted message
-
-                    # TODO: relay other messages to players etc.
 
     def wait_for_message(self, message_name, client, max_attempts=10):
         """
@@ -306,7 +324,7 @@ class CommunicationServer:
         Relays msg to the GM handling the same game name as game_name
         :param msg: message to be sent as string
         :param game_name: name of GM's game
-        :return: 
+        :return:
         """
         for client_index, client in self.clients.items():
             if client.type == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
