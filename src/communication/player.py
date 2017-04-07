@@ -2,9 +2,10 @@
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
-from src.communication import messages_old
+from src.communication import messages_old, messages_new
 from src.communication.client import Client
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, ClientTypeTag
+from src.communication.info import GameInfo, GoalFieldType, PieceType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
+    PieceInfo, ClientTypeTag
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -41,9 +42,6 @@ class Player(Client):
         self.role = 'Not Assigned'
         self.location = tuple()
         self.all_players = []
-        self.blue_player_list = []
-        self.red_player_list = []
-        self.task_field_info_list = []
 
     def confirmation_status_handling(self, confirmation_message):
         """
@@ -93,14 +91,12 @@ class Player(Client):
                     (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
 
                 if player.attrib.get('team') == 'blue':
-                    self.blue_player_list.append(
-                        (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+
                     self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     blue_player_count += 1
 
                 if player.attrib.get('team') == 'red':
-                    self.red_player_list.append(
-                        (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+
                     self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     red_player_count += 1
 
@@ -147,6 +143,8 @@ class Player(Client):
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
 
+        self.game_info.open = not root.attrib.get('gameFinished')
+
         for task_field_list in root.findall(REGISTERED_GAMES_TAG + "TaskFields"):
             if task_field_list is not None:
                 for task_field in task_field_list.findall(REGISTERED_GAMES_TAG + "TaskField"):
@@ -159,12 +157,40 @@ class Player(Client):
                     if task_field.attrib.get('pieceId') is not None:
                         self.game_info.task_fields[x, y].piece_id = int(task_field.attrib.get('pieceId'))
 
+        for goal_field_list in root.findall(REGISTERED_GAMES_TAG + "GoalFields"):
+            if goal_field_list is not None:
+                for goal_field in goal_field_list.findall(REGISTERED_GAMES_TAG + "GoalField"):
+                    x = int(goal_field.attrib.get('x'))
+                    y = int(goal_field.attrib.get('y'))
+                    self.game_info.goal_fields[x, y].timestamp = goal_field.attrib.get('timestamp')
+                    if goal_field.attrib.get('playerId') is not None:
+                        self.game_info.goal_fields[x, y].player_id = int(goal_field.attrib.get('playerId'))
+                    if goal_field.attrib.get('team') == 'red':
+                        self.game_info.goal_fields[x, y].allegiance = Allegiance.RED
+                    if goal_field.attrib.get('team') == 'blue':
+                        self.game_info.goal_fields[x, y].allegiance = Allegiance.BLUE
+
+                    type = goal_field.attrib.get('type')
+                    if type == 'non-goal':
+                        type = GoalFieldType.NON_GOAL
+                    if type == 'goal':
+                        type = GoalFieldType.GOAL
+                    if type == 'unknown':
+                        type = GoalFieldType.UNKNOWN
+                    self.game_info.goal_fields[x, y].type = type
+
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
             if piece_list is not None:
                 for piece in piece_list.findall(REGISTERED_GAMES_TAG + "Piece"):
-                    id = int(task_field.attrib.get('id'))
-                    timestamp = task_field.attrib.get('timestamp')
-                    type = task_field.attrib.get('type')
+                    id = int(piece.attrib.get('id'))
+                    timestamp = piece.attrib.get('timestamp')
+                    type = piece.attrib.get('type')
+                    if type == 'sham':
+                        type = PieceType.SHAM
+                    if type == 'unknown':
+                        type = PieceType.UNKNOWN
+                    if type == 'legit':
+                        type = PieceType.LEGIT
                     self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
@@ -181,6 +207,7 @@ class Player(Client):
             self.open_games = parse_games(games)
 
             if len(self.open_games) > 0:
+                # TODO : remove temp fields after new messages in action
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = 'leader'
                 temp_preferred_team = 'red'
@@ -217,8 +244,9 @@ class Player(Client):
                 test_piece_response = self.receive()
                 if test_piece_response is not None:
                     self.handle_data(test_piece_response)
-                """
 
+                """
+                # TODO: add knowledge exchange sending and receiving when needed
 
 if __name__ == '__main__':
     def simulate(player_count, verbose):

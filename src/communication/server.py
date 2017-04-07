@@ -202,7 +202,7 @@ class CommunicationServer:
     def handle_player(self, player):
         # first_message was a GetGames xml
         self.send(player, messages_old.registered_games(self.games))
-
+        players_game_name = ""
         while self.running:
             received = self.receive(player)
 
@@ -212,34 +212,30 @@ class CommunicationServer:
                 join_game_root = ET.fromstring(received)
 
                 # check if game with this name exists:
-                game_name = join_game_root.attrib["gameName"]
+                players_game_name = join_game_root.attrib["gameName"]
 
                 for game_index, game_info in self.games.items():
-                    if game_info.name == game_name:
+                    if game_info.name == players_game_name:
                         # game found, so we will update JoinGame with player_id and send it to GM:
                         join_game_root.attrib["playerId"] = str(player.id)
                         message = ET.tostring(join_game_root, encoding='unicode', method='xml')
 
                         # find the right GM:
-                        for client_index, client in self.clients.items():
-                            if client.type == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
-                                self.send(client, message)
+                        self.relay_msg_to_gm(message, players_game_name)
 
                     else:
                         # no game with this name, send rejection
-                        self.send(player, messages_old.reject_joining_game(game_name, player.id))
+                        self.send(player, messages_old.reject_joining_game(players_game_name, player.id))
 
             elif "KnowledgeExchangeRequest" in received or "Data" in received:
-                # TODO: parse the message and send it to the correct player (NOT THE GAME MASTER)
-                pass
+                knowledge_exchanged_root = ET.fromstring(received)
+                self.send(self.clients[int(knowledge_exchanged_root.attrib["playerId"])], received)
 
             else:
-                # TODO: otherwise, the message is a regular message and as such should be simply relayed to the correct GM
-                pass
+                self.relay_msg_to_gm(received, players_game_name)
 
     def handle_gm(self, gm, first_message):
         # first_message should be a RegisterGames xml
-        # TODO  We should receive() in a while loop in order for the server to be notified when GM disconnects
         # Parse first register games msg
         register_games_root = ET.fromstring(first_message)
         new_blue_players = 0
@@ -309,6 +305,17 @@ class CommunicationServer:
             received_data = self.receive(client)
             attempts += 1
         return received_data
+
+    def relay_msg_to_gm(self, msg, game_name):
+        """
+        Relays msg to the GM handling the same game name as game_name
+        :param msg: message to be sent as string
+        :param game_name: name of GM's game
+        :return: 
+        """
+        for client_index, client in self.clients.items():
+            if client.type == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
+                self.send(client, msg)
 
     def send(self, recipient, message):
         """
