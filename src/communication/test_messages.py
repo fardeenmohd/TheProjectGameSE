@@ -12,9 +12,9 @@ class TestClass(TestCase):
         player_guid = 12
         direction = 'up'
 
-        flag = False  # will be set to True if there is an error with the message.
+        flag = False  # will be set to True if the message doesn't fit with the schema.
         try:
-            move(game_id, player_guid, direction)
+            Move(game_id, player_guid, direction)
         except DocumentInvalid:
             flag = True
 
@@ -23,7 +23,12 @@ class TestClass(TestCase):
     def test_getgames(self):
         # check if generated GetGames xml is the same as the example
 
-        generated_xml = get_games()
+        generated_xml = GetGames()
         sample_xml = open("../messages/GetGames.xml").read()
 
-        assert generated_xml == sample_xml
+        flag = generated_xml == sample_xml
+        if not flag:
+            print("Generated:\n" + generated_xml)
+            print("Sample:\n" + sample_xml)
+
+        assert flag
