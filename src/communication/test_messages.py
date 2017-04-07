@@ -34,16 +34,17 @@ class TestClass(TestCase):
         player_guid = 'c094cab7-da7b-457f-89e5-a5c51756035f'
 
         generated_xml = PlacePiece(game_id, player_guid)
-        sample_xml = open("../messages/PlacePiece.xml").read()
+        sample_xml = open("../messages/PlacePiece.xml").read()  # Discover, TestPiece, PlacePiece, PickUpPiece
 
         assert generated_xml == sample_xml
 
-    def test_testpiece(self):
-        # check if generated TestPiece xml is the same as the example
+    def test_authorizeknowledgeexchange(self):
+        # check if generated PlacePlace xml is the same as the example
         game_id = 1
         player_guid = 'c094cab7-da7b-457f-89e5-a5c51756035f'
+        with_player_id = 3
 
-        generated_xml = TestPiece(game_id, player_guid)
-        sample_xml = open("../messages/TestPiece.xml").read()
+        generated_xml = AuthorizeKnowledgeExchange(game_id, player_guid, with_player_id)
+        sample_xml = open("../messages/AuthorizeKnowledgeExchange.xml").read()  # Discover, TestPiece, PlacePiece, PickUpPiece
 
         assert generated_xml == sample_xml

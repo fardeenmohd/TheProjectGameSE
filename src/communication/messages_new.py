@@ -66,8 +66,8 @@ def Move(game_id, player_guid, direction):
     return __validate_encode(root)
 
 
-def PickUp(game_id, player_guid):
-    root = __game_message("PickUp", game_id, player_guid)
+def PickUpPiece(game_id, player_guid):
+    root = __game_message("PickUpPiece", game_id, player_guid)
     return __validate_encode(root)
 
 
@@ -78,6 +78,17 @@ def PlacePiece(game_id, player_guid):
 
 def TestPiece(game_id, player_guid):
     root = __game_message("TestPiece", game_id, player_guid)
+    return __validate_encode(root)
+
+
+def Discover(game_id, player_guid):
+    root = __game_message("Discover", game_id, player_guid)
+    return __validate_encode(root)
+
+
+def AuthorizeKnowledgeExchange(game_id, player_guid, with_player_id):
+    root = __game_message("AuthorizeKnowledgeExchange", game_id, player_guid)
+    root.set("withPlayerId", str(with_player_id))
     return __validate_encode(root)
 
 
