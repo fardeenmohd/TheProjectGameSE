@@ -212,7 +212,7 @@ class GameMaster(Client):
         # place the players:
         for i in self.red_players:
             x = random.randint(0, self.info.board_width - 1)
-            y = random.randint(0, self.info.goals_height)
+            y = random.randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
             while not random_red_goal_field.is_occupied and random_red_goal_field.type is GoalFieldType.NON_GOAL:
                 x = random.randint(0, self.info.board_width - 1)
@@ -239,6 +239,7 @@ class GameMaster(Client):
         Thread(target=self.place_pieces(), daemon=True).start()
 
         self.game_on = True
+
         self.play()
 
     def add_piece(self):
