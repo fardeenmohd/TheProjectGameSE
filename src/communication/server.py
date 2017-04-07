@@ -3,7 +3,6 @@ import socket
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
-from enum import Enum, auto
 from threading import Thread
 from time import sleep
 
@@ -12,15 +11,6 @@ from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
-
-
-class Communication(Enum):
-    """
-    an Enum class for flags which will be useful later on for distinguishing between message recipients
-    """
-    SERVER_TO_CLIENT = auto()
-    CLIENT_TO_SERVER = auto()
-    OTHER = auto()
 
 
 class CommunicationServer:
@@ -188,9 +178,7 @@ class CommunicationServer:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
-        except socket.error as e:
-            self.verbose_debug("Closing connection with " + new_client.get_tag() + " due to a socket error: " + str(e),
-                               True)
+        except ConnectionAbortedError:
             self.disconnect_client(new_client.id)
 
         except Exception as e:
@@ -205,6 +193,9 @@ class CommunicationServer:
         players_game_name = ""
         while self.running:
             received = self.receive(player)
+
+            if received is None:
+                raise ConnectionAbortedError
 
             # parse the message, relay it to GM
 
@@ -275,6 +266,10 @@ class CommunicationServer:
             while self.running:
                 # TODO move this code to a handle_gm_msg function?
                 gm_msg = self.receive(gm)
+
+                if gm_msg is None:
+                    raise ConnectionAbortedError
+
                 if "ConfirmJoiningGame" in gm_msg:
                     confirm_root = ET.fromstring(gm_msg)
                     self.send(self.clients[int(confirm_root.attrib.get("playerId"))], gm_msg)
@@ -340,26 +335,40 @@ class CommunicationServer:
         """
         try:
             received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
-            if len(received_data) < 1:
+            if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
             return received_data
 
-        except ConnectionAbortedError:
+        except (ConnectionAbortedError, ConnectionResetError):
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
             self.disconnect_client(client.id)
 
     def disconnect_client(self, client_index):
+
+        if client_index not in self.clients.keys():
+            return
+
+        client = self.clients[client_index]
+        # close the socket
         try:
-            if client_index in self.clients.keys():
-                client = self.clients[client_index]
-                client.socket.close()
-                temp = dict(self.clients)
-                del temp[client_index]
-                self.clients = temp
+            client.socket.close()
+            temp = dict(self.clients)
+            del temp[client_index]
+            self.clients = temp
 
         except socket.error as e:
             self.verbose_debug("Couldn't close socket?! " + str(e), True)
+
+            # if the client was a GM, remove his game from server:
+        if client.type == ClientTypeTag.GAME_MASTER:
+            for game_info in self.games.values():
+                if game_info.name == client.game_name:
+                    del self.games[game_info.id]
+                    self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")
+                    break
+            else:
+                self.verbose_debug("Couldn't close " + client.get_tag() + "'s game - it wasn't found on the server.")
 
     def shutdown(self):
         self.running = False

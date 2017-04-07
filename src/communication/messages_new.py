@@ -60,39 +60,39 @@ def __between_players_message(message_name, player_id, sender_player_id) -> etre
 # TODO: change message-method names (e.g. move, pickup) in this file to CamelCase (use PyCharm's Refactor->Rename tool)
 # (so, after refactoring the names should be e.g. Move, PickUp, JoinGame...)
 
-def Move(game_id, player_guid, direction):
+def move(game_id, player_guid, direction):
     root = __game_message("Move", game_id, player_guid)
     root.set("direction", direction)
     return __validate_encode(root)
 
 
-def PickUpPiece(game_id, player_guid):
+def pick_up_piece(game_id, player_guid):
     root = __game_message("PickUpPiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def PlacePiece(game_id, player_guid):
+def place_piece(game_id, player_guid):
     root = __game_message("PlacePiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def TestPiece(game_id, player_guid):
+def test_piece(game_id, player_guid):
     root = __game_message("TestPiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def Discover(game_id, player_guid):
+def discover(game_id, player_guid):
     root = __game_message("Discover", game_id, player_guid)
     return __validate_encode(root)
 
 
-def AuthorizeKnowledgeExchange(game_id, player_guid, with_player_id):
+def authorize_knowledge_exchange(game_id, player_guid, with_player_id):
     root = __game_message("AuthorizeKnowledgeExchange", game_id, player_guid)
     root.set("withPlayerId", str(with_player_id))
     return __validate_encode(root)
 
 
-def GetGames():
+def get_games():
     root = __base_message("GetGames")
     return __validate_encode(root)
 

@@ -14,7 +14,7 @@ class TestClass(TestCase):
 
         flag = False  # will be set to True if the message doesn't fit with the schema.
         try:
-            Move(game_id, player_guid, direction)
+            move(game_id, player_guid, direction)
         except DocumentInvalid:
             flag = True
 
@@ -23,7 +23,7 @@ class TestClass(TestCase):
     def test_getgames(self):
         # check if generated GetGames xml is the same as the example
 
-        generated_xml = GetGames()
+        generated_xml = get_games()
         sample_xml = open("../messages/GetGames.xml").read()
 
         flag = generated_xml == sample_xml
