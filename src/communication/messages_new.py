@@ -71,12 +71,17 @@ def PickUp(game_id, player_guid):
     return __validate_encode(root)
 
 
-def GetGames():
-    root = __base_message("GetGames")
+def PlacePiece(game_id, player_guid):
+    root = __game_message("PlacePiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def Place(game_id, player_guid):
-    root = __game_message("Place", game_id, player_guid)
+def TestPiece(game_id, player_guid):
+    root = __game_message("TestPiece", game_id, player_guid)
+    return __validate_encode(root)
+
+
+def GetGames():
+    root = __base_message("GetGames")
     return __validate_encode(root)
 

@@ -20,7 +20,6 @@ class TestClass(TestCase):
 
         assert flag
 
-
     def test_getgames(self):
         # check if generated GetGames xml is the same as the example
 
@@ -29,17 +28,22 @@ class TestClass(TestCase):
 
         assert generated_xml == sample_xml
 
+    def test_placepiece(self):
+        # check if generated PlacePlace xml is the same as the example
+        game_id = 1
+        player_guid = 'c094cab7-da7b-457f-89e5-a5c51756035f'
 
+        generated_xml = PlacePiece(game_id, player_guid)
+        sample_xml = open("../messages/PlacePiece.xml").read()
 
-    def test_place(self):
-        # check if generated GetGames xml is the same as the example
-        game_id = 4
-        player_guid = 12-21
+        assert generated_xml == sample_xml
 
-        flag = False  # will be set to True if there is an error with the message.
-        try:
-            Place(game_id, player_guid)
-        except DocumentInvalid:
-            flag = True
+    def test_testpiece(self):
+        # check if generated TestPiece xml is the same as the example
+        game_id = 1
+        player_guid = 'c094cab7-da7b-457f-89e5-a5c51756035f'
 
-        assert flag
+        generated_xml = TestPiece(game_id, player_guid)
+        sample_xml = open("../messages/TestPiece.xml").read()
+
+        assert generated_xml == sample_xml
