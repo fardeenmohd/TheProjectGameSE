@@ -147,7 +147,7 @@ def discover_response(playerid, gamefinished, taskfieldsX, taskfieldsY, taskfiel
 
 
 # Game (OLD - gamemessage)
-def game(playerid, playerteam, playertype, playersid, boardwidth, tasksheight, goalsheight, x, y):
+def game(playerid: int, playerteam, playertype, playersid, boardwidth, tasksheight, goalsheight, x, y):
     """
     Figure 3.8: A GameMessage for Client 2.
     """
@@ -541,6 +541,12 @@ def test_piece(gameid, playerguide):
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
     message = str(messagetemp)
     return message
+
+
+def game_started(game_id: int) -> str:
+    root = ROOT_DICTIONARY["GameStarted"]
+    root.attrib["gameId"] = str(game_id)
+    return ET.tostring(root, encoding='unicode', method='xml')
 
 ##########################################
 # brakuje:

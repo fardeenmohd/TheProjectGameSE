@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
 from enum import Enum
-from random import random
+from random import random, randint
 from threading import Thread
 from time import sleep
 
@@ -169,20 +169,11 @@ class GameMaster(Client):
                             self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, 'blue',
                                                                         self.blue_players[self.player_indexer - 1]))
 
-                    elif "GameStarted" in message:
-                        # good, the game has started.
-                        self.send(messages_old.reject_joining_game(self.game_name, self.player_indexer))
-
-                        start_root = ET.fromstring(message)
-                        if self.info.id != int(start_root.attrib.get("gameId")):
-                            raise UnexpectedServerMessage
-
-                        else:
-                            # the game starts:
+                        if len(self.blue_players) == self.num_of_players_per_team and len(
+                                self.red_players) == self.num_of_players_per_team:
+                            #  We are ready to start the game
                             self.set_up_game()
-
-                    else:
-                        raise UnexpectedServerMessage
+                            self.send(messages_old.game_started(self.info.id))
 
             else:
                 raise UnexpectedServerMessage
@@ -218,24 +209,24 @@ class GameMaster(Client):
 
         # place the players:
         for i in self.red_players.keys():
-            x = random.randint(0, self.info.board_width - 1)
-            y = random.randint(0, self.info.goals_height - 1)
+            x = randint(0, self.info.board_width - 1)
+            y = randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
-            while not random_red_goal_field.is_occupied and random_red_goal_field.type is GoalFieldType.NON_GOAL:
-                x = random.randint(0, self.info.board_width - 1)
-                y = random.randint(0, self.info.goals_height)
+            while not random_red_goal_field.is_occupied() and random_red_goal_field.type is GoalFieldType.NON_GOAL:
+                x = randint(0, self.info.board_width - 1)
+                y = randint(0, self.info.goals_height)
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
             self.red_players_locations[i] = (x, y)
 
         for i in self.blue_players.keys():
-            x = random.randint(self.info.board_width - 1)
-            y = random.randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
+            x = randint(0, self.info.board_width - 1)
+            y = randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
-            while not random_blue_goal_field.is_occupied and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
-                x = random.randint(self.info.board_width - 1)
-                y = random.randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
+            while not random_blue_goal_field.is_occupied() and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
+                x = randint(self.info.board_width - 1)
+                y = randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
@@ -258,13 +249,13 @@ class GameMaster(Client):
         if not self.info.check_for_empty_fields():
             return False
 
-        x = random.randint(0, self.info.board_width - 1)
-        y = random.randint(0, self.info.task_height - 1)
+        x = randint(0, self.info.board_width - 1)
+        y = randint(0, self.info.task_height - 1)
 
         i = 0
         while self.info.has_piece(x, y) and i < self.RANDOMIZATION_ATTEMPTS:
-            x = random.randint(0, self.info.board_width - 1)
-            y = random.randint(0, self.info.task_height - 1)
+            x = randint(0, self.info.board_width - 1)
+            y = randint(0, self.info.task_height - 1)
 
         if self.info.has_piece(x, y):
             for task_field in self.info.task_fields:
