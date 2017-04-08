@@ -57,6 +57,32 @@ def __between_players_message(message_name, player_id, sender_player_id) -> etre
     return root
 
 
+def __data(message_name, player_id, game_finished) -> etree.ElementBase:
+    """
+    :returns an xml root with PlayerMessage as its base
+    """
+    root = __player_message(message_name, player_id)
+    root.set("gameFinished", game_finished)
+    return root
+
+
+def __task_fields(root, x, y, timestamp, distanceToPiece) -> etree.ElementBase:
+    """
+    :return: one TaskField is generated inside TaskFields
+    """
+    task_fields = etree.SubElement(root, "TaskFields")
+
+    # loop for all task fields
+    task_field = etree.SubElement(task_fields, "TaskField")
+    task_field.set("x", str(x))
+    task_field.set("y", str(y))
+    task_field.set("timestamp", str(timestamp))
+    task_field.set("distanceToPiece", str(distanceToPiece))
+
+    return root
+
+
+
 # TODO: change message-method names (e.g. move, pickup) in this file to CamelCase (use PyCharm's Refactor->Rename tool)
 # (so, after refactoring the names should be e.g. Move, PickUp, JoinGame...)
 
@@ -94,5 +120,11 @@ def authorize_knowledge_exchange(game_id, player_guid, with_player_id):
 
 def get_games():
     root = __base_message("GetGames")
+    return __validate_encode(root)
+
+
+def knowledge_exchange_response(player_id, game_finished, task_field_info):
+    root = __data("KnowledgeExchangeResponse", player_id, game_finished)
+    root = (__task_fields(root, task_field_info.x, task_field_info.y, task_field_info.timestamp, task_field_info.distance_to_piece))
     return __validate_encode(root)
 
