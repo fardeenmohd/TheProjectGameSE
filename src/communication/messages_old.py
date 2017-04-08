@@ -484,8 +484,8 @@ def registered_games(games):
         root.remove(child)
     #  print("MESSAGES_OLD REGISTERED GAMES: \n " + ET.tostring(root, encoding='unicode', method='xml'))
     for game_index, game_info in games.items():
-        myattributes = {'gameName': game_info.name, 'blueTeamPlayers': str(game_info.blue_players),
-                        'redTeamPlayers': str(game_info.red_players)}
+        myattributes = {'gameName': game_info.name, 'blueTeamPlayers': str(game_info.max_blue_players),
+                        'redTeamPlayers': str(game_info.max_red_players)}
         registeredgames = ET.SubElement(root, 'GameInfo', attrib=myattributes)
 
     messagetemp = ET.tostring(root, encoding='unicode', method='xml')
