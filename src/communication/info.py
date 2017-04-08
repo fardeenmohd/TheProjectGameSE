@@ -21,9 +21,14 @@ class Direction(Enum):
 
 
 class Allegiance(Enum):
-    RED = 'R'
-    BLUE = 'B'
-    NEUTRAL = 'N'
+    RED = 'red'
+    BLUE = 'blue'
+    NEUTRAL = 'neutral'
+
+
+class PlayerRole(Enum):
+    MEMBER = "member"
+    LEADER = "leader"
 
 
 class PieceType(Enum):
@@ -124,7 +129,7 @@ class GameInfo:
         self.blue_players = blue_players
         self.red_players = red_players
 
-    def check_for_empty_fields(self):
+    def check_for_empty_task_fields(self):
         for task_field in self.task_fields.values():
             if task_field.piece_id == -1:
                 return True
