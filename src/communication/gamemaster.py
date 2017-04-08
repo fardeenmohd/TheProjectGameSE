@@ -73,7 +73,7 @@ class GameMaster(Client):
             self.knowledge_exchange_delay = int(action_costs.find(GAME_SETTINGS_TAG + "KnowledgeExchangeDelay").text)
 
     def __init__(self, verbose=False):
-        super().__init__(verbose)
+        super().__init__(verbose=verbose)
 
         self.RANDOMIZATION_ATTEMPTS = 10
         self.piece_indexer = 0
@@ -81,7 +81,8 @@ class GameMaster(Client):
         self.game_on = False
         self.player_indexer = 0
 
-        self.teams = {}  # A dict of dicts: team => {player_id => role}
+        self.teams = {Allegiance.BLUE.value: {},
+                      Allegiance.RED.value: {}}  # A dict of dicts: team => {player_id => role}
         self.red_players_locations = {}
         self.blue_players_locations = {}
 
@@ -133,6 +134,10 @@ class GameMaster(Client):
         in_player_id = joingame_root.attrib.get("playerId")
         in_game_name = joingame_root.attrib.get("gameName")
         in_pref_team = joingame_root.attrib.get("preferedTeam")
+        if in_pref_team == "red":
+            in_pref_team = Allegiance.RED.value
+        else:
+            in_pref_team = Allegiance.BLUE.value
         in_pref_role = joingame_root.attrib.get("preferedRole")
 
         # in theory, received gamename has to be the same as our game, it should be impossible otherwise
@@ -154,7 +159,7 @@ class GameMaster(Client):
         # add him to a team while taking into account his preferences:
         team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team)
 
-        self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role.value
+        self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
                            + " in team " + team_color + ".")
 
         self.send(messages_old.confirm_joining_game(self.info.id, private_guid, in_player_id, team_color, role))
@@ -169,7 +174,7 @@ class GameMaster(Client):
         for i in range(self.info.goals_height):
             for x in range(self.info.board_width):
                 if (x, y) not in self.info.goal_fields.keys():
-                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
+                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED.value)
             y -= 1
 
         for i in range(self.info.task_height):
@@ -180,11 +185,11 @@ class GameMaster(Client):
         for i in range(self.info.goals_height):
             for x in range(self.info.board_width):
                 if (x, y) not in self.info.goal_fields.keys():
-                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
+                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE.value)
             y -= 1
 
         # place the players:
-        for i in self.teams[Allegiance.RED].keys():
+        for i in self.teams[Allegiance.RED.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
@@ -196,7 +201,7 @@ class GameMaster(Client):
             self.info.goal_fields[x, y].player_id = int(i)
             self.red_players_locations[i] = (x, y)
 
-        for i in self.teams[Allegiance.BLUE].keys():
+        for i in self.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(whole_board_length - self.info.goals_height, whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
@@ -262,16 +267,21 @@ class GameMaster(Client):
         role = ""
 
         if len(self.teams[pref_team]) == self.team_limit:
-            if pref_team == Allegiance.BLUE:
-                team = Allegiance.RED
+            if pref_team == Allegiance.BLUE.value:
+                team = Allegiance.RED.value
             else:
-                team = Allegiance.BLUE
-
-        for player in self.teams[team].values():
-            if player == PlayerRole.LEADER:
-                role = PlayerRole.MEMBER
+                team = Allegiance.BLUE.value
         else:
-            role = PlayerRole.LEADER
+            team = pref_team
+
+        if pref_role == PlayerRole.LEADER.value:
+            for player in self.teams[team].values():
+                if player == PlayerRole.LEADER.value:
+                    role = PlayerRole.MEMBER.value
+            else:
+                role = PlayerRole.LEADER.value
+        else:
+            role = PlayerRole.MEMBER.value
 
         self.teams[team][player_id] = role
         return team, role
@@ -290,7 +300,7 @@ class GameMaster(Client):
         self.send("Thanks for the message.")
 
     def get_num_of_players(self):
-        return len(self.teams[Allegiance.BLUE]) + len(self.teams[Allegiance.RED])
+        return len(self.teams[Allegiance.BLUE.value]) + len(self.teams[Allegiance.RED.value])
 
 
 if __name__ == '__main__':
