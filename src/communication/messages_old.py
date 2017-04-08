@@ -478,9 +478,11 @@ def registered_games(games):
     Figure 3.5: An example of RegisteredGames message with two games listed.
     :type games: dict
     """
-
     root = ROOT_DICTIONARY['RegisteredGames']
-
+    #  clearing all previous child elements
+    for child in list(root):
+        root.remove(child)
+    #  print("MESSAGES_OLD REGISTERED GAMES: \n " + ET.tostring(root, encoding='unicode', method='xml'))
     for game_index, game_info in games.items():
         myattributes = {'gameName': game_info.name, 'blueTeamPlayers': str(game_info.blue_players),
                         'redTeamPlayers': str(game_info.red_players)}

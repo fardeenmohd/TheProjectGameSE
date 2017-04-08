@@ -295,7 +295,8 @@ class CommunicationServer:
 
         else:
             # create the new game:
-            self.games[self.games_indexer] = GameInfo(id=self.games_indexer, name=new_game_name, open=True)
+            self.games[self.games_indexer] = GameInfo(id=self.games_indexer, name=new_game_name, open=True,
+                                                      blue_players=new_blue_players, red_players=new_red_players)
             gm.game_name = new_game_name
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
