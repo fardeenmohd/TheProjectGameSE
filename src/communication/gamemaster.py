@@ -160,8 +160,6 @@ class GameMaster(Client):
                             else:
                                 self.add_player(Allegiance.RED, in_pref_role)
 
-                        print(self.blue_players)
-                        print(self.red_players)
                         if self.player_indexer - 1 in self.red_players.keys():
                             self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, 'red',
                                                                         self.red_players[self.player_indexer - 1]))
@@ -210,7 +208,7 @@ class GameMaster(Client):
         # place the players:
         for i in self.red_players.keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(0, self.info.goals_height - 1)
+            y = randint(self.whole_board_length - self.info.goals_height + 1, self.whole_board_length)
             random_red_goal_field = self.info.goal_fields[x, y]
             while not random_red_goal_field.is_occupied() and random_red_goal_field.type is GoalFieldType.NON_GOAL:
                 x = randint(0, self.info.board_width - 1)
@@ -222,7 +220,7 @@ class GameMaster(Client):
 
         for i in self.blue_players.keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
+            y = randint(0, self.info.goals_height - 1)
             random_blue_goal_field = self.info.goal_fields[x, y]
             while not random_blue_goal_field.is_occupied() and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
                 x = randint(self.info.board_width - 1)
@@ -301,16 +299,7 @@ class GameMaster(Client):
             return 'leader'
 
     def play(self):
-
-        for i in self.red_players.keys():
-            self.send(messages_old.game(int(i), 'red', self.red_players[i], self.red_players.keys(),
-                                        self.info.board_width, self.info.task_height, self.info.goals_height,
-                                        self.red_players_locations[i][0], self.red_players_locations[i][1]))
-
-        for i in self.blue_players.keys():
-            self.send(messages_old.game(int(i), 'blue', self.blue_players[i], self.blue_players.keys(),
-                                        self.info.board_width, self.info.task_height, self.info.goals_height,
-                                        self.blue_players_locations[i][0], self.blue_players_locations[i][1]))
+        # TODO: broadcast game message to each player
 
         while self.game_on:
             message = self.receive()

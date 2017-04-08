@@ -8,7 +8,7 @@
         <ShamProbability>0.33</ShamProbability>
         <PlacingNewPiecesFrequency>2500</PlacingNewPiecesFrequency>
         <InitialNumberOfPieces>1</InitialNumberOfPieces>
-        <BoardWidth>2</BoardWidth>
+        <BoardWidth>3</BoardWidth>
         <TaskAreaLength>4</TaskAreaLength>
         <GoalAreaLength>1</GoalAreaLength>
         <NumberOfPlayersPerTeam>2</NumberOfPlayersPerTeam>
