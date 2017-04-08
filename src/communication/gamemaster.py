@@ -145,10 +145,7 @@ class GameMaster(Client):
                         player_id = joingame_root.attrib["playerId"]
 
                         # generating the private GUID
-                        private_guid = uuid.uuid4()  # todo
-
-                        self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, in_pref_team,
-                                                                    in_pref_role))
+                        private_guid = uuid.uuid4()
 
                         # add him to a team while taking into account his preferences:
                         if in_pref_team == "blue":
@@ -163,6 +160,14 @@ class GameMaster(Client):
                             else:
                                 self.add_player(Allegiance.RED, in_pref_role)
 
+                        print(self.blue_players)
+                        print(self.red_players)
+                        if self.player_indexer - 1 in self.red_players.keys():
+                            self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, 'red',
+                                                                        self.red_players[self.player_indexer - 1]))
+                        else:
+                            self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, 'blue',
+                                                                        self.blue_players[self.player_indexer - 1]))
 
                     elif "GameStarted" in message:
                         # good, the game has started.
@@ -287,32 +292,32 @@ class GameMaster(Client):
     def add_player(self, team, preferred_role):
         if team == Allegiance.BLUE:
             for role in self.blue_players.values():
-                if role == PlayerType.LEADER:
-                    self.blue_players[self.player_indexer] = PlayerType.MEMBER
+                if role == 'leader':
+                    self.blue_players[self.player_indexer] = 'member'
                     self.player_indexer += 1
-                    return PlayerType.MEMBER
-            self.blue_players[self.player_indexer] = PlayerType.LEADER
+                    return 'leader'
+            self.blue_players[self.player_indexer] = 'leader'
             self.player_indexer += 1
-            return PlayerType.LEADER
+            return 'leader'
         else:
             for role in self.red_players.values():
-                if role == PlayerType.LEADER:
-                    self.red_players[self.player_indexer] = PlayerType.MEMBER
+                if role == 'leader':
+                    self.red_players[self.player_indexer] = 'member'
                     self.player_indexer += 1
-                    return PlayerType.MEMBER
-            self.red_players[self.player_indexer] = PlayerType.LEADER
+                    return 'leader'
+            self.red_players[self.player_indexer] = 'leader'
             self.player_indexer += 1
-            return PlayerType.LEADER
+            return 'leader'
 
     def play(self):
 
         for i in self.red_players.keys():
-            self.send(messages_old.game(int(i), 'red', self.red_players[i], self.red_players.values(),
+            self.send(messages_old.game(int(i), 'red', self.red_players[i], self.red_players.keys(),
                                         self.info.board_width, self.info.task_height, self.info.goals_height,
                                         self.red_players_locations[i][0], self.red_players_locations[i][1]))
 
         for i in self.blue_players.keys():
-            self.send(messages_old.game(int(i), 'blue', self.blue_players[i], self.blue_players.values(),
+            self.send(messages_old.game(int(i), 'blue', self.blue_players[i], self.blue_players.keys(),
                                         self.info.board_width, self.info.task_height, self.info.goals_height,
                                         self.blue_players_locations[i][0], self.blue_players_locations[i][1]))
 
