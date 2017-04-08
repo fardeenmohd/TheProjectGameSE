@@ -66,6 +66,9 @@ class GoalFieldInfo:
 
         self.player_id = player_id
 
+        def is_occupied(self):
+            return self.player_id != -1
+
 
 class PieceInfo:
     def __init__(self, id=-1, timestamp=datetime.now(), piece_type=PieceType.LEGIT):
