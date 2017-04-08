@@ -3,7 +3,6 @@ import uuid
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
-from enum import Enum
 from random import random, randint
 from threading import Thread
 from time import sleep
@@ -11,18 +10,12 @@ from time import sleep
 from src.communication import messages_old
 from src.communication.client import Client
 from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
-    GoalFieldType, \
-    ClientTypeTag
+    GoalFieldType, ClientTypeTag, PlayerRole
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
-
-
-class PlayerType(Enum):
-    LEADER = "leader"
-    MEMBER = "member"
 
 
 def parse_game_master_settings():
@@ -52,10 +45,7 @@ class GameMaster(Client):
                 colour = goal.get("team")
                 x = int(goal.get("x"))
                 y = int(goal.get("y"))
-                if colour == "red":
-                    goals[x, y] = GoalFieldInfo(x, y, Allegiance.RED, type=GoalFieldType.GOAL)
-                if colour == "blue":
-                    goals[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE, type=GoalFieldType.GOAL)
+                goals[x, y] = GoalFieldInfo(x, y, colour, type=GoalFieldType.GOAL)
 
             self.sham_probability = float(game_attributes.find(GAME_SETTINGS_TAG + "ShamProbability").text)
             self.placing_pieces_frequency = int(
@@ -66,7 +56,7 @@ class GameMaster(Client):
             goal_area_length = int(game_attributes.find(GAME_SETTINGS_TAG + "GoalAreaLength").text)
 
             self.game_name = game_attributes.find(GAME_SETTINGS_TAG + "GameName").text
-            self.num_of_players_per_team = int(game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
+            self.team_limit = int(game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
 
         self.info = GameInfo(goal_fields=goals, board_width=board_width, task_height=task_area_length,
                              goals_height=goal_area_length)
@@ -82,26 +72,26 @@ class GameMaster(Client):
             self.placing_delay = int(action_costs.find(GAME_SETTINGS_TAG + "PlacingDelay").text)
             self.knowledge_exchange_delay = int(action_costs.find(GAME_SETTINGS_TAG + "KnowledgeExchangeDelay").text)
 
-    def __init__(self, index=1, verbose=False):
-        super().__init__(index, verbose)
+    def __init__(self, verbose=False):
+        super().__init__(verbose=verbose)
 
         self.RANDOMIZATION_ATTEMPTS = 10
-        self.piece_counter = 0
+        self.piece_indexer = 0
         self.typeTag = ClientTypeTag.GAME_MASTER
         self.game_on = False
         self.player_indexer = 0
 
-        self.blue_players = {}
-        self.blue_players_locations = {}
-        self.red_players = {}
+        self.teams = {Allegiance.BLUE.value: {},
+                      Allegiance.RED.value: {}}  # A dict of dicts: team => {player_id => role}
         self.red_players_locations = {}
+        self.blue_players_locations = {}
 
         self.parse_game_definition()
         self.parse_action_costs()
 
     def run(self):
-        register_game_message = messages_old.register_game(self.game_name, self.num_of_players_per_team,
-                                                           self.num_of_players_per_team)
+        register_game_message = messages_old.register_game(self.game_name, self.team_limit,
+                                                           self.team_limit)
         self.send(register_game_message)
 
         message = self.receive()
@@ -121,76 +111,70 @@ class GameMaster(Client):
                     message = self.receive()  # this will block
 
                     if "JoinGame" in message:
-                        # a player is trying to join! let's parse his message
-                        joingame_root = ET.fromstring(message)
+                        self.handle_join(message)
 
-                        in_game_id = int(confirmation_root.attrib.get("gameId"))
-                        in_game_name = joingame_root.attrib.get("gameName")
-
-                        in_pref_team = joingame_root.attrib.get("preferedTeam")
-                        in_pref_role = joingame_root.attrib.get("preferedRole")
-
-                        # in theory, received gamename has to be the same as our game, it should be impossible otherwise
-                        self.verbose_debug("in_game_name is: " + in_game_name + " self.gamename: " + self.game_name)
-                        if in_game_name != self.game_name:
-                            raise UnexpectedServerMessage
-
-                        # let's see if we can fit the player at all:
-                        if len(self.blue_players) == self.num_of_players_per_team and len(
-                                self.red_players) == self.num_of_players_per_team:
-                            # he can't fit in, send a rejection message :(
-                            self.send(messages_old.reject_joining_game(self.game_name, self.player_indexer))
-                            continue
-
-                        player_id = joingame_root.attrib["playerId"]
-
-                        # generating the private GUID
-                        private_guid = uuid.uuid4()
-
-                        # add him to a team while taking into account his preferences:
-                        if in_pref_team == "blue":
-                            if len(self.blue_players) == self.num_of_players_per_team:
-                                self.add_player(Allegiance.RED, in_pref_role)
-                            else:
-                                self.add_player(Allegiance.BLUE, in_pref_role)
-
-                        if in_pref_team == "red":
-                            if len(self.red_players) == self.num_of_players_per_team:
-                                self.add_player(Allegiance.BLUE, in_pref_role)
-                            else:
-                                self.add_player(Allegiance.RED, in_pref_role)
-
-                        if self.player_indexer - 1 in self.red_players.keys():
-                            self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, 'red',
-                                                                        self.red_players[self.player_indexer - 1]))
-                        else:
-                            self.send(messages_old.confirm_joining_game(in_game_id, private_guid, player_id, 'blue',
-                                                                        self.blue_players[self.player_indexer - 1]))
-
-                        if len(self.blue_players) == self.num_of_players_per_team and len(
-                                self.red_players) == self.num_of_players_per_team:
+                        if self.get_num_of_players() == self.team_limit * 2:
                             #  We are ready to start the game
-                            self.set_up_game()
                             self.send(messages_old.game_started(self.info.id))
+                            self.set_up_game()
+                            self.game_on = True
+                            self.play()
 
-            else:
-                raise UnexpectedServerMessage
+                    else:
+                        raise UnexpectedServerMessage
 
         except UnexpectedServerMessage:
             self.verbose_debug("Shutting down due to unexpected message: " + message)
             self.shutdown()
 
+    def handle_join(self, message):
+        # a player is trying to join! let's parse his message
+        joingame_root = ET.fromstring(message)
+
+        in_player_id = joingame_root.attrib.get("playerId")
+        in_game_name = joingame_root.attrib.get("gameName")
+        in_pref_team = joingame_root.attrib.get("preferedTeam")
+        if in_pref_team == "red":
+            in_pref_team = Allegiance.RED.value
+        else:
+            in_pref_team = Allegiance.BLUE.value
+        in_pref_role = joingame_root.attrib.get("preferedRole")
+
+        # in theory, received gamename has to be the same as our game, it should be impossible otherwise
+        self.verbose_debug("A player is trying to join, with id: " + in_game_name + ".")
+        if in_game_name != self.game_name:
+            self.verbose_debug("The server somehow sent us a message with the wrong game name.")
+            raise UnexpectedServerMessage
+
+        # let's see if we can fit the player at all:
+        if self.get_num_of_players() == self.team_limit * 2:
+            # he can't fit in, send a rejection message :(
+            self.verbose_debug("Player " + in_player_id + " was rejected, because the game is already full.")
+            self.send(messages_old.reject_joining_game(self.game_name, in_player_id))
+            return False
+
+        # generating the private GUID
+        private_guid = uuid.uuid4()
+
+        # add him to a team while taking into account his preferences:
+        team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team)
+
+        self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
+                           + " in team " + team_color + ".")
+
+        self.send(messages_old.confirm_joining_game(self.info.id, private_guid, in_player_id, team_color, role))
+
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
-        self.whole_board_length = 2 * self.info.goals_height + self.info.task_height - 1
+        whole_board_length = 2 * self.info.goals_height + self.info.task_height - 1
+
         # initialize goal and task fields:
-        y = self.whole_board_length
+        y = whole_board_length
 
         for i in range(self.info.goals_height):
             for x in range(self.info.board_width):
                 if (x, y) not in self.info.goal_fields.keys():
-                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
-
+                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED.value)
             y -= 1
 
         for i in range(self.info.task_height):
@@ -201,14 +185,13 @@ class GameMaster(Client):
         for i in range(self.info.goals_height):
             for x in range(self.info.board_width):
                 if (x, y) not in self.info.goal_fields.keys():
-                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
-
+                    self.info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE.value)
             y -= 1
 
         # place the players:
-        for i in self.red_players.keys():
+        for i in self.teams[Allegiance.RED.value].keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(self.whole_board_length - self.info.goals_height + 1, self.whole_board_length)
+            y = randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
             while not random_red_goal_field.is_occupied() and random_red_goal_field.type is GoalFieldType.NON_GOAL:
                 x = randint(0, self.info.board_width - 1)
@@ -218,13 +201,13 @@ class GameMaster(Client):
             self.info.goal_fields[x, y].player_id = int(i)
             self.red_players_locations[i] = (x, y)
 
-        for i in self.blue_players.keys():
+        for i in self.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(0, self.info.goals_height - 1)
+            y = randint(whole_board_length - self.info.goals_height, whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
             while not random_blue_goal_field.is_occupied() and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
                 x = randint(self.info.board_width - 1)
-                y = randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
+                y = randint(whole_board_length - self.info.goals_height, whole_board_length)
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
@@ -234,17 +217,16 @@ class GameMaster(Client):
         for i in range(self.initial_number_of_pieces):
             self.add_piece()
 
-        Thread(target=self.place_pieces(), daemon=True).start()
-
-        self.game_on = True
-
-        self.play()
+    def place_pieces(self):
+        while self.game_on:
+            sleep(float(self.placing_pieces_frequency) / 1000)
+            self.add_piece()
 
     def add_piece(self):
-        id = self.piece_counter
+        piece_id = str(self.piece_indexer)
 
         # check if we can add the piece at all:
-        if not self.info.check_for_empty_fields():
+        if not self.info.check_for_empty_task_fields():
             return False
 
         x = randint(0, self.info.board_width - 1)
@@ -254,69 +236,82 @@ class GameMaster(Client):
         while self.info.has_piece(x, y) and i < self.RANDOMIZATION_ATTEMPTS:
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.task_height - 1)
+            i += 1
 
         if self.info.has_piece(x, y):
             for task_field in self.info.task_fields:
                 if not task_field.has_piece():
                     x = task_field.x
                     y = task_field.y
+                    break
 
-        field = TaskFieldInfo(x, y, datetime.now(), 0, -1, id)
-        new_piece = PieceInfo(id, datetime.now())
+        new_piece = PieceInfo(piece_id, datetime.now())
 
         if random() >= self.sham_probability:
-            new_piece.piece_type = PieceType.LEGIT
+            new_piece.piece_type = PieceType.NORMAL
         else:
             new_piece.piece_type = PieceType.SHAM
 
-        self.info.task_fields[x, y] = field
-        self.info.pieces[id] = new_piece
-        self.piece_counter += 1
+        self.info.task_fields[x, y].piece_id = piece_id
+        self.info.pieces[piece_id] = new_piece
+        self.piece_indexer += 1
+        self.verbose_debug(
+            "Added a " + new_piece.piece_type + " piece with id: " + piece_id + "at coordinates " + str(x) + ", " + str(
+                y) + ".")
 
-    def place_pieces(self):
-        while self.game_on:
-            sleep(float(self.placing_pieces_frequency) / 1000)
-            self.add_piece()
+    def add_player(self, player_id, pref_role, pref_team):
+        """
+        :returns: a tuple: (team, role)
+        """
+        team = ""
+        role = ""
 
-    def add_player(self, team, preferred_role):
-        if team == Allegiance.BLUE:
-            for role in self.blue_players.values():
-                if role == 'leader':
-                    self.blue_players[self.player_indexer] = 'member'
-                    self.player_indexer += 1
-                    return 'leader'
-            self.blue_players[self.player_indexer] = 'leader'
-            self.player_indexer += 1
-            return 'leader'
+        if len(self.teams[pref_team]) == self.team_limit:
+            if pref_team == Allegiance.BLUE.value:
+                team = Allegiance.RED.value
+            else:
+                team = Allegiance.BLUE.value
         else:
-            for role in self.red_players.values():
-                if role == 'leader':
-                    self.red_players[self.player_indexer] = 'member'
-                    self.player_indexer += 1
-                    return 'leader'
-            self.red_players[self.player_indexer] = 'leader'
-            self.player_indexer += 1
-            return 'leader'
+            team = pref_team
+
+        if pref_role == PlayerRole.LEADER.value:
+            for player in self.teams[team].values():
+                if player == PlayerRole.LEADER.value:
+                    role = PlayerRole.MEMBER.value
+            else:
+                role = PlayerRole.LEADER.value
+        else:
+            role = PlayerRole.MEMBER.value
+
+        self.teams[team][player_id] = role
+        return team, role
 
     def play(self):
-        # TODO: broadcast game message to each player
+
+        Thread(target=self.place_pieces(), daemon=True).start()
+
+        for team in self.teams.values():
+            for player_id in self.teams[team]:
+                # self.send(messages_old.game(player_id, team, self.teams[team][player_id]  ))
+                pass
 
         while self.game_on:
             message = self.receive()
-            self.send("Thanks for the message.")
+        self.send("Thanks for the message.")
+
+    def get_num_of_players(self):
+        return len(self.teams[Allegiance.BLUE.value]) + len(self.teams[Allegiance.RED.value])
 
 
 if __name__ == '__main__':
-    def simulate(gamemaster_count, verbose):
-        for i in range(gamemaster_count):
-            gm = GameMaster(i, verbose)
-            if gm.connect():
-                gm.run()
-                gm.shutdown()
+    def simulate(verbose):
+        gm = GameMaster(verbose)
+        if gm.connect():
+            gm.run()
+            gm.shutdown()
 
 
     parser = ArgumentParser()
-    parser.add_argument('-c', '--gamemastercount', default=1, help='Number of gamemasters to be deployed.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
     args = vars(parser.parse_args())
-    simulate(int(args["gamemastercount"]), args["verbose"])
+    simulate(args["verbose"])
