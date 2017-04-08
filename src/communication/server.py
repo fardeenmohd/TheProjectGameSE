@@ -53,7 +53,7 @@ class CommunicationServer:
 
         self.verbose_debug("Created server with hostname: " + host + " on port " + str(port), True)
 
-    def verbose_debug(self, message, important=False):
+    def verbose_debug(self, message: str, important: bool=False):
         """
         if in verbose mode, print out the given message with a timestamp
         :param message: message to be printed
@@ -210,10 +210,10 @@ class CommunicationServer:
                     if game_info.name == players_game_name:
                         # game found, so we will update JoinGame with player_id and send it to GM:
                         join_game_root.attrib["playerId"] = str(player.id)
-                        message = ET.tostring(join_game_root, encoding='unicode', method='xml')
+                        join_game_message = ET.tostring(join_game_root, encoding='unicode', method='xml')
 
                         # find the right GM:
-                        self.relay_msg_to_gm(message, players_game_name)
+                        self.relay_msg_to_gm(join_game_message, players_game_name)
 
                     else:
                         # no game with this name, send rejection
@@ -302,6 +302,7 @@ class CommunicationServer:
                     new_blue_players) + " num of red players: " + str(new_red_players))
             self.send(gm, messages_old.confirm_game_registration(self.games_indexer))
             self.games_indexer += 1
+            return True
 
     def wait_for_message(self, message_name, client, max_attempts=10):
         """
