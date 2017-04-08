@@ -124,8 +124,8 @@ class GameInfo:
 
         self.blue_player_list = blue_player_list
         self.red_player_list = red_player_list
-        self.blue_players = blue_players
-        self.red_players = red_players
+        self.max_blue_players = blue_players
+        self.max_red_players = red_players
 
     def check_for_empty_task_fields(self):
         for task_field in self.task_fields.values():
