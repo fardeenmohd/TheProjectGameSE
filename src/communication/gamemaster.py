@@ -203,11 +203,11 @@ class GameMaster(Client):
 
         for i in self.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(whole_board_length - self.info.goals_height, whole_board_length)
+            y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
             while not random_blue_goal_field.is_occupied() and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
                 x = randint(self.info.board_width - 1)
-                y = randint(whole_board_length - self.info.goals_height, whole_board_length)
+                y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
