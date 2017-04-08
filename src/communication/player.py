@@ -98,8 +98,8 @@ class Player(Client):
                     self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     red_player_count += 1
 
-        self.game_info.red_players = red_player_count
-        self.game_info.blue_players = blue_player_count
+        self.game_info.max_red_players = red_player_count
+        self.game_info.max_blue_players = blue_player_count
 
         y = 2 * self.game_info.goals_height + self.game_info.task_height - 1
         for i in range(self.game_info.goals_height):

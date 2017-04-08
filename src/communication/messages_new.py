@@ -164,7 +164,7 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
 
 def game(player_id, teams: dict, board_width, tasks_height, goals_height, player_location: tuple):
     """
-    :param teams: A dict of dicts: team => {player_id => role}
+    :param teams: A dict of dicts: team => {player_id => type}
     :param player_location: a tuple (x,y)
     """
     root = __player_message("Game", player_id)
@@ -179,8 +179,8 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
 
     # add each Player to the collection:
     for team in teams.values():
-        for player_id, role in team.items():
-            e_attributes = {"id": player_id, "role": role, "team": team}
+        for player_id, type in team.items():
+            e_attributes = {"id": player_id, "type": type, "team": team}
             e_player = etree.Element("Player", e_attributes)
             c_players.append(e_player)
     root.append(c_players)
@@ -190,4 +190,96 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
     e_board = etree.Element("Board", board_attributes)
     root.append(e_board)
 
+    return __validate_encode(root)
+
+
+def knowledge_exchange_request(player_id, sender_player_id):
+    root = __between_players_message("KnowledgeExchangeRequest", player_id, sender_player_id)
+    return __validate_encode(root)
+
+
+def accept_exchange_request(player_id, sender_player_id):
+    root = __between_players_message("AcceptExchangeRequest", player_id, sender_player_id)
+    return __validate_encode(root)
+
+
+def reject_knowledge_exchange(player_id, sender_player_id, permanent):
+    root = __between_players_message("RejectKnowledgeExchange", player_id, sender_player_id)
+    root.set("permanent", str(permanent).lower())
+    return __validate_encode(root)
+
+
+def register_game(game_name, blue_team_players, red_team_players):
+    root = __base_message("RegisterGame")
+    root.set("gameName", game_name)
+    root.set("redTeamPlayers", str(red_team_players))
+    root.set("blueTeamPlayers", str(blue_team_players))
+    return __validate_encode(root)
+
+
+def confirm_game_registration(game_id):
+    root = __base_message("ConfirmGameRegistration")
+    root.set("gameId", str(game_id))
+    return __validate_encode(root)
+
+
+def reject_game_registration(game_name):
+    root = __base_message("RejectGameRegistration")
+    root.set("gameName", str(game_name))
+    return __validate_encode(root)
+
+
+def game_started(game_id):
+    root = __base_message("GameStarted")
+    root.set("gameId", str(game_id))
+    return __validate_encode(root)
+
+
+def registered_games(games: dict):
+    """
+    :param games: a dict of: game_id => GameInfo
+    """
+    root = __base_message("RegisteredGames")
+    for game in games:
+        if game.open is True:
+            e_attributes = {"gameName": game.name, "redTeamPlayers": game.max_red_players,
+                            "blueTeamPlayers": game.max_blue_players}
+            e_game_info = etree.Element("GameInfo", e_attributes)
+            root.append(e_game_info)
+    return __validate_encode(root)
+
+
+def join_game(game_name, pref_team, pref_type, player_id=None):
+    root = __base_message("JoinGame")
+    root.set("gameName", game_name)
+    root.set("preferredTeam", pref_team)
+    root.set("preferredRole", pref_type)
+    if player_id is not None:
+        root.set("playerId", player_id)
+    return __validate_encode(root)
+
+
+def confirm_joining_game(player_id, game_id, player_guid, team, type):
+    root = __game_message("ConfirmJoiningGame", game_id, player_guid)
+    root.set("playerId", player_id)
+    definition_attributes = {"id": player_id, "type": type, "team": team}
+    e_definition = etree.Element("PlayerDefinition", definition_attributes)
+    root.append(e_definition)
+    return __validate_encode(root)
+
+
+def reject_joining_game(player_id, game_name):
+    root = __player_message("RejectJoiningGame", player_id)
+    root.set("gameName", game_name)
+    return __validate_encode(root)
+
+
+def game_master_disconnected(game_id):
+    root = __base_message("GameMasterDisconnected")
+    root.set("gameId", game_id)
+    return __validate_encode(root)
+
+
+def player_disconnected(player_id):
+    root = __player_message("PlayerDisconnected", player_id)
     return __validate_encode(root)
