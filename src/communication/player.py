@@ -24,7 +24,7 @@ def parse_games(games):
 
 
 class Player(Client):
-    def __init__(self, index=1, verbose=False, game_name='ez pz'):
+    def __init__(self, index=1, verbose=False, game_name='easy clone'):
         """
 
         :param index: Player index for the server
@@ -250,7 +250,7 @@ class Player(Client):
 
 if __name__ == '__main__':
     def simulate(player_count, verbose):
-        game_name = 'InitialGame'
+        game_name = 'easy clone'
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():

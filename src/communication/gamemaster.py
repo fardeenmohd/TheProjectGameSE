@@ -64,7 +64,7 @@ class GameMaster(Client):
             board_width = int(game_attributes.find(GAME_SETTINGS_TAG + "BoardWidth").text)
             task_area_length = int(game_attributes.find(GAME_SETTINGS_TAG + "TaskAreaLength").text)
             goal_area_length = int(game_attributes.find(GAME_SETTINGS_TAG + "GoalAreaLength").text)
-            self.whole_board_length = 2 * self.info.goals_height + self.info.task_height - 1
+
             self.game_name = game_attributes.find(GAME_SETTINGS_TAG + "GameName").text
             self.num_of_players_per_team = int(game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
 
@@ -92,7 +92,9 @@ class GameMaster(Client):
         self.player_indexer = 0
 
         self.blue_players = {}
+        self.blue_players_locations = {}
         self.red_players = {}
+        self.red_players_locations = {}
 
         self.parse_game_definition()
         self.parse_action_costs()
@@ -186,7 +188,7 @@ class GameMaster(Client):
 
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
-
+        self.whole_board_length = 2 * self.info.goals_height + self.info.task_height - 1
         # initialize goal and task fields:
         y = self.whole_board_length
 
@@ -210,7 +212,7 @@ class GameMaster(Client):
             y -= 1
 
         # place the players:
-        for i in self.red_players:
+        for i in self.red_players.keys():
             x = random.randint(0, self.info.board_width - 1)
             y = random.randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
@@ -220,8 +222,9 @@ class GameMaster(Client):
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
+            self.red_players_locations[i] = (x, y)
 
-        for i in self.blue_players:
+        for i in self.blue_players.keys():
             x = random.randint(self.info.board_width - 1)
             y = random.randint(self.whole_board_length - self.info.goals_height, self.whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
@@ -231,6 +234,7 @@ class GameMaster(Client):
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
+            self.blue_players_locations[i] = (x, y)
 
         # create the first pieces:
         for i in range(self.initial_number_of_pieces):
@@ -301,7 +305,16 @@ class GameMaster(Client):
             return PlayerType.LEADER
 
     def play(self):
-        # todo: actually read incoming messages and respond accordingly.
+
+        for i in self.red_players.keys():
+            self.send(messages_old.game(int(i), 'red', self.red_players[i], self.red_players.values(),
+                                        self.info.board_width, self.info.task_height, self.info.goals_height,
+                                        self.red_players_locations[i][0], self.red_players_locations[i][1]))
+
+        for i in self.blue_players.keys():
+            self.send(messages_old.game(int(i), 'blue', self.blue_players[i], self.blue_players.values(),
+                                        self.info.board_width, self.info.task_height, self.info.goals_height,
+                                        self.blue_players_locations[i][0], self.blue_players_locations[i][1]))
 
         while self.game_on:
             message = self.receive()
