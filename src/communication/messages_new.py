@@ -240,7 +240,7 @@ def registered_games(games: dict):
     :param games: a dict of: game_id => GameInfo
     """
     root = __base_message("RegisteredGames")
-    for game in games:
+    for game in games.values():
         if game.open is True:
             e_attributes = {"gameName": game.name, "redTeamPlayers": game.max_red_players,
                             "blueTeamPlayers": game.max_blue_players}

@@ -6,7 +6,7 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 
-from src.communication import messages_old
+from src.communication import messages_old, messages_new
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 from src.communication.unexpected import UnexpectedClientMessage
 
@@ -191,7 +191,7 @@ class CommunicationServer:
 
     def handle_player(self, player: ClientInfo):
         # first_message was a GetGames xml
-        self.send(player, messages_old.registered_games(self.games))
+        self.send(player, messages_new.registered_games(self.games))
         players_game_name = ""
         while self.running:
             received = self.receive(player)
@@ -218,7 +218,7 @@ class CommunicationServer:
 
                     else:
                         # no game with this name, send rejection
-                        self.send(player, messages_old.reject_joining_game(players_game_name, player.id))
+                        self.send(player, messages_new.reject_joining_game(player.id, players_game_name))
 
             elif "KnowledgeExchangeRequest" in received or "Data" in received:
                 knowledge_exchanged_root = ET.fromstring(received)
@@ -232,13 +232,13 @@ class CommunicationServer:
 
         if not self.try_register_game(gm, registration_msg):
             # registration failed. send rejection:
-            self.send(gm, messages_old.reject_game_registration())
+            self.send(gm, messages_new.reject_game_registration(gm.game_name))
 
             # GM will be trying again, so let's wait for his second attempt:
             second_attempt_message = self.receive(gm)
             if not self.try_register_game(gm, second_attempt_message):
                 # registration failed, again. send rejection:
-                self.send(gm, messages_old.reject_game_registration())
+                self.send(gm, messages_new.reject_game_registration(gm.game_name))
                 # gm should not try to register anymore, so if we receive any message now then it's an error:
                 should_not_be_a_message = self.receive(gm)
                 if len(should_not_be_a_message) > 0:
@@ -303,7 +303,7 @@ class CommunicationServer:
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
-            self.send(gm, messages_old.confirm_game_registration(self.games_indexer))
+            self.send(gm, messages_new.confirm_game_registration(gm.game_name))
             self.games_indexer += 1
             return True
 
