@@ -27,60 +27,63 @@ class Allegiance(Enum):
 
 
 class PieceType(Enum):
-    SHAM = 'S'
-    LEGIT = 'L'
-    UNKNOWN = 'U'
+    SHAM = 'sham'
+    NORMAL = 'normal'
+    UNKNOWN = 'unknown'
 
 
 class GoalFieldType(Enum):
-    GOAL = 'G'
-    NON_GOAL = 'N'
-    UNKNOWN = 'U'
+    GOAL = 'goal'
+    NON_GOAL = 'non-goal'
+    UNKNOWN = 'unknown'
 
 
-class TaskFieldInfo:
-    # Maybe default values are not necessary here but I'm just testing the class
-    def __init__(self, x=0, y=0, timestamp=datetime.now(), distance_to_piece=-1, player_id=-1, piece_id=-1):
+class FieldInfo:
+    def __init__(self, x=0, y=0, timestamp=datetime.now(), player_id=None):
         self.x = x
         self.y = y
         self.timestamp = timestamp
-        self.distance_to_piece = distance_to_piece
-        self.player_id = player_id
-        self.piece_id = piece_id
-
-    def has_piece(self):
-        return self.piece_id != -1
+        if player_id is not None:
+            self.player_id = player_id
 
     def is_occupied(self):
         return self.player_id != -1
 
 
-class GoalFieldInfo:
-    def __init__(self, x=0, y=0, allegiance=Allegiance.NEUTRAL, player_id=-1, timestamp=datetime.now(),
-                 type=GoalFieldType.UNKNOWN):
-        self.x = x
-        self.y = y
-        self.allegiance = allegiance
-        self.timestamp = timestamp
-        self.type = type
+class TaskFieldInfo(FieldInfo):
+    # Maybe default values are not necessary here but I'm just testing the class
+    def __init__(self, x=0, y=0, timestamp=datetime.now(), distance_to_piece=-1, player_id=None, piece_id=None):
+        super(TaskFieldInfo, self).__init__(x, y, timestamp, player_id)
+        self.distance_to_piece = distance_to_piece
+        self.piece_id = piece_id
 
-        self.player_id = player_id
+    def has_piece(self):
+        return self.piece_id != -1
+
+
+class GoalFieldInfo(FieldInfo):
+    def __init__(self, x=0, y=0, allegiance=Allegiance.NEUTRAL, player_id=None, timestamp=datetime.now(),
+                 type=GoalFieldType.UNKNOWN):
+        super(GoalFieldInfo, self).__init__(x, y, timestamp, player_id)
+        self.allegiance = allegiance
+        self.type = type
 
     def is_occupied(self):
         return self.player_id != -1
 
 
 class PieceInfo:
-    def __init__(self, id=-1, timestamp=datetime.now(), piece_type=PieceType.LEGIT):
+    def __init__(self, id=-1, timestamp=datetime.now(), piece_type=PieceType.NORMAL, player_id=None):
         self.id = id
         self.timestamp = timestamp
         self.piece_type = piece_type
+        self.player_id = player_id
 
 
 class ClientInfo:
     """might not actually be used that much, encapsulate some information about client id, their type etc."""
 
-    def __init__(self, id="-1", type=ClientTypeTag.CLIENT, socket=None, game_name="", game_master_id = "-1"):
+    def __init__(self, id="-1", type=ClientTypeTag.CLIENT, socket=None, game_name="", game_master_id="-1"):
         self.id = id
         self.type = type
         self.socket = socket
@@ -92,11 +95,13 @@ class ClientInfo:
 
 
 class GameInfo:
-    def __init__(self, pieces=None, task_fields=None, goal_fields=None, board_width=0, task_height=0, goals_height=0,
-                 id=-1, name="", blue_player_list=None, red_player_list=None, blue_players=0, red_players=0, open=True):
+    def __init__(self, id=-1, name="", task_fields=None, goal_fields=None, pieces=None, board_width=0, task_height=0,
+                 goals_height=0, blue_player_list=None, red_player_list=None, blue_players=0, red_players=0, open=True,
+                 finished=False):
         self.id = id
         self.name = name
         self.open = open
+        self.finished = finished
         if pieces is None:
             pieces = {}
         if goal_fields is None:

@@ -52,10 +52,7 @@ class GameMaster(Client):
                 colour = goal.get("team")
                 x = int(goal.get("x"))
                 y = int(goal.get("y"))
-                if colour == "red":
-                    goals[x, y] = GoalFieldInfo(x, y, Allegiance.RED, type=GoalFieldType.GOAL)
-                if colour == "blue":
-                    goals[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE, type=GoalFieldType.GOAL)
+                goals[x, y] = GoalFieldInfo(x, y, colour, type=GoalFieldType.GOAL)
 
             self.sham_probability = float(game_attributes.find(GAME_SETTINGS_TAG + "ShamProbability").text)
             self.placing_pieces_frequency = int(
@@ -267,7 +264,7 @@ class GameMaster(Client):
         new_piece = PieceInfo(id, datetime.now())
 
         if random() >= self.sham_probability:
-            new_piece.piece_type = PieceType.LEGIT
+            new_piece.piece_type = PieceType.NORMAL
         else:
             new_piece.piece_type = PieceType.SHAM
 
