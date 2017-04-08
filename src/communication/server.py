@@ -23,7 +23,8 @@ class CommunicationServer:
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
 
-    def __init__(self, verbose, host=DEFAULT_HOSTNAME, port=DEFAULT_PORT, client_limit=DEFAULT_CLIENT_LIMIT):
+    def __init__(self, verbose: bool, host: str=DEFAULT_HOSTNAME, port: int=DEFAULT_PORT,
+                 client_limit: int=DEFAULT_CLIENT_LIMIT):
         """
         constructor.
         :param verbose:
@@ -139,7 +140,7 @@ class CommunicationServer:
                 client_socket.close()
                 sleep(1)
 
-    def register_connection(self, client_socket, client_id):
+    def register_connection(self, client_socket: socket, client_id: int):
         new_client = ClientInfo(client_id, socket=client_socket)
         self.clients[client_id] = new_client
 
@@ -150,7 +151,7 @@ class CommunicationServer:
 
         Thread(target=self.handle_client, args=[new_client], daemon=True).start()
 
-    def handle_client(self, new_client):
+    def handle_client(self, new_client: ClientInfo):
         """
         Receive and send messages to/from a given client.
         :type new_client: ClientInfo
@@ -188,7 +189,7 @@ class CommunicationServer:
             self.disconnect_client(new_client.id)
             raise e
 
-    def handle_player(self, player):
+    def handle_player(self, player: ClientInfo):
         # first_message was a GetGames xml
         self.send(player, messages_old.registered_games(self.games))
         players_game_name = ""
@@ -226,10 +227,10 @@ class CommunicationServer:
             else:
                 self.relay_msg_to_gm(received, players_game_name)
 
-    def handle_gm(self, gm, first_message):
+    def handle_gm(self, gm: ClientInfo, registration_msg: str):
         # first_message should be a RegisterGames xml
 
-        if not self.try_register_game(gm, first_message):
+        if not self.try_register_game(gm, registration_msg):
             # registration failed. send rejection:
             self.send(gm, messages_old.reject_game_registration())
 
@@ -268,7 +269,7 @@ class CommunicationServer:
 
                 # TODO: relay other messages to players etc.
 
-    def try_register_game(self, gm, register_game_message):
+    def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
         Read a RegisterGame message, try to add it to our games list if no game with the same name exists.
         :type gm: ClientInfo
@@ -305,7 +306,7 @@ class CommunicationServer:
             self.games_indexer += 1
             return True
 
-    def wait_for_message(self, message_name, client, max_attempts=10):
+    def wait_for_message(self, message_name: str, client, max_attempts: int=10):
         """
         This method blocks until it receives a certain message, it will try max_attempts amount of times to receive it
         Then it returns the full message when it is received
@@ -321,7 +322,7 @@ class CommunicationServer:
             attempts += 1
         return received_data
 
-    def relay_msg_to_gm(self, msg, game_name):
+    def relay_msg_to_gm(self, msg: str, game_name: str):
         """
         Relays msg to the GM handling the same game name as game_name
         :param msg: message to be sent as string
@@ -332,7 +333,7 @@ class CommunicationServer:
             if client.type == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
                 self.send(client, msg)
 
-    def send(self, recipient, message):
+    def send(self, recipient: ClientInfo, message: str):
         """
         a truly vital method. Sends a given message to a recipient.
         :type recipient: ClientInfo
@@ -343,13 +344,13 @@ class CommunicationServer:
         recipient.socket.send(message.encode())
         self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
 
-    def send_to_all_players(self, message):
+    def send_to_all_players(self, message: str):
         # sends message to everyone except GM
         for client in self.clients.values():
             if client.type != ClientTypeTag.GAME_MASTER:
                 self.send(client, message)
 
-    def receive(self, client):
+    def receive(self, client: ClientInfo):
         """
         :type client: ClientInfo
         """
@@ -364,7 +365,7 @@ class CommunicationServer:
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
             self.disconnect_client(client.id)
 
-    def disconnect_client(self, client_index):
+    def disconnect_client(self, client_index: int):
 
         if client_index not in self.clients.keys():
             return

@@ -66,8 +66,8 @@ class GoalFieldInfo:
 
         self.player_id = player_id
 
-        def is_occupied(self):
-            return self.player_id != -1
+    def is_occupied(self):
+        return self.player_id != -1
 
 
 class PieceInfo:
