@@ -115,8 +115,8 @@ class GameMaster(Client):
 
                         if self.get_num_of_players() == self.team_limit * 2:
                             #  We are ready to start the game
-                            self.set_up_game()
                             self.send(messages_old.game_started(self.info.id))
+                            self.set_up_game()
                             self.game_on = True
                             self.play()
 

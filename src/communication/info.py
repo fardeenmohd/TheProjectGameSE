@@ -48,6 +48,7 @@ class FieldInfo:
         self.x = x
         self.y = y
         self.timestamp = timestamp
+        self.player_id = -1
         if player_id is not None:
             self.player_id = player_id
 
@@ -72,9 +73,6 @@ class GoalFieldInfo(FieldInfo):
         super(GoalFieldInfo, self).__init__(x, y, timestamp, player_id)
         self.allegiance = allegiance
         self.type = type
-
-    def is_occupied(self):
-        return self.player_id != -1
 
 
 class PieceInfo:
