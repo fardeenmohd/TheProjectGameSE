@@ -293,16 +293,15 @@ class GameMaster(Client):
             for player_id in self.teams[team]:
                 self.all_players[player_id] = GameInfo()
                 if team is Allegiance.BLUE.value:
-
                     self.send(messages_new.game(player_id, self.teams, self.info.board_width,
                                                 self.info.task_height, self.info.goals_height,
                                                 self.blue_players_locations[player_id]))
-
+                    sleep(1)
                 else:
                     self.send(messages_new.game(player_id, self.teams, self.info.board_width,
                                                 self.info.task_height, self.info.goals_height,
                                                 self.red_players_locations[player_id]))
-
+                    sleep(1)
         Thread(target=self.place_pieces(), daemon=True).start()
 
         while self.game_on:
