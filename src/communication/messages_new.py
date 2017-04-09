@@ -161,7 +161,7 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
 
 def game(player_id, teams: dict, board_width, tasks_height, goals_height, player_location: tuple):
     """
-    :param teams: A dict of dicts: team => {player_id => type}
+    :param teams: A dict of dicts: team => {player_id => PlayerInfo}
     :param player_location: a tuple (x,y)
     """
     root = __player_message("Game", player_id)
@@ -171,8 +171,8 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
 
     # add each Player to the collection:
     for team in teams.keys():
-        for player_id, type in teams[team].items():
-            e_attributes = {"id": player_id, "type": type, "team": team}
+        for player in teams[team].values():
+            e_attributes = {"id": player.id, "type": player.type, "team": player.team}
             __append_element(c_players, "Player", e_attributes)
 
     # add Board element:

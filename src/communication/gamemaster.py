@@ -7,10 +7,10 @@ from random import random, randint
 from threading import Thread
 from time import sleep
 
-from src.communication import messages_old, messages_new
+from src.communication import messages_new
 from src.communication.client import Client
 from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
-    GoalFieldType, ClientTypeTag, PlayerRole
+    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -81,11 +81,8 @@ class GameMaster(Client):
         self.game_on = False
         self.player_indexer = 0
 
-        self.teams = {Allegiance.BLUE.value: {},
-                      Allegiance.RED.value: {}}  # A dict of dicts: team => {player_id => role}
-        self.red_players_locations = {}
-        self.blue_players_locations = {}
-        self.all_players = {} # id=>GameInfo
+        # A dict of dicts: team => {player_id => PlayerInfo}
+        self.teams = {Allegiance.BLUE.value: {}, Allegiance.RED.value: {}}
 
         self.parse_game_definition()
         self.parse_action_costs()
@@ -163,8 +160,7 @@ class GameMaster(Client):
         self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
                            + " in team " + team_color + ".")
 
-        self.send(
-            messages_new.confirm_joining_game(str(in_player_id), str(self.info.id), private_guid, team_color, role))
+        self.send(messages_new.confirm_joining_game(in_player_id, str(self.info.id), private_guid, team_color, role))
 
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
@@ -195,25 +191,25 @@ class GameMaster(Client):
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
-            while not random_red_goal_field.is_occupied() and random_red_goal_field.type is GoalFieldType.NON_GOAL:
+            while random_red_goal_field.is_occupied():
                 x = randint(0, self.info.board_width - 1)
                 y = randint(0, self.info.goals_height)
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.red_players_locations[i] = (x, y)
+            self.teams[Allegiance.RED.value][i].location = (x, y)
 
         for i in self.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
-            while not random_blue_goal_field.is_occupied() and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
+            while random_blue_goal_field.is_occupied():
                 x = randint(self.info.board_width - 1)
                 y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.blue_players_locations[i] = (x, y)
+            self.teams[Allegiance.BLUE.value][i].location = (x, y)
 
         # create the first pieces:
         for i in range(self.initial_number_of_pieces):
@@ -276,32 +272,24 @@ class GameMaster(Client):
         else:
             team = pref_team
 
-        if pref_role == PlayerRole.LEADER.value:
+        if pref_role == PlayerType.LEADER.value:
             for player in self.teams[team].values():
-                if player == PlayerRole.LEADER.value:
-                    role = PlayerRole.MEMBER.value
+                if player.type == PlayerType.LEADER.value:
+                    role = PlayerType.MEMBER.value
                 else:
-                    role = PlayerRole.LEADER.value
+                    role = PlayerType.LEADER.value
         else:
-            role = PlayerRole.MEMBER.value
+            role = PlayerType.MEMBER.value
 
-        self.teams[team][player_id] = role
+        self.teams[team][player_id] = PlayerInfo(player_id, role, team)
         return team, role
 
     def play(self):
-        for team in self.teams.keys():
-            for player_id in self.teams[team]:
-                self.all_players[player_id] = GameInfo()
-                if team is Allegiance.BLUE.value:
-                    self.send(messages_new.game(player_id, self.teams, self.info.board_width,
-                                                self.info.task_height, self.info.goals_height,
-                                                self.blue_players_locations[player_id]))
-                    sleep(1)
-                else:
-                    self.send(messages_new.game(player_id, self.teams, self.info.board_width,
-                                                self.info.task_height, self.info.goals_height,
-                                                self.red_players_locations[player_id]))
-                    sleep(1)
+        for team in self.teams.values():
+            for player in team:
+                self.send(messages_new.game(player.id, self.teams, self.info.board_width, self.info.task_height,
+                                            self.info.goals_height, player.location))
+
         Thread(target=self.place_pieces(), daemon=True).start()
 
         while self.game_on:

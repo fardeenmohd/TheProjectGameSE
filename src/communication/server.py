@@ -6,7 +6,7 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 
-from src.communication import messages_old, messages_new
+from src.communication import messages_new
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 from src.communication.unexpected import UnexpectedClientMessage
 
@@ -164,19 +164,19 @@ class CommunicationServer:
                 received_data = self.receive(new_client)
 
                 if "RegisterGame" in received_data:
-                    new_client.type = ClientTypeTag.GAME_MASTER
+                    new_client.tag = ClientTypeTag.GAME_MASTER
                 elif "GetGames" in received_data:
-                    new_client.type = ClientTypeTag.PLAYER
+                    new_client.tag = ClientTypeTag.PLAYER
 
-                if new_client.type == ClientTypeTag.CLIENT:
+                if new_client.tag == ClientTypeTag.CLIENT:
                     self.verbose_debug("Unknown client connected to server, disconnecting him: ", True)
                     self.disconnect_client(new_client.id)
 
-                if new_client.type == ClientTypeTag.PLAYER:
+                if new_client.tag == ClientTypeTag.PLAYER:
                     self.verbose_debug("Identified C" + str(new_client.id) + " as a player")
                     self.handle_player(new_client)
 
-                elif new_client.type == ClientTypeTag.GAME_MASTER:
+                elif new_client.tag == ClientTypeTag.GAME_MASTER:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
@@ -331,7 +331,7 @@ class CommunicationServer:
         :return:
         """
         for client_index, client in self.clients.items():
-            if client.type == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
+            if client.tag == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
                 self.send(client, msg)
 
     def send(self, recipient: ClientInfo, message: str):
@@ -348,7 +348,7 @@ class CommunicationServer:
     def send_to_all_players(self, message: str):
         # sends message to everyone except GM
         for client in self.clients.values():
-            if client.type != ClientTypeTag.GAME_MASTER:
+            if client.tag != ClientTypeTag.GAME_MASTER:
                 self.send(client, message)
 
     def receive(self, client: ClientInfo):
@@ -383,7 +383,7 @@ class CommunicationServer:
             self.verbose_debug("Couldn't close socket?! " + str(e), True)
 
             # if the client was a GM, remove his game from server:
-        if client.type == ClientTypeTag.GAME_MASTER:
+        if client.tag == ClientTypeTag.GAME_MASTER:
             for game_info in self.games.values():
                 if game_info.name == client.game_name:
                     del self.games[game_info.id]
