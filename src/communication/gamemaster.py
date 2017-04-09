@@ -288,27 +288,40 @@ class GameMaster(Client):
                 if team[player].id == id:
                     return team[player]
 
-    def send_validated_move_message(self, location, player_info):
+    def send_validated_move_message(self, new_location, player_info):
 
-        if self.info.is_task_field(location):
-            the_task_field = self.info.task_fields[location]
+        if self.info.is_task_field(new_location):
+            the_task_field = self.info.task_fields[new_location]
             if the_task_field.is_occupied():
                 self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        task_fields={location: the_task_field}, player_location=player_info.location))
-
-            if the_task_field.has_piece():
-                the_piece = self.info.pieces[location]
-                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        task_fields={location: the_task_field}, pieces={location: the_piece},
+                                        task_fields={new_location: the_task_field},
                                         player_location=player_info.location))
 
-        if self.info.is_goal_field(location):
-            the_goal_field = self.info.goal_fields[location]
+            elif the_task_field.has_piece(new_location):
+                the_piece = self.info.pieces[new_location]
+                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
+                                        task_fields={new_location: the_task_field},
+                                        pieces={new_location: the_piece},
+                                        player_location=new_location))
+
+            else:
+                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
+                                        task_fields={new_location: the_task_field},
+                                        player_location=new_location))
+
+        if self.info.is_goal_field(new_location):
+
+            the_goal_field = self.info.goal_fields[new_location]
             if the_goal_field.is_occupied():
                 self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        goal_fields={location: the_goal_field}, player_location=player_info.location))
+                                        goal_fields={new_location: the_goal_field},
+                                        player_location=player_info.location))
+            else:
+                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
+                                        goal_fields={new_location: the_goal_field},
+                                        player_location=new_location))
 
-        if self.info.is_out_of_bounds(location):
+        if self.info.is_out_of_bounds(player_info.location):
             self.send(messages.data(player_info.id, self.info.finished, player_location=player_info.location))
 
     def handle_move_message(self, move_message):
@@ -319,29 +332,27 @@ class GameMaster(Client):
         direction = root.get('direction')
         player_info = self.find_player_by_guid(guid)
         player_location = player_info.location
+        new_location = player_location
 
         if direction == Direction.UP.value:
-            player_location.y += 1
+            new_location.y += 1
 
         if direction == Direction.DOWN.value:
-            player_location.y -= 1
+            new_location.y -= 1
 
         if direction == Direction.LEFT.value:
-            player_location.x -= 1
+            new_location.x -= 1
 
         if direction == Direction.RIGHT.value:
-            player_location.x += 1
+            new_location.x += 1
 
-        self.send_validated_move_message(player_location, player_info)
+        self.send_validated_move_message(new_location, player_info)
 
     def handle_discover_message(self, discover_message):
 
         root = ET.fromstring(discover_message)
         player_id = root.attrib.get('playerId')
         player_info = self.find_player_by_id(player_id)
-
-
-
 
     def play(self):
         # Thread(target=self.place_pieces()).start()
