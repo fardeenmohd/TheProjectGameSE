@@ -166,11 +166,6 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
     """
     root = __player_message("Game", player_id)
 
-    # add PlayerLocation element:
-    if player_location is not None:
-        e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
-        __append_element(root, "PlayerLocation", e_player_location)
-
     # add Players collection
     c_players = __append_element(root, "Players")
 
@@ -183,6 +178,11 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
     # add Board element:
     e_board_attributes = {"width": str(board_width), "tasksHeight": str(tasks_height), "goalsHeight": str(goals_height)}
     __append_element(root, "Board", e_board_attributes)
+
+    # add PlayerLocation element:
+    if player_location is not None:
+        e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
+        __append_element(root, "PlayerLocation", e_player_location)
 
     return __validate_encode(root)
 
@@ -253,8 +253,8 @@ def join_game(game_name, pref_team, pref_type, player_id=None):
 
 def confirm_joining_game(player_id, game_id, player_guid, team, type):
     root = __player_message("ConfirmJoiningGame", player_id)
-    root.set("privateGuid", player_guid)
-    root.set("gameId", game_id)
+    root.set("privateGuid", str(player_guid))
+    root.set("gameId", str(game_id))
     e_definition_attributes = {"id": player_id, "type": type, "team": team}
     __append_element(root, "PlayerDefinition", e_definition_attributes)
     return __validate_encode(root)
