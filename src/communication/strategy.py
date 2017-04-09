@@ -1,10 +1,8 @@
 from src.communication.info import GameInfo, Allegiance
 
-from datetime import datetime
-
 
 class BaseStrategy:
-    def __init__(self, game_info: GameInfo, location, team):
+    def __init__(self, game_info: GameInfo = None, location=None, team=None):
         self.has_piece = 0  # player has not piece
         self.game_info = game_info
         self.location = location

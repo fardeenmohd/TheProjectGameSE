@@ -35,7 +35,6 @@ class Player(Client):
         """
         super().__init__(index, verbose)
 
-        self.strategy = BaseStrategy(self.game_info, self.location, self.team)
         self.typeTag = ClientTypeTag.PLAYER
         self.Guid = 'Not Assigned'
         self.game_info = GameInfo()
@@ -44,6 +43,8 @@ class Player(Client):
         self.team = 'Not Assigned'
         self.role = 'Not Assigned'
         self.location = tuple()
+
+        self.strategy = BaseStrategy()
 
     def handle_confirmation(self, message):
         """

@@ -135,6 +135,7 @@ class Client:
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
             self.verbose_debug("Received from server: \"" + received_data + "\".")
+            sleep(0.01)
             return received_data
 
         except ConnectionAbortedError:

@@ -22,6 +22,8 @@ class CommunicationServer:
     DEFAULT_TIMEOUT = 10
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
+    TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
+                          "RejectKnowledgeExchange"]
 
     def __init__(self, verbose: bool, hostname: str = DEFAULT_HOSTNAME, port: int = DEFAULT_PORT,
                  client_limit: int = DEFAULT_CLIENT_LIMIT):
@@ -180,7 +182,7 @@ class CommunicationServer:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
-        except ConnectionAbortedError:
+        except (ConnectionAbortedError, ConnectionResetError):
             self.disconnect_client(new_client.id)
 
         except Exception as e:
@@ -208,31 +210,35 @@ class CommunicationServer:
 
             # parse the message:
             if "JoinGame" in player_message:
-                # check if game with this name exists:
-                players_game_name = message_root.attrib["gameName"]
-
-                for game_index, game_info in self.games.items():
-                    if game_info.name == players_game_name:
-                        # game found, so we will update JoinGame with player_id and send it to GM:
-                        message_root.attrib["playerId"] = str(player.id)
-                        join_game_message = ET.tostring(message_root, encoding='unicode', method='xml')
-
-                        gm_id = game_info.game_master_id
-                        self.send(gm_id, join_game_message)
-                        break
-                else:
-                    # no game with this name, send rejection
-                    self.send(player, messages.reject_joining_game(player.id, players_game_name))
+                self.handle_join(player, player_message)
 
             # below list contains messages which are addressed to a different player, NOT GM
-            to_player_messages = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
-                                  "RejectKnowledgeExchange"]
-            if any(message in player_message for message in to_player_messages):
+
+            elif any(message in player_message for message in self.TO_PLAYER_MESSAGES):
                 self.send(self.clients[message_root.attrib["playerId"]], player_message)
 
             else:
                 # DEFAULT HANDLING: relay the message to GM
                 self.send(self.clients[player.game_master_id], player_message)
+
+    def handle_join(self, player, player_message):
+        message_root = ET.fromstring(player_message)
+        # check if game with this name exists:
+        players_game_name = message_root.attrib["gameName"]
+
+        for game_index, game_info in self.games.items():
+            if game_info.name == players_game_name:
+                # game found, so we will update JoinGame with player_id and send it to GM:
+                message_root.attrib["playerId"] = str(player.id)
+                join_game_message = ET.tostring(message_root, encoding='unicode', method='xml')
+
+                gm_id = game_info.game_master_id
+                player.game_master_id = gm_id
+                self.send(self.clients[gm_id], join_game_message)
+                return True
+        # no game with this name, send rejection
+        self.send(player, messages.reject_joining_game(player.id, players_game_name))
+        return False
 
     def handle_gm(self, gm: ClientInfo, registration_msg: str):
         # first_message should be a RegisterGames xml
@@ -351,8 +357,9 @@ class CommunicationServer:
         try:
             received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
             if len(received_data) < 1 or received_data is None:
-                raise ConnectionAbortedError
+                raise ConnectionResetError
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
+            sleep(0.01)
             return received_data
 
         except (ConnectionAbortedError, ConnectionResetError):
@@ -363,8 +370,19 @@ class CommunicationServer:
 
         if client_index not in self.clients.keys():
             return
-
         client = self.clients[client_index]
+
+        # if the client was a GM, remove his game from server:
+        if client.tag == ClientTypeTag.GAME_MASTER:
+            for game_info in self.games.values():
+                if game_info.name == client.game_name:
+                    del self.games[game_info.id]
+                    self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")
+                    break
+            else:
+                self.verbose_debug(
+                    "Couldn't close " + client.get_tag() + "'s game - it wasn't found on the server.")
+
         # close the socket
         try:
             client.socket.close()
@@ -375,15 +393,6 @@ class CommunicationServer:
         except socket.error as e:
             self.verbose_debug("Couldn't close socket?! " + str(e), True)
 
-            # if the client was a GM, remove his game from server:
-        if client.tag == ClientTypeTag.GAME_MASTER:
-            for game_info in self.games.values():
-                if game_info.name == client.game_name:
-                    del self.games[game_info.id]
-                    self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")
-                    break
-            else:
-                self.verbose_debug("Couldn't close " + client.get_tag() + "'s game - it wasn't found on the server.")
 
     def shutdown(self):
         self.running = False

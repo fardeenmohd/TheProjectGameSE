@@ -131,7 +131,7 @@ class GameMaster(Client):
         in_pref_role = joingame_root.attrib.get("preferredRole")
 
         # in theory, received game name has to be the same as our game, it should be impossible otherwise
-        self.verbose_debug("A player is trying to join, with id: " + in_game_name + ".")
+        self.verbose_debug("A player is trying to join, with id: " + in_player_id + ".")
         if in_game_name != self.game_name:
             self.verbose_debug("The server somehow sent us a message with the wrong game name.")
             raise UnexpectedServerMessage
@@ -267,8 +267,9 @@ class GameMaster(Client):
             for player in self.info.teams[team].values():
                 if player.type == PlayerType.LEADER.value:
                     role = PlayerType.MEMBER.value
-                else:
-                    role = PlayerType.LEADER.value
+                    break
+            else:
+                role = PlayerType.LEADER.value
         else:
             role = PlayerType.MEMBER.value
 
