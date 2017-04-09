@@ -3,9 +3,11 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
 from src.communication import messages_new
+from src.communication import strategy
 from src.communication.client import Client
 from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
     PieceInfo, ClientTypeTag
+from src.communication.strategy import BaseStrategy
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -33,6 +35,7 @@ class Player(Client):
         """
         super().__init__(index, verbose)
 
+        self.strategy = BaseStrategy(self.game_info, self.location, self.team)
         self.typeTag = ClientTypeTag.PLAYER
         self.Guid = 'Not Assigned'
         self.game_info = GameInfo()
@@ -131,7 +134,7 @@ class Player(Client):
         return messages_new.discover(self.game_info.id, self.Guid)
 
     def pickup_message(self):
-        return messages_new.pickup(self.game_info.id, self.Guid)
+        return messages_new.pick_up_piece(self.game_info.id, self.Guid)
 
     def place_message(self):
         return messages_new.place(self.game_info.id, self.Guid)
@@ -203,6 +206,11 @@ class Player(Client):
                 game_info = self.receive()
                 if game_info is not None:
                     self.game_message_handling(game_info)
+
+                while 1:
+                    self.strategy.get_next_move()
+
+
 
                 """ ----------message handling for future --------
                 self.send(self.move_message(Direction.UP))
