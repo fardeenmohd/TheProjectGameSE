@@ -116,9 +116,8 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
         __append_element(root, "PlayerLocation", e_player_location)
 
     # add TaskFields collection:
+    c_task_fields = __append_element(root, "TaskFields")
     if task_fields is not None:
-        c_task_fields = __append_element(root, "TaskFields")
-
         # add each TaskField to the collection:
         for (x, y), field in task_fields:
             e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(),
