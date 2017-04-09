@@ -115,7 +115,7 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
     # add PlayerLocation element:
     if player_location is not None:
         e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
-        __append_element(root, etree.Element("PlayerLocation", e_player_location))
+        __append_element(root, "PlayerLocation", e_player_location)
 
     # add TaskFields collection:
     if task_fields is not None:
