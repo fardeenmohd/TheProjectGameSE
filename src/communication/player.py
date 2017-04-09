@@ -74,27 +74,28 @@ class Player(Client):
         root = ET.fromstring(game_message)
 
         for board in root.findall(REGISTERED_GAMES_TAG + "Board"):
-            self.game_info.task_height = board.attrib.get('tasksHeight')
-            self.game_info.board_width = board.attrib.get('width')
-            self.game_info.goals_height = board.attrib.get('goalsHeight')
+            self.game_info.task_height = int(board.attrib.get('tasksHeight'))
+            self.game_info.board_width = int(board.attrib.get('width'))
+            self.game_info.goals_height = int(board.attrib.get('goalsHeight'))
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             x = int(player_location.attrib.get('x'))
             y = int(player_location.attrib.get('y'))
             self.location = (x, y)
-        print(self.location)
+
         red_player_count = 0
         blue_player_count = 0
+
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
             for player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
                 self.all_players.append(
                     (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
 
-                if player.attrib.get('team') == 'blue':
+                if player.attrib.get('team') is Allegiance.BLUE.value:
                     self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     blue_player_count += 1
 
-                if player.attrib.get('team') == 'red':
+                if player.attrib.get('team') is Allegiance.RED.value:
                     self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     red_player_count += 1
 

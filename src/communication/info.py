@@ -111,8 +111,8 @@ class GameInfo:
             goal_fields = {}
         if task_fields is None:
             task_fields = {}
-        if blue_player_list is None:
-            blue_player_list = {}
+        if red_player_list is None:
+            red_player_list = {}
         if blue_player_list is None:
             blue_player_list = {}
         self.pieces = pieces

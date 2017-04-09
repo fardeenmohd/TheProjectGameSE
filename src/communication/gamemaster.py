@@ -286,6 +286,7 @@ class GameMaster(Client):
 
         self.teams[team][player_id] = role
         return team, role
+
     def play(self):
         for team in self.teams.keys():
             for player_id in self.teams[team]:

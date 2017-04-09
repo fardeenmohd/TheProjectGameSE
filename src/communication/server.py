@@ -263,7 +263,7 @@ class CommunicationServer:
             else:
                 # TODO handle other messages here
                 gm_msg = self.receive(gm)
-                self.send_to_all_players("Relaying this message to all players: \n" + gm_msg)
+                self.send_to_all_players(gm_msg)
                 # then, he will send us a GameStarted message
                 # TODO: parse a GameStarted message
 
