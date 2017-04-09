@@ -282,14 +282,34 @@ class GameMaster(Client):
                 if team[player].guid == guid:
                     return team[player]
 
-    def send_validated_move_message(self, location, id):
-        # TODO: add move handling using data
+    def find_player_by_id(self, id):
+        for team in self.info.teams.values():
+            for player in team:
+                if team[player].id == id:
+                    return team[player]
+
+    def send_validated_move_message(self, location, player_info):
+
         if self.info.is_task_field(location):
-            1 + 1
+            the_task_field = self.info.task_fields[location]
+            if the_task_field.is_occupied():
+                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
+                                        task_fields={location: the_task_field}, player_location=player_info.location))
+
+            if the_task_field.has_piece():
+                the_piece = self.info.pieces[location]
+                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
+                                        task_fields={location: the_task_field}, pieces={location: the_piece},
+                                        player_location=player_info.location))
+
         if self.info.is_goal_field(location):
-            1 + 1
+            the_goal_field = self.info.goal_fields[location]
+            if the_goal_field.is_occupied():
+                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
+                                        goal_fields={location: the_goal_field}, player_location=player_info.location))
+
         if self.info.is_out_of_bounds(location):
-            1 + 1
+            self.send(messages.data(player_info.id, self.info.finished, player_location=player_info.location))
 
     def handle_move_message(self, move_message):
 
@@ -301,21 +321,29 @@ class GameMaster(Client):
         player_location = player_info.location
 
         if direction == Direction.UP.value:
-            player_location[1] += 1
+            player_location.y += 1
 
         if direction == Direction.DOWN.value:
-            player_location[1] -= 1
+            player_location.y -= 1
 
         if direction == Direction.LEFT.value:
-            player_location[1] -= 1
+            player_location.x -= 1
 
         if direction == Direction.RIGHT.value:
-            player_location[1] += 1
+            player_location.x += 1
 
-        self.send_validated_move_message(player_location)
+        self.send_validated_move_message(player_location, player_info)
+
+    def handle_discover_message(self, discover_message):
+
+        root = ET.fromstring(discover_message)
+        player_id = root.attrib.get('playerId')
+        player_info = self.find_player_by_id(player_id)
+
+
+
 
     def play(self):
-
         # Thread(target=self.place_pieces()).start()
 
         for team in self.info.teams.values():
@@ -324,7 +352,7 @@ class GameMaster(Client):
                                         self.info.goals_height, team[player].location))
 
         while self.game_on:
-            message = messages.move(self.info.id, self.info.teams['blue']['1'].guid, 'up')
+            message = messages.move(self.info.id, self.info.teams['red']['2'].guid, 'left')
             # self.receive()
             if "Move" in message:
                 self.handle_move_message(message)

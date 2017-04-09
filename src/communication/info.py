@@ -171,3 +171,4 @@ class PlayerInfo(ClientInfo):
         self.team = team
         self.location = location
         self.guid = guid
+
