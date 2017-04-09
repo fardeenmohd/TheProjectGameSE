@@ -6,6 +6,7 @@ from src.communication import messages
 from src.communication.client import Client
 from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
     PieceInfo, ClientTypeTag, PlayerInfo
+from src.communication.strategy import BaseStrategy
 from src.communication.unexpected import UnexpectedServerMessage
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
@@ -124,7 +125,6 @@ class Player(Client):
         return messages.discover(self.game_info.id, self.Guid)
 
     def pickup_message(self):
-        return messages_new.pick_up_piece(self.game_info.id, self.Guid)
         return messages.pick_up_piece(self.game_info.id, self.Guid)
 
     def place_message(self):
