@@ -260,14 +260,27 @@ class CommunicationServer:
             elif "RejectJoiningGame" in gm_msg:
                 reject_root = ET.fromstring(gm_msg)
                 self.send(self.clients[int(reject_root.attrib.get("playerId"))], gm_msg)
+            elif "GameStarted" in gm_msg:
+                # Game as been started so we mark it as closed in our games dict
+                # Next message we expect is a Game.xml which must be relayed to proper players
+                game_started_root = ET.fromstring(gm_msg)
+                self.games[int(game_started_root.attrib["gameId"])].open = False
+                # TODO maybe set more than just open property in self.games?
+                self.verbose_debug("Received GameStarted and altered self.games variable accordingly...")
             else:
                 # TODO handle other messages here
-                gm_msg = self.receive(gm)
-                self.send_to_all_players(gm_msg)
-                # then, he will send us a GameStarted message
-                # TODO: parse a GameStarted message
 
-                # TODO: relay other messages to players etc.
+                # handling Game.xml
+                try:
+                    msg_root = ET.fromstring(gm_msg)
+                    self.verbose_debug("Received msg tag: " + msg_root.tag)
+                    # this is how we should check what type of message we get, instead of using "in" operator
+                    if msg_root.tag == XML_MESSAGE_TAG + "Game":
+                        self.verbose_debug("Relaying Game.xml message to proper player...")
+                        self.send(self.clients[int(msg_root.attrib["playerId"])], gm_msg)
+
+                except ET.ParseError:
+                    print('Corrupt or invalid XML sent by GM: \n {} '.format(gm_msg))
 
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
