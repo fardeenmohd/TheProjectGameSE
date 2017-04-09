@@ -3,7 +3,8 @@ from datetime import datetime
 
 from lxml import etree
 
-# constants:
+from src.communication.info import Location
+
 XSD_PATH = "../messages/TheProjectGameCommunication.xsd"
 XML_NAMESPACE = "https://se2.mini.pw.edu.pl/17-results/"
 NAMESPACE_PREFIX = "{%s}" % XML_NAMESPACE
@@ -105,16 +106,13 @@ def get_games():
 
 
 def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: dict = None, pieces: dict = None,
-         player_location=None):
-    """
-    :param player_location: tuple (x,y)
-    """
+         player_location: Location = None):
     root = __player_message("Data", player_id)
     root.set("gameFinished", str(game_finished).lower())
 
     # add PlayerLocation element:
     if player_location is not None:
-        e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
+        e_player_location = {"x": str(player_location.x), "y": str(player_location.y)}
         __append_element(root, "PlayerLocation", e_player_location)
 
     # add TaskFields collection:
@@ -159,10 +157,9 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
     return __validate_encode(root)
 
 
-def game(player_id, teams: dict, board_width, tasks_height, goals_height, player_location: tuple):
+def game(player_id, teams: dict, board_width, tasks_height, goals_height, player_location: Location):
     """
     :param teams: A dict of dicts: team => {player_id => PlayerInfo}
-    :param player_location: a tuple (x,y)
     """
     root = __player_message("Game", player_id)
 
@@ -181,7 +178,7 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
 
     # add PlayerLocation element:
     if player_location is not None:
-        e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
+        e_player_location = {"x": str(player_location.x), "y": str(player_location.y)}
         __append_element(root, "PlayerLocation", e_player_location)
 
     return __validate_encode(root)
