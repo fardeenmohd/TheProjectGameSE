@@ -137,14 +137,23 @@ class GameInfo:
         else:
             return False
 
+    def is_task_field(self, location):
+        return location in self.task_fields.keys()
+
+    def is_goal_field(self,location):
+        return location in self.goal_fields.keys()
+
+    def is_out_of_bounds(self,location):
+        return not (self.is_task_field() or self.is_goal_field())
 
 class PlayerInfo(ClientInfo):
     """used by GameMaster only (for now, at least...)"""
 
     def __init__(self, id="-1", tag=PlayerType.MEMBER.value, team=None, info: GameInfo = None,
-                 location: tuple = None):
+                 location: tuple = None, guid=None):
         super(PlayerInfo, self).__init__(id=id, tag=ClientTypeTag.PLAYER)
         self.type = tag
         self.info = info
         self.team = team
         self.location = location
+        self.guid = guid
