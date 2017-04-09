@@ -99,8 +99,7 @@ class ClientInfo:
 
 class GameInfo:
     def __init__(self, id=-1, name="", task_fields=None, goal_fields=None, pieces=None, board_width=0, task_height=0,
-                 goals_height=0, blue_player_list=None, red_player_list=None, blue_players=0, red_players=0, open=True,
-                 finished=False, game_master_id=""):
+                 goals_height=0, max_blue_players=0, max_red_players=0, open=True, finished=False, game_master_id=""):
         self.id = id
         self.name = name
         self.open = open
@@ -112,10 +111,6 @@ class GameInfo:
             goal_fields = {}
         if task_fields is None:
             task_fields = {}
-        if red_player_list is None:
-            red_player_list = {}
-        if blue_player_list is None:
-            blue_player_list = {}
         self.pieces = pieces
         self.goal_fields = goal_fields
         self.task_fields = task_fields
@@ -123,10 +118,11 @@ class GameInfo:
         self.task_height = task_height
         self.goals_height = goals_height
 
-        self.blue_player_list = blue_player_list
-        self.red_player_list = red_player_list
-        self.max_blue_players = blue_players
-        self.max_red_players = red_players
+        self.players = {Allegiance.RED.value: {}, Allegiance.BLUE.value: {}}
+        # self.players is a dict of dicts: team => {player_id => PlayerInfo}
+
+        self.max_blue_players = max_blue_players
+        self.max_red_players = max_red_players
 
     def check_for_empty_task_fields(self):
         for task_field in self.task_fields.values():

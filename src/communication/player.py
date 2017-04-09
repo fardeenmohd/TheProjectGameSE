@@ -5,7 +5,8 @@ from argparse import ArgumentParser
 from src.communication import messages
 from src.communication.client import Client
 from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
-    PieceInfo, ClientTypeTag
+    PieceInfo, ClientTypeTag, PlayerInfo
+from src.communication.unexpected import UnexpectedServerMessage
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -41,16 +42,15 @@ class Player(Client):
         self.team = 'Not Assigned'
         self.role = 'Not Assigned'
         self.location = tuple()
-        self.all_players = []
 
-    def confirmation_status_handling(self, confirmation_message):
+    def handle_confirmation(self, message):
         """
 
-        :param confirmation_message:
+        :param message:
         :return: Parses the confirmation message and extracts game information
         """
-        if "ConfirmJoiningGame" in confirmation_message:
-            root = ET.fromstring(confirmation_message)
+        if "ConfirmJoiningGame" in message:
+            root = ET.fromstring(message)
             self.Guid = root.attrib.get('privateGuid')
             self.game_info.id = int(root.attrib.get('gameId'))
             self.game_info.name = self.game_name
@@ -58,14 +58,18 @@ class Player(Client):
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
                 self.role = player_definition.attrib.get('type')
-
             return True
-        else:
-            print("Got rejected by the server so shutting down")
+
+        elif "RejectJoiningGame" in message:
+            self.verbose_debug("Got rejected by the server, so shutting down.")
             self.shutdown()
             return False
 
-    def game_message_handling(self, game_message):
+        else:
+            self.verbose_debug("Unexpected message from server!")
+            raise UnexpectedServerMessage
+
+    def handle_game(self, game_message):
         """
 
         :param game_message:
@@ -83,24 +87,12 @@ class Player(Client):
             y = int(player_location.attrib.get('y'))
             self.location = (x, y)
 
-        red_player_count = 0
-        blue_player_count = 0
-
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
-            for player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
-                self.all_players.append(
-                    (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
-
-                if player.attrib.get('team') is Allegiance.BLUE.value:
-                    self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
-                    blue_player_count += 1
-
-                if player.attrib.get('team') is Allegiance.RED.value:
-                    self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
-                    red_player_count += 1
-
-        self.game_info.max_red_players = red_player_count
-        self.game_info.max_blue_players = blue_player_count
+            for in_player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
+                in_team = in_player.attrib.get('team')
+                in_type = in_player.attrib.get('type')
+                in_id = in_player.attrib.get('id')
+                self.game_info.players[in_team][in_id] = PlayerInfo(in_id, in_type, in_type)
 
         y = 2 * self.game_info.goals_height + self.game_info.task_height - 1
         for i in range(self.game_info.goals_height):
@@ -165,7 +157,6 @@ class Player(Client):
                     if goal_field.attrib.get('playerId') is not None:
                         self.game_info.goal_fields[x, y].player_id = int(goal_field.attrib.get('playerId'))
                     self.game_info.goal_fields[x, y].allegiance = goal_field.attrib.get('team')
-
                     type = goal_field.attrib.get('type')
                     self.game_info.goal_fields[x, y].type = type
 
@@ -199,10 +190,10 @@ class Player(Client):
                 self.send(messages.join_game(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
                 confirmation = self.receive()
                 if confirmation is not None:
-                    self.confirmation_status_handling(confirmation)
+                    self.handle_confirmation(confirmation)
                 game_info = self.receive()
                 if game_info is not None:
-                    self.game_message_handling(game_info)
+                    self.handle_game(game_info)
 
                 """ ----------message handling for future --------
                 self.send(self.move_message(Direction.UP))

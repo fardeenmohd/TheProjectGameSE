@@ -23,20 +23,20 @@ class CommunicationServer:
     DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
 
-    def __init__(self, verbose: bool, host: str = DEFAULT_HOSTNAME, port: int = DEFAULT_PORT,
+    def __init__(self, verbose: bool, hostname: str = DEFAULT_HOSTNAME, port: int = DEFAULT_PORT,
                  client_limit: int = DEFAULT_CLIENT_LIMIT):
         """
         constructor.
         :param verbose:
-        :param host:
+        :param hostname:
         :param port:
         """
 
         # declare fields:
         self.running = True
-        self.host = host
+        self.host = hostname
         self.port = port
-        self.clientLimit = client_limit
+        self.client_limit = client_limit
         self.verbose = verbose
 
         self.socket = socket.socket()
@@ -46,13 +46,13 @@ class CommunicationServer:
         self.games_indexer = 0
 
         try:
-            self.socket.bind((host, port))
+            self.socket.bind((hostname, port))
 
         except OSError as e:
             self.verbose_debug("Error while setting up the socket: " + str(e), True)
             raise e
 
-        self.verbose_debug("Created server with hostname: " + host + " on port " + str(port), True)
+        self.verbose_debug("Created server with hostname: " + hostname + " on port " + str(port), True)
 
     def verbose_debug(self, message: str, important: bool = False):
         """
@@ -67,7 +67,7 @@ class CommunicationServer:
     def print_state(self):
         """
         method running on a separate Thread, prints the current state of the server every couple of seconds
-        time between each printing of debug messages is specified by the constant CommunicationServer.INTER_PRINT_STATE_TIME
+        time between each printing of debug messages is specified by the constant NTER_PRINT_STATE_TIME
         """
         while self.running:
             self.verbose_debug("Currently there are " + str(len(self.clients)) + " clients connected.")
@@ -127,7 +127,7 @@ class CommunicationServer:
             # block and wait until a client connects:
             client_socket, address = self.socket.accept()
 
-            if len(self.clients) < self.clientLimit:
+            if len(self.clients) < self.client_limit:
                 # if client limit not exceeded, handle the new client:
                 # send a single byte which says "greetings"
                 self.verbose_debug("Accepted some client, sending greeting byte...")
@@ -146,7 +146,7 @@ class CommunicationServer:
 
         self.verbose_debug(
             "New client: " + new_client.get_tag() + " with address " + str(client_socket.getsockname()) + " connected.")
-        if len(self.clients) == self.clientLimit:
+        if len(self.clients) == self.client_limit:
             self.verbose_debug("Client capacity reached.")
 
         Thread(target=self.handle_client, args=[new_client], daemon=True).start()
@@ -310,7 +310,8 @@ class CommunicationServer:
             # create the new game:
             game_id = str(self.games_indexer)
             self.games[self.games_indexer] = GameInfo(id=game_id, name=new_game_name,
-                                                      blue_players=new_blue_players, red_players=new_red_players,
+                                                      max_blue_players=new_blue_players,
+                                                      max_red_players=new_red_players,
                                                       open=True, game_master_id=gm.id)
             gm.game_name = new_game_name
             self.verbose_debug(
