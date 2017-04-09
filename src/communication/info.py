@@ -1,8 +1,12 @@
-from collections import namedtuple
 from datetime import datetime
 from enum import Enum
 
-Location = namedtuple('Location', ['x', 'y'])
+
+class Location():
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+
 
 class ClientTypeTag(Enum):
     CLIENT = "C"
@@ -144,11 +148,17 @@ class GameInfo:
     def is_task_field(self, location):
         return location in self.task_fields.keys()
 
-    def is_goal_field(self,location):
+    def is_goal_field(self, location):
         return location in self.goal_fields.keys()
 
-    def is_out_of_bounds(self,location):
+    def is_out_of_bounds(self, location):
         return not (self.is_task_field(location) or self.is_goal_field(location))
+
+    def get_neighbours(self, location):
+        # for (x, y), field in self.task_fields.items():
+        #     if
+        pass
+
 
 class PlayerInfo(ClientInfo):
     """used by GameMaster only (for now, at least...)"""
