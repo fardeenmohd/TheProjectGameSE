@@ -85,6 +85,7 @@ class GameMaster(Client):
                       Allegiance.RED.value: {}}  # A dict of dicts: team => {player_id => role}
         self.red_players_locations = {}
         self.blue_players_locations = {}
+        self.all_players = {} # id=>GameInfo
 
         self.parse_game_definition()
         self.parse_action_costs()
@@ -290,10 +291,13 @@ class GameMaster(Client):
     def play(self):
         for team in self.teams.keys():
             for player_id in self.teams[team]:
+                self.all_players[player_id] = GameInfo()
                 if team is Allegiance.BLUE.value:
+
                     self.send(messages_new.game(player_id, self.teams, self.info.board_width,
                                                 self.info.task_height, self.info.goals_height,
                                                 self.blue_players_locations[player_id]))
+
                 else:
                     self.send(messages_new.game(player_id, self.teams, self.info.board_width,
                                                 self.info.task_height, self.info.goals_height,
@@ -303,6 +307,7 @@ class GameMaster(Client):
 
         while self.game_on:
             message = self.receive()
+
         self.send("Thanks for the message.")
 
     def get_num_of_players(self):
