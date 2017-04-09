@@ -100,11 +100,12 @@ class ClientInfo:
 class GameInfo:
     def __init__(self, id=-1, name="", task_fields=None, goal_fields=None, pieces=None, board_width=0, task_height=0,
                  goals_height=0, blue_player_list=None, red_player_list=None, blue_players=0, red_players=0, open=True,
-                 finished=False):
+                 finished=False, game_master_id=""):
         self.id = id
         self.name = name
         self.open = open
         self.finished = finished
+        self.game_master_id = game_master_id
         if pieces is None:
             pieces = {}
         if goal_fields is None:

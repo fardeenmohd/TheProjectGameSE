@@ -1,10 +1,10 @@
+from datetime import datetime
 from unittest import TestCase
 
 from lxml.etree import DocumentInvalid
 
 from src.communication.info import TaskFieldInfo
-from src.communication.messages_new import *
-from datetime import datetime
+from src.communication.messages import *
 
 
 class TestClass(TestCase):

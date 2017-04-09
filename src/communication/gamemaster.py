@@ -7,7 +7,7 @@ from random import random, randint
 from threading import Thread
 from time import sleep
 
-from src.communication import messages_new
+from src.communication import messages
 from src.communication.client import Client
 from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
     GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
@@ -88,8 +88,8 @@ class GameMaster(Client):
         self.parse_action_costs()
 
     def run(self):
-        register_game_message = messages_new.register_game(self.game_name, self.team_limit,
-                                                           self.team_limit)
+        register_game_message = messages.register_game(self.game_name, self.team_limit,
+                                                       self.team_limit)
         self.send(register_game_message)
 
         message = self.receive()
@@ -113,7 +113,7 @@ class GameMaster(Client):
 
                         if self.get_num_of_players() == self.team_limit * 2:
                             #  We are ready to start the game
-                            self.send(messages_new.game_started(self.info.id))
+                            self.send(messages.game_started(self.info.id))
                             self.set_up_game()
                             self.game_on = True
                             self.play()
@@ -148,7 +148,7 @@ class GameMaster(Client):
         if self.get_num_of_players() == self.team_limit * 2:
             # he can't fit in, send a rejection message :(
             self.verbose_debug("Player " + in_player_id + " was rejected, because the game is already full.")
-            self.send(messages_new.reject_joining_game(in_player_id, self.game_name))
+            self.send(messages.reject_joining_game(in_player_id, self.game_name))
             return False
 
         # generating the private GUID
@@ -160,7 +160,7 @@ class GameMaster(Client):
         self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
                            + " in team " + team_color + ".")
 
-        self.send(messages_new.confirm_joining_game(in_player_id, str(self.info.id), private_guid, team_color, role))
+        self.send(messages.confirm_joining_game(in_player_id, str(self.info.id), private_guid, team_color, role))
 
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
@@ -287,8 +287,8 @@ class GameMaster(Client):
     def play(self):
         for team in self.teams.values():
             for player in team:
-                self.send(messages_new.game(player.id, self.teams, self.info.board_width, self.info.task_height,
-                                            self.info.goals_height, player.location))
+                self.send(messages.game(player.id, self.teams, self.info.board_width, self.info.task_height,
+                                        self.info.goals_height, player.location))
 
         Thread(target=self.place_pieces(), daemon=True).start()
 
