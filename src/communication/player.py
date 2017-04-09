@@ -34,6 +34,7 @@ class Player(Client):
         """
         super().__init__(index, verbose)
 
+        self.strategy = BaseStrategy(self.game_info, self.location, self.team)
         self.typeTag = ClientTypeTag.PLAYER
         self.Guid = 'Not Assigned'
         self.game_info = GameInfo()
@@ -123,6 +124,7 @@ class Player(Client):
         return messages.discover(self.game_info.id, self.Guid)
 
     def pickup_message(self):
+        return messages_new.pick_up_piece(self.game_info.id, self.Guid)
         return messages.pick_up_piece(self.game_info.id, self.Guid)
 
     def place_message(self):
@@ -194,6 +196,11 @@ class Player(Client):
                 game_info = self.receive()
                 if game_info is not None:
                     self.handle_game(game_info)
+
+                while 1:
+                    self.strategy.get_next_move()
+
+
 
                 """ ----------message handling for future --------
                 self.send(self.move_message(Direction.UP))
