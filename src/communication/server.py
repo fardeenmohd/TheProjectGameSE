@@ -303,7 +303,7 @@ class CommunicationServer:
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
-            self.send(gm, messages_new.confirm_game_registration(gm.game_name))
+            self.send(gm, messages_new.confirm_game_registration(self.games[self.games_indexer].id))
             self.games_indexer += 1
             return True
 

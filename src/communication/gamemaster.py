@@ -150,11 +150,11 @@ class GameMaster(Client):
         if self.get_num_of_players() == self.team_limit * 2:
             # he can't fit in, send a rejection message :(
             self.verbose_debug("Player " + in_player_id + " was rejected, because the game is already full.")
-            self.send(messages_new.reject_joining_game(in_player_id,self.game_name))
+            self.send(messages_new.reject_joining_game(in_player_id, self.game_name))
             return False
 
         # generating the private GUID
-        private_guid = uuid.uuid4()
+        private_guid = str(uuid.uuid4())
 
         # add him to a team while taking into account his preferences:
         team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team)
@@ -162,7 +162,8 @@ class GameMaster(Client):
         self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
                            + " in team " + team_color + ".")
 
-        self.send(messages_new.confirm_joining_game(in_player_id, self.info.id, private_guid,team_color, role))
+        self.send(
+            messages_new.confirm_joining_game(str(in_player_id), str(self.info.id), private_guid, team_color, role))
 
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
@@ -278,8 +279,8 @@ class GameMaster(Client):
             for player in self.teams[team].values():
                 if player == PlayerRole.LEADER.value:
                     role = PlayerRole.MEMBER.value
-            else:
-                role = PlayerRole.LEADER.value
+                else:
+                    role = PlayerRole.LEADER.value
         else:
             role = PlayerRole.MEMBER.value
 
@@ -287,21 +288,18 @@ class GameMaster(Client):
         return team, role
 
     def play(self):
+        for team in self.teams.keys():
+            for player_id in self.teams[team]:
+                if team is Allegiance.BLUE.value:
+                    self.send(messages_new.game(player_id, self.teams, self.info.board_width,
+                                                self.info.task_height, self.info.goals_height,
+                                                self.blue_players_locations[player_id]))
+                else:
+                    self.send(messages_new.game(player_id, self.teams, self.info.board_width,
+                                                self.info.task_height, self.info.goals_height,
+                                                self.red_players_locations[player_id]))
 
         Thread(target=self.place_pieces(), daemon=True).start()
-
-        for team in self.teams.values():
-            for player_id in self.teams[team]:
-                if player_id in self.red_players_locations.keys():
-                    self.send(messages_new.game(player_id, self.teams[team][player_id], self.info.board_width,
-                                                self.info.task_height, self.info.goals_height,
-                                                self.red_players_locations[player_id]))
-                else:
-                    self.send(messages_new.game(player_id, self.teams[team][player_id], self.info.board_width,
-                                                self.info.task_height, self.info.goals_height,
-                                                self.red_players_locations[player_id]))
-
-                pass
 
         while self.game_on:
             message = self.receive()

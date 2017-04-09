@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 
 from src.communication import messages_old, messages_new
 from src.communication.client import Client
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, \
+from src.communication.info import GameInfo, PlayerRole, GoalFieldInfo, Allegiance, TaskFieldInfo, \
     PieceInfo, ClientTypeTag
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
@@ -193,9 +193,9 @@ class Player(Client):
             if len(self.open_games) > 0:
                 # TODO : remove temp fields after new messages in action
                 temp_game_name = self.open_games[0][0]
-                temp_preferred_role = 'leader'
-                temp_preferred_team = 'red'
-                self.send(messages_new.join_game(temp_game_name, temp_preferred_role, temp_preferred_team, self.id))
+                temp_preferred_role = PlayerRole.LEADER.value
+                temp_preferred_team = Allegiance.RED.value
+                self.send(messages_new.join_game(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
                 confirmation = self.receive()
                 if confirmation is not None:
                     self.confirmation_status_handling(confirmation)

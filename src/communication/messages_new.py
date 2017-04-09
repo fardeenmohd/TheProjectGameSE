@@ -175,8 +175,8 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
     c_players = __append_element(root, "Players")
 
     # add each Player to the collection:
-    for team in teams.values():
-        for player_id, type in team.items():
+    for team in teams.keys():
+        for player_id, type in teams[team].items():
             e_attributes = {"id": player_id, "type": type, "team": team}
             __append_element(c_players, "Player", e_attributes)
 
