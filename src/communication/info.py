@@ -1,6 +1,8 @@
+from collections import namedtuple
 from datetime import datetime
 from enum import Enum
 
+Location = namedtuple('Location', ['x', 'y'])
 
 class ClientTypeTag(Enum):
     CLIENT = "C"
@@ -99,7 +101,8 @@ class ClientInfo:
 
 class GameInfo:
     def __init__(self, id=-1, name="", task_fields=None, goal_fields=None, pieces=None, board_width=0, task_height=0,
-                 goals_height=0, max_blue_players=0, max_red_players=0, open=True, finished=False, game_master_id=""):
+                 goals_height=0, max_blue_players=0, max_red_players=0, open=True, finished=False, game_master_id="",
+                 latest_timestamp=""):
         self.id = id
         self.name = name
         self.open = open
@@ -117,6 +120,7 @@ class GameInfo:
         self.board_width = board_width
         self.task_height = task_height
         self.goals_height = goals_height
+        self.latest_timestamp = latest_timestamp
 
         self.teams = {Allegiance.RED.value: {}, Allegiance.BLUE.value: {}}
         # self.teams is a dict of dicts: team => {player_id => PlayerInfo}
@@ -144,13 +148,13 @@ class GameInfo:
         return location in self.goal_fields.keys()
 
     def is_out_of_bounds(self,location):
-        return not (self.is_task_field() or self.is_goal_field())
+        return not (self.is_task_field(location) or self.is_goal_field(location))
 
 class PlayerInfo(ClientInfo):
     """used by GameMaster only (for now, at least...)"""
 
     def __init__(self, id="-1", tag=PlayerType.MEMBER.value, team=None, info: GameInfo = None,
-                 location: tuple = None, guid=None):
+                 location: Location = None, guid=None):
         super(PlayerInfo, self).__init__(id=id, tag=ClientTypeTag.PLAYER)
         self.type = tag
         self.info = info
