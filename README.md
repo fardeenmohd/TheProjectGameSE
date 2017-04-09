@@ -1,4 +1,4 @@
-**Welcome to the project set_up_game thing.**
+**Welcome to the project game thing.**
 
 CA/Team 5: Filip Matracki, Ksawery Jasieński, Tomek Marcińczyk, Fardin Mohammed
 
@@ -20,9 +20,9 @@ After starting the server, it will wait for and handle client connections. It is
 
 *Running the clients:*
 >python player.py
+and
+
+>python gamemaster.py
 
 Possible parameters: 
-* -c (--playercount) specifies the number of clients to run (default is 1)
 * -v (--verbose) runs the client in verbose mode
-
-        After running, the script deploys the specified number of clients.
