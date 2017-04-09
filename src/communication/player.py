@@ -93,7 +93,7 @@ class Player(Client):
                 in_team = in_player.attrib.get('team')
                 in_type = in_player.attrib.get('type')
                 in_id = in_player.attrib.get('id')
-                self.game_info.players[in_team][in_id] = PlayerInfo(in_id, in_type, in_type)
+                self.game_info.teams[in_team][in_id] = PlayerInfo(in_id, in_type, in_type)
 
         y = 2 * self.game_info.goals_height + self.game_info.task_height - 1
         for i in range(self.game_info.goals_height):

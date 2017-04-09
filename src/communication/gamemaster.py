@@ -4,7 +4,6 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
 from random import random, randint
-from threading import Thread
 from time import sleep
 
 from src.communication import messages
@@ -180,7 +179,7 @@ class GameMaster(Client):
             y -= 1
 
         # place the players:
-        for i in self.info.players[Allegiance.RED.value].keys():
+        for i in self.info.teams[Allegiance.RED.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
             random_red_goal_field = self.info.goal_fields[x, y]
@@ -190,9 +189,9 @@ class GameMaster(Client):
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.info.players[Allegiance.RED.value][i].location = (x, y)
+            self.info.teams[Allegiance.RED.value][i].location = (x, y)
 
-        for i in self.info.players[Allegiance.BLUE.value].keys():
+        for i in self.info.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.goals_height - 1)
             random_blue_goal_field = self.info.goal_fields[x, y]
@@ -202,7 +201,7 @@ class GameMaster(Client):
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.info.players[Allegiance.BLUE.value][i].location = (x, y)
+            self.info.teams[Allegiance.BLUE.value][i].location = (x, y)
 
         # create the first pieces:
         for i in range(self.initial_number_of_pieces):
@@ -254,10 +253,9 @@ class GameMaster(Client):
         """
         :returns: a tuple: (team, role)
         """
-        team = ""
         role = ""
 
-        if len(self.info.players[pref_team]) == self.team_limit:
+        if len(self.info.teams[pref_team]) == self.team_limit:
             if pref_team == Allegiance.BLUE.value:
                 team = Allegiance.RED.value
             else:
@@ -266,7 +264,7 @@ class GameMaster(Client):
             team = pref_team
 
         if pref_role == PlayerType.LEADER.value:
-            for player in self.info.players[team].values():
+            for player in self.info.teams[team].values():
                 if player.type == PlayerType.LEADER.value:
                     role = PlayerType.MEMBER.value
                 else:
@@ -274,18 +272,17 @@ class GameMaster(Client):
         else:
             role = PlayerType.MEMBER.value
 
-        self.info.players[team][player_id] = PlayerInfo(player_id, role, team, guid=private_guid)
+        self.info.teams[team][player_id] = PlayerInfo(player_id, role, team, guid=private_guid)
         return team, role
 
     def find_player_by_guid(self, guid):
-
-        for team in self.teams.values():
+        for team in self.info.teams.values():
             for player in team:
                 if team[player].guid == guid:
                     return team[player]
 
-    def send_validated_move_message(self,location,id):
-        #TODO: add move handling using data
+    def send_validated_move_message(self, location, id):
+        # TODO: add move handling using data
         if self.info.is_task_field(location):
             1 + 1
         if self.info.is_goal_field(location):
@@ -320,13 +317,14 @@ class GameMaster(Client):
 
         # Thread(target=self.place_pieces()).start()
 
-        for team in self.info.players.values():
+        for team in self.info.teams.values():
             for player in team:
-                self.send(messages.game(player, self.info.players, self.info.board_width, self.info.task_height,
+                self.send(messages.game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
 
         while self.game_on:
-            message = messages_new.move(self.info.id, self.teams['blue']['1'].guid ,'up') #self.receive()
+            message = messages.move(self.info.id, self.info.teams['blue']['1'].guid, 'up')
+            # self.receive()
             if "Move" in message:
                 self.handle_move_message(message)
                 break
@@ -334,7 +332,7 @@ class GameMaster(Client):
         self.send("Thanks for the message.")
 
     def get_num_of_players(self):
-        return len(self.info.players[Allegiance.BLUE.value]) + len(self.info.players[Allegiance.RED.value])
+        return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
 
 
 if __name__ == '__main__':

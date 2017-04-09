@@ -118,8 +118,8 @@ class GameInfo:
         self.task_height = task_height
         self.goals_height = goals_height
 
-        self.players = {Allegiance.RED.value: {}, Allegiance.BLUE.value: {}}
-        # self.players is a dict of dicts: team => {player_id => PlayerInfo}
+        self.teams = {Allegiance.RED.value: {}, Allegiance.BLUE.value: {}}
+        # self.teams is a dict of dicts: team => {player_id => PlayerInfo}
 
         self.max_blue_players = max_blue_players
         self.max_red_players = max_red_players
