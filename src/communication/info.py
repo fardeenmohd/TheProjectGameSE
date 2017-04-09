@@ -26,7 +26,7 @@ class Allegiance(Enum):
     NEUTRAL = 'neutral'
 
 
-class PlayerRole(Enum):
+class PlayerType(Enum):
     MEMBER = "member"
     LEADER = "leader"
 
@@ -86,15 +86,15 @@ class PieceInfo:
 class ClientInfo:
     """might not actually be used that much, encapsulate some information about client id, their type etc."""
 
-    def __init__(self, id="-1", type=ClientTypeTag.CLIENT, socket=None, game_name="", game_master_id="-1"):
+    def __init__(self, id="-1", tag=ClientTypeTag.CLIENT, socket=None, game_name="", game_master_id="-1"):
         self.id = id
-        self.type = type
+        self.tag = tag
         self.socket = socket
         self.game_name = game_name
         self.game_master_id = game_master_id
 
     def get_tag(self):
-        return self.type.value + str(self.id)
+        return self.tag.value + str(self.id)
 
 
 class GameInfo:
@@ -111,8 +111,8 @@ class GameInfo:
             goal_fields = {}
         if task_fields is None:
             task_fields = {}
-        if blue_player_list is None:
-            blue_player_list = {}
+        if red_player_list is None:
+            red_player_list = {}
         if blue_player_list is None:
             blue_player_list = {}
         self.pieces = pieces
@@ -139,3 +139,15 @@ class GameInfo:
             return self.task_fields[x, y].has_piece()
         else:
             return False
+
+
+class PlayerInfo(ClientInfo):
+    """used by GameMaster only (for now, at least...)"""
+
+    def __init__(self, id="-1", tag=PlayerType.MEMBER.value, team=None, info: GameInfo = None,
+                 location: tuple = None):
+        super(PlayerInfo, self).__init__(id=id, tag=ClientTypeTag.PLAYER)
+        self.type = tag
+        self.info = info
+        self.team = team
+        self.location = location

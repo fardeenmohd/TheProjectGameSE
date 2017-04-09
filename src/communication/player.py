@@ -2,9 +2,9 @@
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
-from src.communication import messages_old
+from src.communication import messages_new
 from src.communication.client import Client
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, \
+from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
     PieceInfo, ClientTypeTag
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
@@ -74,27 +74,28 @@ class Player(Client):
         root = ET.fromstring(game_message)
 
         for board in root.findall(REGISTERED_GAMES_TAG + "Board"):
-            self.game_info.task_height = board.attrib.get('tasksHeight')
-            self.game_info.board_width = board.attrib.get('width')
-            self.game_info.goals_height = board.attrib.get('goalsHeight')
+            self.game_info.task_height = int(board.attrib.get('tasksHeight'))
+            self.game_info.board_width = int(board.attrib.get('width'))
+            self.game_info.goals_height = int(board.attrib.get('goalsHeight'))
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             x = int(player_location.attrib.get('x'))
             y = int(player_location.attrib.get('y'))
             self.location = (x, y)
-        print(self.location)
+
         red_player_count = 0
         blue_player_count = 0
+
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
             for player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
                 self.all_players.append(
                     (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
 
-                if player.attrib.get('team') == 'blue':
+                if player.attrib.get('team') is Allegiance.BLUE.value:
                     self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     blue_player_count += 1
 
-                if player.attrib.get('team') == 'red':
+                if player.attrib.get('team') is Allegiance.RED.value:
                     self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
                     red_player_count += 1
 
@@ -124,19 +125,19 @@ class Player(Client):
         :param direction: Move direction
         :return: Move direction message
         """
-        return messages_old.move(self.game_info.id, self.Guid, direction)
+        return messages_new.move(self.game_info.id, self.Guid, direction)
 
     def discover_message(self):
-        return messages_old.discover(self.game_info.id, self.Guid)
+        return messages_new.discover(self.game_info.id, self.Guid)
 
     def pickup_message(self):
-        return messages_old.pickup(self.game_info.id, self.Guid)
+        return messages_new.pickup(self.game_info.id, self.Guid)
 
     def place_message(self):
-        return messages_old.place(self.game_info.id, self.Guid)
+        return messages_new.place(self.game_info.id, self.Guid)
 
     def test_piece_message(self):
-        return messages_old.test_piece(self.game_info.id, self.Guid)
+        return messages_new.test_piece(self.game_info.id, self.Guid)
 
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
@@ -183,7 +184,8 @@ class Player(Client):
                 self.location = (x, y)
 
     def play(self):
-        self.send(messages_old.get_games())
+        self.send(messages_new.get_games())
+        print(messages_new.get_games())
         games = self.receive()
 
         if 'RegisteredGames' in games:
@@ -192,9 +194,9 @@ class Player(Client):
             if len(self.open_games) > 0:
                 # TODO : remove temp fields after new messages in action
                 temp_game_name = self.open_games[0][0]
-                temp_preferred_role = 'leader'
-                temp_preferred_team = 'red'
-                self.send(messages_old.join_game(temp_game_name, temp_preferred_role, temp_preferred_team))
+                temp_preferred_role = PlayerType.LEADER.value
+                temp_preferred_team = Allegiance.RED.value
+                self.send(messages_new.join_game(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
                 confirmation = self.receive()
                 if confirmation is not None:
                     self.confirmation_status_handling(confirmation)

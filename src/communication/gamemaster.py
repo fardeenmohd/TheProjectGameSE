@@ -7,10 +7,10 @@ from random import random, randint
 from threading import Thread
 from time import sleep
 
-from src.communication import messages_old
+from src.communication import messages_new
 from src.communication.client import Client
 from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
-    GoalFieldType, ClientTypeTag, PlayerRole
+    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -81,16 +81,14 @@ class GameMaster(Client):
         self.game_on = False
         self.player_indexer = 0
 
-        self.teams = {Allegiance.BLUE.value: {},
-                      Allegiance.RED.value: {}}  # A dict of dicts: team => {player_id => role}
-        self.red_players_locations = {}
-        self.blue_players_locations = {}
+        # A dict of dicts: team => {player_id => PlayerInfo}
+        self.teams = {Allegiance.BLUE.value: {}, Allegiance.RED.value: {}}
 
         self.parse_game_definition()
         self.parse_action_costs()
 
     def run(self):
-        register_game_message = messages_old.register_game(self.game_name, self.team_limit,
+        register_game_message = messages_new.register_game(self.game_name, self.team_limit,
                                                            self.team_limit)
         self.send(register_game_message)
 
@@ -115,7 +113,7 @@ class GameMaster(Client):
 
                         if self.get_num_of_players() == self.team_limit * 2:
                             #  We are ready to start the game
-                            self.send(messages_old.game_started(self.info.id))
+                            self.send(messages_new.game_started(self.info.id))
                             self.set_up_game()
                             self.game_on = True
                             self.play()
@@ -150,11 +148,11 @@ class GameMaster(Client):
         if self.get_num_of_players() == self.team_limit * 2:
             # he can't fit in, send a rejection message :(
             self.verbose_debug("Player " + in_player_id + " was rejected, because the game is already full.")
-            self.send(messages_old.reject_joining_game(self.game_name, in_player_id))
+            self.send(messages_new.reject_joining_game(in_player_id, self.game_name))
             return False
 
         # generating the private GUID
-        private_guid = uuid.uuid4()
+        private_guid = str(uuid.uuid4())
 
         # add him to a team while taking into account his preferences:
         team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team)
@@ -162,7 +160,7 @@ class GameMaster(Client):
         self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
                            + " in team " + team_color + ".")
 
-        self.send(messages_old.confirm_joining_game(self.info.id, private_guid, in_player_id, team_color, role))
+        self.send(messages_new.confirm_joining_game(in_player_id, str(self.info.id), private_guid, team_color, role))
 
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
@@ -193,25 +191,25 @@ class GameMaster(Client):
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.goals_height - 1)
             random_red_goal_field = self.info.goal_fields[x, y]
-            while not random_red_goal_field.is_occupied() and random_red_goal_field.type is GoalFieldType.NON_GOAL:
+            while random_red_goal_field.is_occupied():
                 x = randint(0, self.info.board_width - 1)
                 y = randint(0, self.info.goals_height)
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.red_players_locations[i] = (x, y)
+            self.teams[Allegiance.RED.value][i].location = (x, y)
 
         for i in self.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
             random_blue_goal_field = self.info.goal_fields[x, y]
-            while not random_blue_goal_field.is_occupied() and random_blue_goal_field.type is GoalFieldType.NON_GOAL:
+            while random_blue_goal_field.is_occupied():
                 x = randint(self.info.board_width - 1)
                 y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.blue_players_locations[i] = (x, y)
+            self.teams[Allegiance.BLUE.value][i].location = (x, y)
 
         # create the first pieces:
         for i in range(self.initial_number_of_pieces):
@@ -274,29 +272,29 @@ class GameMaster(Client):
         else:
             team = pref_team
 
-        if pref_role == PlayerRole.LEADER.value:
+        if pref_role == PlayerType.LEADER.value:
             for player in self.teams[team].values():
-                if player == PlayerRole.LEADER.value:
-                    role = PlayerRole.MEMBER.value
-            else:
-                role = PlayerRole.LEADER.value
+                if player.type == PlayerType.LEADER.value:
+                    role = PlayerType.MEMBER.value
+                else:
+                    role = PlayerType.LEADER.value
         else:
-            role = PlayerRole.MEMBER.value
+            role = PlayerType.MEMBER.value
 
-        self.teams[team][player_id] = role
+        self.teams[team][player_id] = PlayerInfo(player_id, role, team)
         return team, role
 
     def play(self):
+        for team in self.teams.values():
+            for player in team:
+                self.send(messages_new.game(player.id, self.teams, self.info.board_width, self.info.task_height,
+                                            self.info.goals_height, player.location))
 
         Thread(target=self.place_pieces(), daemon=True).start()
 
-        for team in self.teams.values():
-            for player_id in self.teams[team]:
-                # self.send(messages_old.game(player_id, team, self.teams[team][player_id]  ))
-                pass
-
         while self.game_on:
             message = self.receive()
+
         self.send("Thanks for the message.")
 
     def get_num_of_players(self):
