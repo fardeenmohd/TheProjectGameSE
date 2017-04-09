@@ -253,7 +253,7 @@ def join_game(game_name, pref_team, pref_type, player_id=None):
 
 def confirm_joining_game(player_id, game_id, player_guid, team, type):
     root = __player_message("ConfirmJoiningGame", player_id)
-    root.set("privateGuid", player_guid)
+    root.set("privateGuid", str(player_guid))
     root.set("gameId", game_id)
     e_definition_attributes = {"id": player_id, "type": type, "team": team}
     __append_element(root, "PlayerDefinition", e_definition_attributes)
