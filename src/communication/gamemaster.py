@@ -9,7 +9,7 @@ from time import sleep
 
 from src.communication import messages_new
 from src.communication.client import Client
-from src.communication.info import GameInfo, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
+from src.communication.info import GameInfo, Direction, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
     GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
 
@@ -155,7 +155,7 @@ class GameMaster(Client):
         private_guid = str(uuid.uuid4())
 
         # add him to a team while taking into account his preferences:
-        team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team)
+        team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team, private_guid)
 
         self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
                            + " in team " + team_color + ".")
@@ -257,7 +257,7 @@ class GameMaster(Client):
             "Added a " + new_piece.piece_type + " piece with id: " + piece_id + "at coordinates " + str(x) + ", " + str(
                 y) + ".")
 
-    def add_player(self, player_id, pref_role, pref_team):
+    def add_player(self, player_id, pref_role, pref_team, private_guid):
         """
         :returns: a tuple: (team, role)
         """
@@ -281,19 +281,62 @@ class GameMaster(Client):
         else:
             role = PlayerType.MEMBER.value
 
-        self.teams[team][player_id] = PlayerInfo(player_id, role, team)
+        self.teams[team][player_id] = PlayerInfo(player_id, role, team, guid=private_guid)
         return team, role
 
+    def find_player_by_guid(self, guid):
+
+        for team in self.teams.values():
+            for player in team:
+                if team[player].guid == guid:
+                    return team[player]
+
+    def send_validated_move_message(self,location,id):
+        #TODO: add move handling using data
+        if self.info.is_task_field(location):
+            1 + 1
+        if self.info.is_goal_field(location):
+            1 + 1
+        if self.info.is_out_of_bounds(location):
+            1 + 1
+
+    def handle_move_message(self, move_message):
+
+        root = ET.fromstring(move_message)
+
+        guid = root.get('playerGuid')
+        direction = root.get('direction')
+        player_info = self.find_player_by_guid(guid)
+        player_location = player_info.location
+
+        if direction == Direction.UP.value:
+            player_location[1] += 1
+
+        if direction == Direction.DOWN.value:
+            player_location[1] -= 1
+
+        if direction == Direction.LEFT.value:
+            player_location[1] -= 1
+
+        if direction == Direction.RIGHT.value:
+            player_location[1] += 1
+
+        self.send_validated_move_message(player_location)
+
     def play(self):
+
+        # Thread(target=self.place_pieces()).start()
+
         for team in self.teams.values():
             for player in team:
                 self.send(messages_new.game(player, self.teams, self.info.board_width, self.info.task_height,
                                             self.info.goals_height, team[player].location))
 
-        Thread(target=self.place_pieces(), daemon=True).start()
-
         while self.game_on:
-            message = self.receive()
+            message = messages_new.move(self.info.id, self.teams['blue']['1'].guid ,'up') #self.receive()
+            if "Move" in message:
+                self.handle_move_message(message)
+                break
 
         self.send("Thanks for the message.")
 
