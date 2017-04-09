@@ -189,11 +189,11 @@ class GameMaster(Client):
         # place the players:
         for i in self.teams[Allegiance.RED.value].keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(0, self.info.goals_height - 1)
+            y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
             random_red_goal_field = self.info.goal_fields[x, y]
             while random_red_goal_field.is_occupied():
                 x = randint(0, self.info.board_width - 1)
-                y = randint(0, self.info.goals_height)
+                y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
@@ -201,11 +201,11 @@ class GameMaster(Client):
 
         for i in self.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
-            y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
+            y = randint(0, self.info.goals_height - 1)
             random_blue_goal_field = self.info.goal_fields[x, y]
             while random_blue_goal_field.is_occupied():
-                x = randint(self.info.board_width - 1)
-                y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
+                x = randint(0, self.info.board_width - 1)
+                y = randint(0, self.info.goals_height - 1)
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
@@ -287,8 +287,8 @@ class GameMaster(Client):
     def play(self):
         for team in self.teams.values():
             for player in team:
-                self.send(messages_new.game(player.id, self.teams, self.info.board_width, self.info.task_height,
-                                            self.info.goals_height, player.location))
+                self.send(messages_new.game(player, self.teams, self.info.board_width, self.info.task_height,
+                                            self.info.goals_height, team[player].location))
 
         Thread(target=self.place_pieces(), daemon=True).start()
 
