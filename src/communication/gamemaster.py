@@ -9,7 +9,7 @@ from time import sleep
 from src.communication import messages
 from src.communication.client import Client
 from src.communication.info import GameInfo, Direction, GoalFieldInfo, Allegiance, TaskFieldInfo, PieceInfo, PieceType, \
-    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
+    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo, Location
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -149,7 +149,7 @@ class GameMaster(Client):
         # add him to a team while taking into account his preferences:
         team_color, role = self.add_player(in_player_id, in_pref_role, in_pref_team, private_guid)
 
-        self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned role of " + role
+        self.verbose_debug("Player with id " + in_player_id + " was accepted to game, assigned type of " + role
                            + " in team " + team_color + ".")
 
         self.send(messages.confirm_joining_game(in_player_id, str(self.info.id), private_guid, team_color, role))
@@ -189,7 +189,7 @@ class GameMaster(Client):
                 random_red_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.info.teams[Allegiance.RED.value][i].location = (x, y)
+            self.info.teams[Allegiance.RED.value][i].location = Location(x, y)
 
         for i in self.info.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
@@ -201,7 +201,7 @@ class GameMaster(Client):
                 random_blue_goal_field = self.info.goal_fields[x, y]
 
             self.info.goal_fields[x, y].player_id = int(i)
-            self.info.teams[Allegiance.BLUE.value][i].location = (x, y)
+            self.info.teams[Allegiance.BLUE.value][i].location = Location(x, y)
 
         # create the first pieces:
         for i in range(self.initial_number_of_pieces):
@@ -251,7 +251,7 @@ class GameMaster(Client):
 
     def add_player(self, player_id, pref_role, pref_team, private_guid):
         """
-        :returns: a tuple: (team, role)
+        :returns: a tuple: (team, type)
         """
         role = ""
 
