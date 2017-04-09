@@ -20,6 +20,7 @@ After starting the server, it will wait for and handle client connections. It is
 
 *Running the clients:*
 >python player.py
+
 and
 
 >python gamemaster.py
