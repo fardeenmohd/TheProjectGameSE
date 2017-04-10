@@ -363,7 +363,7 @@ class GameMaster(Client):
                                         self.info.goals_height, team[player].location))
 
         while self.game_on:
-            message = messages.move(self.info.id, self.info.teams['red']['2'].guid, 'left')
+            message = messages.move(self.info.id, self.info.teams['red']['2'].guid, 'up')
             # self.receive()
             if "Move" in message:
                 self.handle_move_message(message)
