@@ -183,7 +183,7 @@ class GameMaster(Client):
             x = randint(0, self.info.board_width - 1)
             y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
             random_red_goal_field = self.info.goal_fields[x, y]
-            while random_red_goal_field.is_occupied():
+            while random_red_goal_field.is_occupied:
                 x = randint(0, self.info.board_width - 1)
                 y = randint(whole_board_length - self.info.goals_height + 1, whole_board_length)
                 random_red_goal_field = self.info.goal_fields[x, y]
@@ -195,7 +195,7 @@ class GameMaster(Client):
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.goals_height - 1)
             random_blue_goal_field = self.info.goal_fields[x, y]
-            while random_blue_goal_field.is_occupied():
+            while random_blue_goal_field.is_occupied:
                 x = randint(0, self.info.board_width - 1)
                 y = randint(0, self.info.goals_height - 1)
                 random_blue_goal_field = self.info.goal_fields[x, y]
