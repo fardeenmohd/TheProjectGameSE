@@ -110,11 +110,6 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
     root = __player_message("Data", player_id)
     root.set("gameFinished", str(game_finished).lower())
 
-    # add PlayerLocation element:
-    if player_location is not None:
-        e_player_location = {"x": str(player_location.x), "y": str(player_location.y)}
-        __append_element(root, "PlayerLocation", e_player_location)
-
     # add TaskFields collection:
     c_task_fields = __append_element(root, "TaskFields")
     if task_fields is not None:
@@ -152,6 +147,11 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
             if piece.player_id is not None:
                 e_attributes["playerId"] = piece.player_id
             __append_element(c_pieces, "Piece", e_attributes)
+
+    # add PlayerLocation element:
+    if player_location is not None:
+        e_player_location = {"x": str(player_location.x), "y": str(player_location.y)}
+        __append_element(root, "PlayerLocation", e_player_location)
 
     return __validate_encode(root)
 

@@ -7,6 +7,9 @@ class Location():
         self.x = x
         self.y = y
 
+    def __str__(self):
+        return "({0}, {1})".format(str(self.x), str(self.y))
+
 
 class ClientTypeTag(Enum):
     CLIENT = "C"
@@ -58,6 +61,7 @@ class FieldInfo:
         if player_id is not None:
             self.player_id = player_id
 
+    @property
     def is_occupied(self):
         return self.player_id != -1
 
@@ -145,19 +149,25 @@ class GameInfo:
         else:
             return False
 
-    def is_task_field(self, location):
-        return location in self.task_fields.keys()
+    def is_task_field(self, location: Location):
+        return (location.x, location.y) in self.task_fields.keys()
 
-    def is_goal_field(self, location):
-        return location in self.goal_fields.keys()
+    def is_goal_field(self, location: Location):
+        return (location.x, location.y) in self.goal_fields.keys()
 
-    def is_out_of_bounds(self, location):
+    def is_out_of_bounds(self, location: Location):
         return not (self.is_task_field(location) or self.is_goal_field(location))
 
-    def get_neighbours(self, location):
-        # for (x, y), field in self.task_fields.items():
-        #     if
-        pass
+    def get_neighbours(self, location: Location):
+        # manhattan distance should be at most 1.
+        neighbours = {}
+        for (x, y), field in self.task_fields.items():
+            if abs(location.x - x) + abs(location.y - y) <= 1:
+                neighbours[x, y] = field
+        for (x, y), field in self.goal_fields.items():
+            if abs(location.x - x) + abs(location.y - y) <= 1:
+                neighbours[x, y] = field
+        return neighbours
 
 
 class PlayerInfo(ClientInfo):

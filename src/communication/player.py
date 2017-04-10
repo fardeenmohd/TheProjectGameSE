@@ -5,8 +5,8 @@ from argparse import ArgumentParser
 from src.communication import messages
 from src.communication.client import Client
 from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
-    PieceInfo, ClientTypeTag, PlayerInfo
-from src.communication.strategy import BaseStrategy
+    PieceInfo, ClientTypeTag, PlayerInfo, Location
+from src.communication.strategy import StrategyFactory, Decision
 from src.communication.unexpected import UnexpectedServerMessage
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
@@ -41,10 +41,11 @@ class Player(Client):
         self.open_games = []
         self.game_name = game_name
         self.team = 'Not Assigned'
-        self.role = 'Not Assigned'
-        self.location = tuple()
+        self.type = 'Not Assigned'
+        self.location = Location()
+        self.game_on = False
 
-        self.strategy = BaseStrategy()
+        self.strategy = None
 
     def handle_confirmation(self, message):
         """
@@ -60,7 +61,7 @@ class Player(Client):
 
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
-                self.role = player_definition.attrib.get('type')
+                self.type = player_definition.attrib.get('type')
             return True
 
         elif "RejectJoiningGame" in message:
@@ -88,7 +89,7 @@ class Player(Client):
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             x = int(player_location.attrib.get('x'))
             y = int(player_location.attrib.get('y'))
-            self.location = (x, y)
+            self.location = Location(x, y)
 
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
             for in_player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
@@ -175,9 +176,9 @@ class Player(Client):
             if player_location is not None:
                 x = int(task_field.attrib.get('x'))
                 y = int(task_field.attrib.get('y'))
-                self.location = (x, y)
+                self.location = Location(x, y)
 
-    def play(self):
+    def try_join(self, game_name):
         self.send(messages.get_games())
         print(messages.get_games())
         games = self.receive()
@@ -191,45 +192,58 @@ class Player(Client):
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
                 self.send(messages.join_game(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
+
                 confirmation = self.receive()
                 if confirmation is not None:
                     self.handle_confirmation(confirmation)
-                game_info = self.receive()
-                if game_info is not None:
-                    self.handle_game(game_info)
+                else:
+                    raise UnexpectedServerMessage
 
-                while 1:
-                    self.strategy.get_next_move()
+                game_message = self.receive()
+                if game_message is not None:
+                    self.handle_game(game_message)
+                else:
+                    raise UnexpectedServerMessage
 
+    def play(self):
+        self.game_on = True
+        self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
 
+        while self.game_on:
+            decision = self.strategy.get_next_move()
 
-                """ ----------message handling for future --------
-                self.send(self.move_message(Direction.UP))
-                move_response = self.receive()
-                if move_response is not None:
-                    self.handle_data(move_response)
-
+            if decision.choice == Decision.DISCOVER:
                 self.send(self.discover_message())
                 discover_response = self.receive()
                 if discover_response is not None:
                     self.handle_data(discover_response)
 
+            elif decision.choice == Decision.MOVE:
+                direction = decision.additional_info
+                self.send(self.move_message(direction))
+                move_response = self.receive()
+                if move_response is not None:
+                    self.handle_data(move_response)
+
+            elif decision.choice == Decision.PICK_UP:
                 self.send(self.pickup_message())
                 pickup_response = self.receive()
                 if pickup_response is not None:
                     self.handle_data(pickup_response)
 
+            elif decision.choice == Decision.PLACE:
                 self.send(self.place_message())
                 place_response = self.receive()
                 if place_response is not None:
                     self.handle_data(place_response)
 
+                """ ----------message handling for future --------
                 self.send(self.test_piece_message())
                 test_piece_response = self.receive()
                 if test_piece_response is not None:
                     self.handle_data(test_piece_response)
-
                 """
+
                 # TODO: add knowledge exchange sending and receiving when needed
 
 
@@ -239,6 +253,7 @@ if __name__ == '__main__':
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
+                p.try_join(game_name)
                 p.play()
                 p.shutdown()
 
