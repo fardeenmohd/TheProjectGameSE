@@ -202,8 +202,11 @@ class Player(Client):
                 game_message = self.receive()
                 if game_message is not None:
                     self.handle_game(game_message)
+                    return True
                 else:
                     raise UnexpectedServerMessage
+        return False
+
 
     def play(self):
         self.game_on = True
@@ -253,9 +256,9 @@ if __name__ == '__main__':
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
-                p.try_join(game_name)
-                p.play()
-                p.shutdown()
+                if p.try_join(game_name):
+                    p.play()
+                    p.shutdown()
 
 
     parser = ArgumentParser()

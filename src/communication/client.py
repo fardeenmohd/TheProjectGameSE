@@ -49,17 +49,10 @@ class Client:
             try:
                 self.verbose_debug("Trying to connect to server " + str(hostname + " at port " + str(port) + "."))
                 if self.socket.connect_ex((hostname, port)) == 0:
-                    # try to receive the initial "greeting" byte from Server
-                    received = self.socket.recv(1)
-                    if received.decode() == '1':
-                        # # say hello to the server
-                        # self.send("1")
-                        self.connected = True
-                        self.verbose_debug("Succesfully connected to server.")
-                        return True
-                    else:
-                        self.verbose_debug("Message was not number 1! It actually was: " + received, True)
-                        raise socket.error
+                    self.connected = True
+                    self.verbose_debug("Succesfully connected to server.")
+                    return True
+
                 else:
                     raise socket.error
 

@@ -20,13 +20,13 @@ class CommunicationServer:
     DEFAULT_BUFFER_SIZE = 1024
     DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
-    DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
+
+    # below list contains messages which are addressed to a different player, NOT GM
     TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
                           "RejectKnowledgeExchange"]
 
-    def __init__(self, verbose: bool, hostname: str = DEFAULT_HOSTNAME, port: int = DEFAULT_PORT,
-                 client_limit: int = DEFAULT_CLIENT_LIMIT):
+    def __init__(self, verbose: bool, hostname: str = DEFAULT_HOSTNAME, port: int = DEFAULT_PORT):
         """
         constructor.
         :param verbose:
@@ -38,7 +38,6 @@ class CommunicationServer:
         self.running = True
         self.host = hostname
         self.port = port
-        self.client_limit = client_limit
         self.verbose = verbose
 
         self.socket = socket.socket()
@@ -128,19 +127,8 @@ class CommunicationServer:
         while self.running:
             # block and wait until a client connects:
             client_socket, address = self.socket.accept()
-
-            if len(self.clients) < self.client_limit:
-                # if client limit not exceeded, handle the new client:
-                # send a single byte which says "greetings"
-                self.verbose_debug("Accepted some client, sending greeting byte...")
-                client_socket.send('1'.encode())
-                self.register_connection(client_socket, str(self.client_indexer))
-                self.client_indexer += 1
-            else:
-                # if client limit exceeded, send a "sorry, server full" byte:
-                client_socket.send('0'.encode())
-                client_socket.close()
-                sleep(1)
+            self.register_connection(client_socket, str(self.client_indexer))
+            self.client_indexer += 1
 
     def register_connection(self, client_socket: socket, client_id: str):
         new_client = ClientInfo(client_id, socket=client_socket)
@@ -148,8 +136,6 @@ class CommunicationServer:
 
         self.verbose_debug(
             "New client: " + new_client.get_tag() + " with address " + str(client_socket.getsockname()) + " connected.")
-        if len(self.clients) == self.client_limit:
-            self.verbose_debug("Client capacity reached.")
 
         Thread(target=self.handle_client, args=[new_client], daemon=True).start()
 
@@ -212,8 +198,6 @@ class CommunicationServer:
             if "JoinGame" in player_message:
                 self.handle_join(player, player_message)
 
-            # below list contains messages which are addressed to a different player, NOT GM
-
             elif any(message in player_message for message in self.TO_PLAYER_MESSAGES):
                 self.send(self.clients[message_root.attrib["playerId"]], player_message)
 
@@ -257,37 +241,38 @@ class CommunicationServer:
                 if len(should_not_be_a_message) > 0:
                     raise UnexpectedClientMessage(
                         "GameMaster tried to register a game again, while he should have switched off!")
+        else:
+            ###############REGISTERING GAME DONE###################
+            # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
+            while self.running and gm.id in self.clients.keys():
+                gm_msg = self.receive(gm)
 
-        ###############REGISTERING GAME DONE###################
-        # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
-        while self.running:
-            gm_msg = self.receive(gm)
-            msg_root = ET.fromstring(gm_msg)
+                if gm_msg is None:
+                    raise ConnectionAbortedError
 
-            if gm_msg is None:
-                raise ConnectionAbortedError
+                msg_root = ET.fromstring(gm_msg)
 
-            # non-default message types:
-            elif "ConfirmJoiningGame" in gm_msg:
-                player_id = msg_root.attrib["playerId"]
-                self.clients[player_id].game_master_id = gm.id
-                self.send(self.clients[player_id], gm_msg)
+                # non-default message types:
+                if "ConfirmJoiningGame" in gm_msg:
+                    player_id = msg_root.attrib["playerId"]
+                    self.clients[player_id].game_master_id = gm.id
+                    self.send(self.clients[player_id], gm_msg)
 
-            elif "GameStarted" in gm_msg:
-                game_id = msg_root.attrib["gameId"]
-                self.games[game_id].open = False
+                elif "GameStarted" in gm_msg:
+                    game_id = msg_root.attrib["gameId"]
+                    self.games[game_id].open = False
 
-            elif "Data" in gm_msg:
-                player_id = msg_root.attrib["playerId"]
-                game_id = msg_root.attrib["gameId"]
-                finished = msg_root.attrib["gameFinished"]
-                if finished == "true":
-                    del self.games[game_id]
-                self.send(gm_msg, player_id)
+                elif "Data" in gm_msg:
+                    player_id = msg_root.attrib["playerId"]
+                    game_id = msg_root.attrib["gameId"]
+                    finished = msg_root.attrib["gameFinished"]
+                    if finished == "true":
+                        del self.games[game_id]
+                    self.send(gm_msg, player_id)
 
-            else:
-                # DEFAULT MESSAGE HANDLING:
-                self.relay_msg_to_player(gm_msg)
+                else:
+                    # DEFAULT MESSAGE HANDLING:
+                    self.relay_msg_to_player(gm_msg)
 
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
@@ -296,6 +281,8 @@ class CommunicationServer:
         :param register_game_message: string containing a RegisterGame message
         :returns True, if succeeded, False if it didnt
         """
+        if register_game_message is None:
+            raise ConnectionAbortedError
         register_games_root = ET.fromstring(register_game_message)
 
         new_game_info = register_games_root[0]  # access index 0 because info is in the first (and only) child of root
@@ -304,6 +291,8 @@ class CommunicationServer:
         new_blue_players = new_game_info.attrib["blueTeamPlayers"]
         new_red_players = new_game_info.attrib["redTeamPlayers"]
         # done parsing.
+
+        gm.game_name = new_game_name
 
         # check if game with this name exists:
         if len([game for game_index, game in self.games.items() if game.name == new_game_name]) > 0:
@@ -315,11 +304,9 @@ class CommunicationServer:
         else:
             # create the new game:
             game_id = str(self.games_indexer)
-            self.games[self.games_indexer] = GameInfo(id=game_id, name=new_game_name,
-                                                      max_blue_players=new_blue_players,
-                                                      max_red_players=new_red_players,
-                                                      open=True, game_master_id=gm.id)
-            gm.game_name = new_game_name
+            self.games[game_id] = GameInfo(id=game_id, name=new_game_name, max_blue_players=new_blue_players,
+                                           max_red_players=new_red_players,
+                                           open=True, game_master_id=gm.id)
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
@@ -354,10 +341,15 @@ class CommunicationServer:
         """
         :type client: ClientInfo
         """
+
+        # check if the client hadn't disconnected before we can read a message:
+        if client.id not in self.clients.keys():
+            raise ConnectionResetError
         try:
             received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionResetError
+
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
             sleep(0.01)
             return received_data
@@ -366,16 +358,16 @@ class CommunicationServer:
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
             self.disconnect_client(client.id)
 
-    def disconnect_client(self, client_index: int):
+    def disconnect_client(self, client_id: int):
 
-        if client_index not in self.clients.keys():
+        if client_id not in self.clients.keys():
             return
-        client = self.clients[client_index]
+        client = self.clients[client_id]
 
         # if the client was a GM, remove his game from server:
         if client.tag == ClientTypeTag.GAME_MASTER:
             for game_info in self.games.values():
-                if game_info.name == client.game_name:
+                if game_info.name == client.game_name and game_info.game_master_id == client_id:
                     del self.games[game_info.id]
                     self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")
                     break
@@ -387,12 +379,11 @@ class CommunicationServer:
         try:
             client.socket.close()
             temp = dict(self.clients)
-            del temp[client_index]
+            del temp[client_id]
             self.clients = temp
 
         except socket.error as e:
             self.verbose_debug("Couldn't close socket?! " + str(e), True)
-
 
     def shutdown(self):
         self.running = False
