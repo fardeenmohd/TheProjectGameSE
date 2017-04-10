@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from datetime import datetime
 from random import random, randint
+from threading import Thread
 from time import sleep
 
 from src.communication import messages
@@ -121,6 +122,10 @@ class GameMaster(Client):
             self.verbose_debug("Shutting down due to unexpected message: " + message)
             self.shutdown()
 
+        except (ConnectionAbortedError, ConnectionResetError) as e:
+            self.verbose_debug("Server shut down or other type of connection error: " + str(e))
+            self.shutdown()
+
     def handle_join(self, message):
         # a player is trying to join! let's parse his message
         joingame_root = ET.fromstring(message)
@@ -219,13 +224,15 @@ class GameMaster(Client):
         if not self.info.check_for_empty_task_fields():
             return False
 
+        # randomize until we find a suitable field:
+
         x = randint(0, self.info.board_width - 1)
-        y = randint(0, self.info.task_height - 1)
+        y = randint(self.info.goals_height, self.info.task_height - 1)
 
         i = 0
         while self.info.has_piece(x, y) and i < self.RANDOMIZATION_ATTEMPTS:
             x = randint(0, self.info.board_width - 1)
-            y = randint(0, self.info.task_height - 1)
+            y = randint(self.info.goals_height, self.info.task_height - 1)
             i += 1
 
         if self.info.has_piece(x, y):
@@ -241,6 +248,13 @@ class GameMaster(Client):
             new_piece.piece_type = PieceType.NORMAL
         else:
             new_piece.piece_type = PieceType.SHAM
+
+        found_field = self.info.task_fields[x, y]
+        # update distance_to_piece in all fields:
+        for field in self.info.task_fields.values():
+            distance = self.info.manhattan_distance(field, found_field)
+            if field.distance_to_piece == -1 or field.distance_to_piece > distance:
+                field.distance_to_piece = distance
 
         self.info.task_fields[x, y].piece_id = piece_id
         self.info.pieces[piece_id] = new_piece
@@ -288,43 +302,48 @@ class GameMaster(Client):
                 if team[player].id == id:
                     return team[player]
 
-    def send_validated_move_message(self, new_location, player_info):
+    def send_validated_move_message(self, new_location: Location, player_info: PlayerInfo):
 
         if self.info.is_task_field(new_location):
             the_task_field = self.info.task_fields[new_location]
+
             if the_task_field.is_occupied():
-                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        task_fields={new_location: the_task_field},
-                                        player_location=player_info.location))
+                # can't move, stay in the same location.
+                new_location = player_info.location
 
-            elif the_task_field.has_piece(new_location):
-                the_piece = self.info.pieces[new_location]
-                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        task_fields={new_location: the_task_field},
-                                        pieces={new_location: the_piece},
-                                        player_location=new_location))
+            if the_task_field.has_piece(new_location):
+                piece_id = the_task_field.piece_id
 
+                # check if the Player already knows what type this piece is:
+                # if yes, keep his information about it:
+                if piece_id in self.info.teams[player_info.team][player_info.id].info.pieces.keys():
+                    piece_info = self.info.teams[player_info.team][player_info.id].info.pieces[piece_id]
+                else:
+                    # if he doesn't yet know about the Piece, set its type to unknown
+                    piece_info = PieceInfo(piece_id, piece_type=PieceType.UNKNOWN.value)
+                self.send(messages.data(player_info.id, self.info.finished, {new_location: the_task_field},
+                                        pieces={piece_id: piece_info}, player_location=new_location))
             else:
-                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        task_fields={new_location: the_task_field},
+                self.send(messages.data(player_info.id, self.info.finished, {new_location: the_task_field},
                                         player_location=new_location))
 
-        if self.info.is_goal_field(new_location):
+        elif self.info.is_goal_field(new_location):
 
             the_goal_field = self.info.goal_fields[new_location]
             if the_goal_field.is_occupied():
-                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        goal_fields={new_location: the_goal_field},
-                                        player_location=player_info.location))
-            else:
-                self.send(messages.data(player_id=player_info.id, game_finished=self.info.finished,
-                                        goal_fields={new_location: the_goal_field},
-                                        player_location=new_location))
+                new_location = player_info.location
 
-        if self.info.is_out_of_bounds(player_info.location):
+            x, y = new_location.x, new_location.y
+            the_goal_field.type = self.info.teams[player_info.team][player_info.id].info.goal_fields[x, y].type
+
+            self.send(messages.data(player_info.id, self.info.finished, {new_location: the_goal_field}, new_location))
+
+        elif self.info.is_out_of_bounds(player_info.location):
             self.send(messages.data(player_info.id, self.info.finished, player_location=player_info.location))
 
     def handle_move_message(self, move_message):
+
+        sleep(float(self.move_delay) / 1000)
 
         root = ET.fromstring(move_message)
 
@@ -350,26 +369,67 @@ class GameMaster(Client):
 
     def handle_discover_message(self, discover_message):
 
+        sleep(float(self.discover_delay) / 1000)
+
         root = ET.fromstring(discover_message)
         player_id = root.attrib.get('playerId')
         player_info = self.find_player_by_id(player_id)
 
+        goal_fields = {}
+        task_fields = {}
+        pieces = {}
+
+        # get all 8 neighbouts
+        for (x, y), neighbour in player_info.info.get_neighbours(player_info.location, True).items():
+
+            # if neighbour is a TaskField, update info about a player who is standing on that Field, and about distance to piece
+            if self.info.is_task_field(Location(x, y)):
+                player_info.task_fields[x, y].player_id = neighbour.player_id
+                player_info.task_fields[x, y].distance_to_piece = neighbour.distance_to_piece
+
+                # if this field has a piece, check if player knows about it
+                if neighbour.has_piece():
+                    if neighbour.piece_id not in player_info.pieces.keys():
+                        # if he doesn't know, add it to his dict
+                        player_info.pieces[neighbour.piece_id] = PieceInfo(neighbour.piece_id,
+                                                                           piece_type=PieceType.UNKNOWN.value)
+                    pieces = player_info.pieces
+                    player_info.task_fields[x, y].piece_id = neighbour.piece_id
+                if len(pieces) < 1:
+                    pieces = None
+                task_fields[x, y] = player_info.task_fields[x, y]
+
+            else:
+                # it is a goal field.
+                player_info.goal_fields[x, y].player_id = neighbour.player_id
+                goal_fields[x, y] = player_info.goal_fields[x, y]
+
+        self.send(messages.data(player_id, self.info.finished, task_fields, goal_fields, pieces))
+
     def play(self):
-        # Thread(target=self.place_pieces()).start()
 
         for team in self.info.teams.values():
             for player in team:
                 self.send(messages.game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
 
-        while self.game_on:
-            message = messages.move(self.info.id, self.info.teams['red']['2'].guid, 'up')
-            # self.receive()
-            if "Move" in message:
-                self.handle_move_message(message)
-                break
+        Thread(target=self.place_pieces).start()
 
-        self.send("Thanks for the message.")
+        while self.game_on:
+
+            message = self.receive()
+            if message is None:
+                raise ConnectionAbortedError
+
+            # handling depends on type of message:
+
+            if "Move" in message:
+                Thread(target=self.handle_move_message, args=message, daemon=True).start()
+
+            elif "Discover" in message:
+                Thread(target=self.handle_discover_message, args=message, daemon=True).start()
+
+                # TODO: other types of messages:
 
     def get_num_of_players(self):
         return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])

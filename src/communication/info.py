@@ -122,9 +122,9 @@ class GameInfo:
             goal_fields = {}
         if task_fields is None:
             task_fields = {}
-        self.pieces = pieces
-        self.goal_fields = goal_fields
-        self.task_fields = task_fields
+        self.pieces = pieces  # pieceId => PieceInfo
+        self.goal_fields = goal_fields  # (x,y) => GoalFieldInfo
+        self.task_fields = task_fields  # (x,y) => TaskFieldInfo
         self.board_width = board_width
         self.task_height = task_height
         self.goals_height = goals_height
@@ -158,16 +158,28 @@ class GameInfo:
     def is_out_of_bounds(self, location: Location):
         return not (self.is_task_field(location) or self.is_goal_field(location))
 
-    def get_neighbours(self, location: Location):
-        # manhattan distance should be at most 1.
+    def get_neighbours(self, location: Location, look_for_extended=False):
+        """
+        :param look_for_extended: if True, function will look for all 8 neighbours instead of 9.
+        :return:
+        """
+        dist = 1
+        if look_for_extended:
+            dist = 2
+
         neighbours = {}
         for (x, y), field in self.task_fields.items():
-            if abs(location.x - x) + abs(location.y - y) <= 1:
-                neighbours[x, y] = field
+            if not (abs(location.x - x) > 1) and not abs(location.y - y) > 1:
+                if abs(location.x - x) + abs(location.y - y) <= dist:
+                    neighbours[x, y] = field
         for (x, y), field in self.goal_fields.items():
-            if abs(location.x - x) + abs(location.y - y) <= 1:
-                neighbours[x, y] = field
+            if not (abs(location.x - x) > 1) and not abs(location.y - y) > 1:
+                if abs(location.x - x) + abs(location.y - y) <= dist:
+                    neighbours[x, y] = field
         return neighbours
+
+    def manhattan_distance(self, field_a: FieldInfo, field_b: FieldInfo):
+        return abs(field_a.x - field_b.x) + abs(field_a.y - field_b.y)
 
 
 class PlayerInfo(ClientInfo):
@@ -181,4 +193,3 @@ class PlayerInfo(ClientInfo):
         self.team = team
         self.location = location
         self.guid = guid
-
