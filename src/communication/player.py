@@ -4,8 +4,7 @@ from argparse import ArgumentParser
 
 from src.communication import messages
 from src.communication.client import Client
-from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
-    PieceInfo, ClientTypeTag, PlayerInfo, Location
+from src.communication.info import GameInfo, PlayerType, Allegiance, PieceInfo, ClientTypeTag, PlayerInfo, Location
 from src.communication.strategy import StrategyFactory, Decision
 from src.communication.unexpected import UnexpectedServerMessage
 
@@ -98,42 +97,27 @@ class Player(Client):
                 in_id = in_player.attrib.get('id')
                 self.game_info.teams[in_team][in_id] = PlayerInfo(in_id, in_type, in_type)
 
-        y = 2 * self.game_info.goals_height + self.game_info.task_height - 1
-        for i in range(self.game_info.goals_height):
-            for x in range(self.game_info.board_width):
-                if (x, y) not in self.game_info.goal_fields.keys():
-                    self.game_info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
-            y -= 1
+        self.game_info.initialize_fields()
 
-        for i in range(self.game_info.task_height):
-            for x in range(self.game_info.board_width):
-                self.game_info.task_fields[x, y] = TaskFieldInfo(x, y)
-            y -= 1
-
-        for i in range(self.game_info.goals_height):
-            for x in range(self.game_info.board_width):
-                if (x, y) not in self.game_info.goal_fields.keys():
-                    self.game_info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
-            y -= 1
 
     def move_message(self, direction):
         """
         :param direction: Move direction
         :return: Move direction message
         """
-        return messages.move(self.game_info.id, self.Guid, direction)
+        return messages.Move(self.game_info.id, self.Guid, direction)
 
     def discover_message(self):
-        return messages.discover(self.game_info.id, self.Guid)
+        return messages.Discover(self.game_info.id, self.Guid)
 
     def pickup_message(self):
-        return messages.pick_up_piece(self.game_info.id, self.Guid)
+        return messages.PickUpPiece(self.game_info.id, self.Guid)
 
     def place_message(self):
-        return messages.place_piece(self.game_info.id, self.Guid)
+        return messages.PlacePiece(self.game_info.id, self.Guid)
 
     def test_piece_message(self):
-        return messages.test_piece(self.game_info.id, self.Guid)
+        return messages.TestPiece(self.game_info.id, self.Guid)
 
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
@@ -167,7 +151,7 @@ class Player(Client):
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
             if piece_list is not None:
                 for piece in piece_list.findall(REGISTERED_GAMES_TAG + "Piece"):
-                    id = int(piece.attrib.get('id'))
+                    id = piece.attrib.get('id')
                     timestamp = piece.attrib.get('timestamp')
                     type = piece.attrib.get('type')
                     self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
@@ -179,8 +163,8 @@ class Player(Client):
                 self.location = Location(x, y)
 
     def try_join(self, game_name):
-        self.send(messages.get_games())
-        print(messages.get_games())
+        self.send(messages.GetGames())
+        print(messages.GetGames())
         games = self.receive()
 
         if 'RegisteredGames' in games:
@@ -191,7 +175,7 @@ class Player(Client):
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
-                self.send(messages.join_game(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
+                self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
 
                 confirmation = self.receive()
                 if confirmation is not None:

@@ -185,7 +185,7 @@ class CommunicationServer:
                 open_games[game.id] = game
 
         # and send them to this player
-        self.send(player, messages.registered_games(open_games))
+        self.send(player, messages.RegisteredGames(open_games))
 
         while self.running:
             player_message = self.receive(player)
@@ -221,7 +221,7 @@ class CommunicationServer:
                 self.send(self.clients[gm_id], join_game_message)
                 return True
         # no game with this name, send rejection
-        self.send(player, messages.reject_joining_game(player.id, players_game_name))
+        self.send(player, messages.RejectJoiningGame(player.id, players_game_name))
         return False
 
     def handle_gm(self, gm: ClientInfo, registration_msg: str):
@@ -229,13 +229,13 @@ class CommunicationServer:
 
         if not self.try_register_game(gm, registration_msg):
             # registration failed. send rejection:
-            self.send(gm, messages.reject_game_registration(gm.game_name))
+            self.send(gm, messages.RejectGameRegistration(gm.game_name))
 
             # GM will be trying again, so let's wait for his second attempt:
             second_attempt_message = self.receive(gm)
             if not self.try_register_game(gm, second_attempt_message):
                 # registration failed, again. send rejection:
-                self.send(gm, messages.reject_game_registration(gm.game_name))
+                self.send(gm, messages.RejectGameRegistration(gm.game_name))
                 # gm should not try to register anymore, so if we receive any message now then it's an error:
                 should_not_be_a_message = self.receive(gm)
                 if len(should_not_be_a_message) > 0:
@@ -310,7 +310,7 @@ class CommunicationServer:
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
-            self.send(gm, messages.confirm_game_registration(game_id))
+            self.send(gm, messages.ConfirmGameRegistration(game_id))
             self.games_indexer += 1
             return True
 

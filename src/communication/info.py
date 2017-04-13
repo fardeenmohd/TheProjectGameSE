@@ -3,12 +3,10 @@ from enum import Enum
 
 
 class Location():
-    def __init__(self, x=0, y=0):
+    # legacy class, should not be used anymore (use x,y tuples for location instead)
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-
-    def __str__(self):
-        return "({0}, {1})".format(str(self.x), str(self.y))
 
 
 class ClientTypeTag(Enum):
@@ -64,6 +62,26 @@ class FieldInfo:
     @property
     def is_occupied(self):
         return self.player_id != -1
+
+    @property
+    def location(self):
+        return self.x, self.y
+
+    def __setitem__(self, key: int, value: int):
+        if key != 0 and key != 1:
+            raise IndexError
+        if key == 0:
+            self.x = value
+        if key == 1:
+            self.y = value
+
+    def __getitem__(self, key: int):
+        if key != 0 and key != 1:
+            raise IndexError
+        if key == 0:
+            return self.x
+        if key == 1:
+            return self.y
 
 
 class TaskFieldInfo(FieldInfo):
@@ -149,18 +167,18 @@ class GameInfo:
         else:
             return False
 
-    def is_task_field(self, location: Location):
-        return (location.x, location.y) in self.task_fields.keys()
+    def is_task_field(self, location: tuple):
+        return (location[0], location[1]) in self.task_fields.keys()
 
-    def is_goal_field(self, location: Location):
-        return (location.x, location.y) in self.goal_fields.keys()
+    def is_goal_field(self, location: tuple):
+        return (location[0], location[1]) in self.goal_fields.keys()
 
-    def is_out_of_bounds(self, location: Location):
+    def is_out_of_bounds(self, location: tuple):
         return not (self.is_task_field(location) or self.is_goal_field(location))
 
-    def get_neighbours(self, location: Location, look_for_extended=False):
+    def get_neighbours(self, location: tuple, look_for_extended=False):
         """
-        :param look_for_extended: if True, function will look for all 8 neighbours instead of 9.
+        :param look_for_extended: if True, function will look for all 8 neighbours (including diagonal) instead of 4.
         :return:
         """
         dist = 1
@@ -169,26 +187,59 @@ class GameInfo:
 
         neighbours = {}
         for (x, y), field in self.task_fields.items():
-            if not (abs(location.x - x) > 1) and not abs(location.y - y) > 1:
-                if abs(location.x - x) + abs(location.y - y) <= dist:
+            if not (abs(location[0] - x) > 1) and not abs(location[1] - y) > 1:
+                if abs(location[0] - x) + abs(location[1] - y) <= dist:
                     neighbours[x, y] = field
         for (x, y), field in self.goal_fields.items():
-            if not (abs(location.x - x) > 1) and not abs(location.y - y) > 1:
-                if abs(location.x - x) + abs(location.y - y) <= dist:
+            if not (abs(location[0] - x) > 1) and not abs(location[1] - y) > 1:
+                if abs(location[0] - x) + abs(location[1] - y) <= dist:
                     neighbours[x, y] = field
+
+        # neighbours will include the original field itself, so we remove it:
+        del neighbours[location]
         return neighbours
 
-    def manhattan_distance(self, field_a: FieldInfo, field_b: FieldInfo):
-        return abs(field_a.x - field_b.x) + abs(field_a.y - field_b.y)
+    @staticmethod
+    def manhattan_distance(field_a: FieldInfo, field_b: FieldInfo):
+        return abs(field_a[0] - field_b[0]) + abs(field_a[1] - field_b[1])
+
+    @property
+    def whole_board_length(self):
+        return 2 * self.goals_height + self.task_height - 1
+
+    def initialize_fields(self, goals_height=None, task_height=None):
+
+        if goals_height is not None:
+            self.goals_height = goals_height
+        if task_height is not None:
+            self.task_height = task_height
+
+        y = 2 * self.goals_height + self.task_height - 1
+
+        for i in range(self.goals_height):
+            for x in range(self.board_width):
+                if (x, y) not in self.goal_fields.keys():
+                    self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
+            y -= 1
+
+        for i in range(self.task_height):
+            for x in range(self.board_width):
+                if (x, y) not in self.task_fields.keys():
+                    self.task_fields[x, y] = TaskFieldInfo(x, y)
+            y -= 1
+
+        for i in range(self.goals_height):
+            for x in range(self.board_width):
+                if (x, y) not in self.goal_fields.keys():
+                    self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
+            y -= 1
 
 
-class PlayerInfo(ClientInfo):
+class PlayerInfo():
     """used by GameMaster only (for now, at least...)"""
 
-    def __init__(self, id="-1", tag=PlayerType.MEMBER.value, team=None, info: GameInfo = None,
-                 location: Location = None, guid=None):
-        super(PlayerInfo, self).__init__(id=id, tag=ClientTypeTag.PLAYER)
-        self.type = tag
+    def __init__(self, id="-1", team=None, info: GameInfo = None, type=None, location: tuple = None, guid=None):
+        self.id = id
         self.info = info
         self.team = team
         self.location = location

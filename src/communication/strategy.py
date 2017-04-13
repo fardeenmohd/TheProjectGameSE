@@ -1,6 +1,6 @@
 import random
 
-from src.communication.info import GameInfo, Allegiance, Location, Direction, GoalFieldType
+from src.communication.info import GameInfo, Allegiance, Direction, GoalFieldType
 from src.communication.unexpected import StrategicError
 
 
@@ -17,7 +17,7 @@ class Decision:
     PLACE = 8
 
 
-def StrategyFactory(team: str, player_type: str, location: Location, game_info: GameInfo):
+def StrategyFactory(team: str, player_type: str, location: tuple, game_info: GameInfo):
     if team == Allegiance.RED.value:
         return BasicRedStrategy(team, player_type, location, game_info)
     else:
@@ -25,7 +25,7 @@ def StrategyFactory(team: str, player_type: str, location: Location, game_info: 
 
 
 class BaseStrategy:
-    def __init__(self, team: str, player_type: str, location: Location, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
 
         self.team = team
         self.player_type = player_type
@@ -71,7 +71,7 @@ class BaseStrategy:
         # try to place the piece on the field on which we're standing.
 
         # first find if our would-be goal field is not already discovered:
-        field = self.game_info.goal_fields[self.current_location.x, self.current_location.y]
+        field = self.game_info.goal_fields[self.current_location[0], self.current_location[1]]
         if field.type == GoalFieldType.UNKNOWN:
             return Decision(Decision.PLACE)
         else:
@@ -120,7 +120,7 @@ class BaseStrategy:
                 "Player should be in a Task Field, but wasn't! Location: " + str(self.current_location))
 
         # check if our current field has a piece:
-        field = self.game_info.task_fields[self.current_location.x, self.current_location.y]
+        field = self.game_info.task_fields[self.current_location[0], self.current_location[1]]
         if field.has_piece():
             self.have_piece = field.piece_id
             return Decision(Decision.PICK_UP)
@@ -144,21 +144,21 @@ class BaseStrategy:
         valid_directions = []
         for neighbour in neighbours.values():
             if not neighbour.is_occupied:
-                if neighbour.y > self.current_location.y:
+                if neighbour[1] > self.current_location[1]:
                     valid_directions.append(Direction.UP.value)
-                if neighbour.y < self.current_location.y:
+                if neighbour[1] < self.current_location[1]:
                     valid_directions.append(Direction.DOWN.value)
-                if neighbour.x < self.current_location.x:
+                if neighbour[0] < self.current_location[0]:
                     valid_directions.append(Direction.LEFT.value)
-                if neighbour.x > self.current_location.x:
+                if neighbour[0] > self.current_location[0]:
                     valid_directions.append(Direction.RIGHT.value)
         return random.choice(valid_directions)
 
     def get_direction_to(self, field):
         # returns a Direction which should be taken in order to get to the specified field.
 
-        y_delta = field.y - self.current_location.y
-        x_delta = field.x - self.current_location.x
+        y_delta = field[1] - self.current_location[1]
+        x_delta = field[0] - self.current_location[0]
 
         if abs(y_delta) > abs(x_delta) and y_delta > 0:
             return Direction.UP.value
@@ -171,15 +171,15 @@ class BaseStrategy:
 
     def try_go_down(self):
         # check if the field below us is occupied:
-        if self.game_info.is_goal_field(Location(self.current_location.x, self.current_location.y - 1)):
-            if not self.game_info.goal_fields[self.current_location.x, self.current_location.y - 1].is_occupied:
+        if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] - 1)):
+            if not self.game_info.goal_fields[self.current_location[0], self.current_location[1] - 1].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.DOWN.value)
             else:
                 # we can't move there. let's move randomly.
                 return self.get_random_move()
         else:
-            if not self.game_info.task_fields[self.current_location.x, self.current_location.y - 1].is_occupied:
+            if not self.game_info.task_fields[self.current_location[0], self.current_location[1] - 1].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.DOWN.value)
             else:
@@ -188,15 +188,15 @@ class BaseStrategy:
 
     def try_go_up(self):
         # check if the field above us is occupied:
-        if self.game_info.is_goal_field(Location(self.current_location.x, self.current_location.y + 1)):
-            if not self.game_info.goal_fields[self.current_location.x, self.current_location.y + 1].is_occupied:
+        if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] + 1)):
+            if not self.game_info.goal_fields[self.current_location[0], self.current_location[1] + 1].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.UP.value)
             else:
                 # we can't move there. let's move randomly.
                 return self.get_random_move()
         else:
-            if not self.game_info.task_fields[self.current_location.x, self.current_location.y + 1].is_occupied:
+            if not self.game_info.task_fields[self.current_location[0], self.current_location[1] + 1].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.UP.value)
             else:
@@ -205,7 +205,7 @@ class BaseStrategy:
 
 
 class BasicBlueStrategy(BaseStrategy):
-    def __init__(self, team: str, player_type: str, location: Location, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
         super(BasicBlueStrategy, self).__init__(team, player_type, location, game_info)
 
     def go_to_goal_fields(self):
@@ -218,7 +218,7 @@ class BasicBlueStrategy(BaseStrategy):
 
 
 class BasicRedStrategy(BaseStrategy):
-    def __init__(self, team: str, player_type: str, location: Location, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
         super(BasicRedStrategy, self).__init__(team, player_type, location, game_info)
 
     def go_to_goal_fields(self):
