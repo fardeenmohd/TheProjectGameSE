@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 
 from src.communication import messages
 from src.communication.client import Client
-from src.communication.info import GameInfo, PlayerType, Allegiance, PieceInfo, ClientTypeTag, PlayerInfo, Location
+from src.communication.info import GameInfo, PlayerType, Allegiance, PieceInfo, ClientTypeTag, PlayerInfo
 from src.communication.strategy import StrategyFactory, Decision
 from src.communication.unexpected import UnexpectedServerMessage
 
@@ -41,7 +41,7 @@ class Player(Client):
         self.game_name = game_name
         self.team = 'Not Assigned'
         self.type = 'Not Assigned'
-        self.location = Location()
+        self.location = tuple()
         self.game_on = False
 
         self.strategy = None
@@ -88,7 +88,7 @@ class Player(Client):
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             x = int(player_location.attrib.get('x'))
             y = int(player_location.attrib.get('y'))
-            self.location = Location(x, y)
+            self.location = (x, y)
 
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
             for in_player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
@@ -160,11 +160,25 @@ class Player(Client):
             if player_location is not None:
                 x = int(task_field.attrib.get('x'))
                 y = int(task_field.attrib.get('y'))
-                self.location = Location(x, y)
+                self.location = (x, y)
+
+    def receive(self):
+        """
+        overriding the parent method to implement re-joining when GM disconnects
+        """
+        received = super(Player, self).receive()
+        if "GameMasterDisconnected" in received:
+            # clean up our knowledge and try to join to the game again.
+            self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
+            if not self.try_join(self.game_name):
+                # if we failed to join, kys
+                self.verbose_debug("Failed to re-join game. Shutting down.")
+                self.shutdown()
+        return received
+
 
     def try_join(self, game_name):
         self.send(messages.GetGames())
-        print(messages.GetGames())
         games = self.receive()
 
         if 'RegisteredGames' in games:
@@ -191,7 +205,6 @@ class Player(Client):
                     raise UnexpectedServerMessage
         return False
 
-
     def play(self):
         self.game_on = True
         self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
@@ -201,28 +214,16 @@ class Player(Client):
 
             if decision.choice == Decision.DISCOVER:
                 self.send(self.discover_message())
-                discover_response = self.receive()
-                if discover_response is not None:
-                    self.handle_data(discover_response)
 
             elif decision.choice == Decision.MOVE:
                 direction = decision.additional_info
                 self.send(self.move_message(direction))
-                move_response = self.receive()
-                if move_response is not None:
-                    self.handle_data(move_response)
 
             elif decision.choice == Decision.PICK_UP:
                 self.send(self.pickup_message())
-                pickup_response = self.receive()
-                if pickup_response is not None:
-                    self.handle_data(pickup_response)
 
             elif decision.choice == Decision.PLACE:
                 self.send(self.place_message())
-                place_response = self.receive()
-                if place_response is not None:
-                    self.handle_data(place_response)
 
                 """ ----------message handling for future --------
                 self.send(self.test_piece_message())
@@ -230,6 +231,15 @@ class Player(Client):
                 if test_piece_response is not None:
                     self.handle_data(test_piece_response)
                 """
+            # ... after sending...
+            response = self.receive()
+            if response is None:
+                self.verbose_debug("Something wrong happened to the server! Shutting down.")
+                self.shutdown()
+
+            else:
+                # normal response!
+                self.handle_data(response)
 
                 # TODO: add knowledge exchange sending and receiving when needed
 

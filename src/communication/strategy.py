@@ -31,7 +31,7 @@ class BaseStrategy:
         self.player_type = player_type
         self.current_location = location
         self.game_info = game_info
-        self.last_move = None
+        self.last_move = Decision(Decision.NULLDECISION)
         self.have_piece = -1  # by default, the player doesn't have a piece.
         # if self.have_piece is different from -1, then it is the id of the currently held piece
 

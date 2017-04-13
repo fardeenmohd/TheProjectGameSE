@@ -96,28 +96,28 @@ class FieldInfo:
 
 class TaskFieldInfo(FieldInfo):
     # Maybe default values are not necessary here but I'm just testing the class
-    def __init__(self, x=0, y=0, timestamp=datetime.now(), distance_to_piece=-1, player_id=None, piece_id=None):
+    def __init__(self, x=0, y=0, timestamp=datetime.now(), distance_to_piece=-1, player_id="-1", piece_id="-1"):
         super(TaskFieldInfo, self).__init__(x, y, timestamp, player_id)
         self.distance_to_piece = distance_to_piece
         self.piece_id = piece_id
 
     def has_piece(self):
-        return self.piece_id != "-1"
+        return self.piece_id != "-1" and self.piece_id is not None
 
 
 class GoalFieldInfo(FieldInfo):
-    def __init__(self, x=0, y=0, allegiance=Allegiance.NEUTRAL, player_id=None, timestamp=datetime.now(),
-                 type=GoalFieldType.UNKNOWN):
+    def __init__(self, x=0, y=0, allegiance=Allegiance.NEUTRAL.value, player_id=None, timestamp=datetime.now(),
+                 type=GoalFieldType.UNKNOWN.value):
         super(GoalFieldInfo, self).__init__(x, y, timestamp, player_id)
         self.allegiance = allegiance
         self.type = type
 
 
 class PieceInfo:
-    def __init__(self, id="-1", timestamp=datetime.now(), piece_type=PieceType.UNKNOWN, player_id=None):
+    def __init__(self, id="-1", timestamp=datetime.now(), type=PieceType.UNKNOWN.value, player_id="-1"):
         self.id = id
         self.timestamp = timestamp
-        self.piece_type = piece_type
+        self.type = type
         self.player_id = player_id
 
 
@@ -206,7 +206,7 @@ class GameInfo:
                     neighbours[x, y] = field
 
         # neighbours will include the original field itself, so we remove it:
-        del neighbours[location]
+        del neighbours[location[0], location[1]]
         return neighbours
 
     @staticmethod
@@ -217,19 +217,21 @@ class GameInfo:
     def whole_board_length(self):
         return 2 * self.goals_height + self.task_height - 1
 
-    def initialize_fields(self, goals_height=None, task_height=None):
+    def initialize_fields(self, goals_height=None, task_height=None, board_width=None):
 
         if goals_height is not None:
             self.goals_height = goals_height
         if task_height is not None:
             self.task_height = task_height
+        if board_width is not None:
+            self.board_width = board_width
 
         y = 2 * self.goals_height + self.task_height - 1
 
         for i in range(self.goals_height):
             for x in range(self.board_width):
                 if (x, y) not in self.goal_fields.keys():
-                    self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
+                    self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED.value)
             y -= 1
 
         for i in range(self.task_height):
@@ -241,7 +243,7 @@ class GameInfo:
         for i in range(self.goals_height):
             for x in range(self.board_width):
                 if (x, y) not in self.goal_fields.keys():
-                    self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
+                    self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE.value)
             y -= 1
 
 

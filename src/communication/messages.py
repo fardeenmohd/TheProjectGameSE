@@ -119,8 +119,8 @@ def Data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
         c_task_fields = __append_element(root, "TaskFields")
 
         # add each TaskField to the collection:
-        for (x, y), field in task_fields:
-            e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(),
+        for (x, y), field in task_fields.items():
+            e_attributes = {"x": str(x), "y": str(y), "timestamp": str(datetime.now()),
                             "distanceToPiece": str(field.distance_to_piece)}
             if field.player_id is not None and field.player_id != -1:
                 e_attributes["playerId"] = str(field.player_id)
@@ -134,21 +134,19 @@ def Data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
 
         # add each GoalField to the collection:
         for (x, y), field in goal_fields.items():
-            e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(), "type": field.type,
+            e_attributes = {"x": str(x), "y": str(y), "timestamp": str(datetime.now()), "type": field.type,
                             "team": field.allegiance}
             if field.player_id is not None and field.player_id != -1:
                 e_attributes["playerId"] = str(field.player_id)
-            if field.piece_id is not None and field.piece_id != -1:
-                e_attributes["pieceId"] = str(field.piece_id)
             __append_element(c_goal_fields, "GoalField", e_attributes)
 
     # add Pieces collection:
-    if pieces is not None:
+    if pieces is not None and len(pieces) > 0:
         c_pieces = __append_element(root, "Pieces")
 
         # add each Piece to the collection:
         for piece in pieces.values():
-            e_attributes = {"id": piece.id, "timestamp": datetime.now(), "type": piece.type}
+            e_attributes = {"id": piece.id, "timestamp": str(datetime.now()), "type": piece.type}
             if piece.player_id is not None and piece.player_id != -1:
                 e_attributes["playerId"] = piece.player_id
             __append_element(c_pieces, "Piece", e_attributes)

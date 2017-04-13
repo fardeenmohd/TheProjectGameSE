@@ -201,6 +201,10 @@ class CommunicationServer:
             elif any(message in player_message for message in self.TO_PLAYER_MESSAGES):
                 self.send(self.clients[message_root.attrib["playerId"]], player_message)
 
+            elif "GetGames" in player_message:
+                # he's trying to re-join so let's handle him again!
+                self.handle_player(player)
+
             else:
                 # DEFAULT HANDLING: relay the message to GM
                 self.send(self.clients[player.game_master_id], player_message)
@@ -354,9 +358,10 @@ class CommunicationServer:
             sleep(0.01)
             return received_data
 
-        except (ConnectionAbortedError, ConnectionResetError):
+        except (ConnectionAbortedError, ConnectionResetError) as e:
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
             self.disconnect_client(client.id)
+            raise e
 
     def disconnect_client(self, client_id: int):
 
@@ -368,6 +373,12 @@ class CommunicationServer:
         if client.tag == ClientTypeTag.GAME_MASTER:
             for game_info in self.games.values():
                 if game_info.name == client.game_name and game_info.game_master_id == client_id:
+                    # find all players who were connected to this game and send them a GameMasterdisconneted message
+                    for dude in self.clients.values():
+                        if dude.tag == ClientTypeTag.PLAYER and dude.game_master_id == client.id:
+                            self.send(dude, messages.GameMasterDisconnected(game_info.id))
+
+
                     del self.games[game_info.id]
                     self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")
                     break

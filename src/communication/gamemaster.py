@@ -225,9 +225,9 @@ class GameMaster(Client):
         new_piece = PieceInfo(piece_id)
 
         if random() >= self.sham_probability:
-            new_piece.piece_type = PieceType.NORMAL
+            new_piece.type = PieceType.NORMAL
         else:
-            new_piece.piece_type = PieceType.SHAM
+            new_piece.type = PieceType.SHAM
 
         found_field = self.info.task_fields[x, y]
         # update distance_to_piece in all fields:
@@ -240,7 +240,7 @@ class GameMaster(Client):
         self.info.pieces[piece_id] = new_piece
         self.piece_indexer += 1
         self.verbose_debug(
-            "Added a " + new_piece.piece_type + " piece with id: " + piece_id + "at coordinates " + str(x) + ", " + str(
+            "Added a " + new_piece.type + " piece with id: " + piece_id + "at coordinates " + str(x) + ", " + str(
                 y) + ".")
 
     def add_player(self, player_id, pref_role, pref_team, private_guid):
@@ -267,7 +267,8 @@ class GameMaster(Client):
             role = PlayerType.MEMBER.value
 
         self.info.teams[team][player_id] = PlayerInfo(player_id, team, type=role, guid=private_guid)
-        self.info.teams[team][player_id].info.initialize_fields(self.info.goals_height, self.info.task_height)
+        self.info.teams[team][player_id].info.initialize_fields(self.info.goals_height, self.info.task_height,
+                                                                self.info.board_width)
         return team, role
 
     def find_player_by_guid(self, guid):
@@ -318,7 +319,7 @@ class GameMaster(Client):
                 if piece_info is None:
                     # if he doesn't yet know about the Piece, set its type to unknown
                     self.info.teams[player_info.team][player_info.id].info.pieces[piece_id] = PieceInfo(piece_id,
-                                                                                                        piece_type=PieceType.UNKNOWN.value)
+                                                                                                        type=PieceType.UNKNOWN.value)
                     piece_info = self.info.teams[player_info.team][player_info.id].info.pieces.get(piece_id)
 
                 piece_dict = {piece_id: piece_info}
@@ -439,7 +440,7 @@ class GameMaster(Client):
             else:
                 # the field is a goal field.
                 # check if the piece is legit:
-                if self.info.pieces[piece_id].piece_type == PieceType.NORMAL.value:
+                if self.info.pieces[piece_id].type == PieceType.NORMAL.value:
                     field = self.info.goal_fields[player_info.location]
                     # send information about the true nature of this goal field
                     self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.id: field}))
@@ -458,31 +459,35 @@ class GameMaster(Client):
 
         while self.game_on:
 
-            message = self.receive()
-            if message is None:
-                raise ConnectionAbortedError
+            try:
+                message = self.receive()
+                if message is None:
+                    raise ConnectionAbortedError
 
-            # handling depends on type of message:
-            root = ET.fromstring(message)
+                # handling depends on type of message:
+                root = ET.fromstring(message)
 
-            player_guid = root.attrib.get("playerGuid")
-            player_info = self.find_player_by_guid(player_guid)
+                player_guid = root.attrib.get("playerGuid")
+                player_info = self.find_player_by_guid(player_guid)
 
-            if "Move" in message:
-                direction = root.get('direction')
-                Thread(target=self.handle_move_message, args=(direction, player_info), daemon=True).start()
+                if "Move" in message:
+                    direction = root.get('direction')
+                    Thread(target=self.handle_move_message, args=[direction, player_info], daemon=True).start()
 
-            elif "Discover" in message:
-                Thread(target=self.handle_discover_message, args=player_info, daemon=True).start()
+                elif "Discover" in message:
+                    Thread(target=self.handle_discover_message, args=[player_info], daemon=True).start()
 
-            elif "PlacePiece" in message:
-                Thread(target=self.handle_place_message, args=player_info, daemon=True).start()
+                elif "PlacePiece" in message:
+                    Thread(target=self.handle_place_message, args=[player_info], daemon=True).start()
 
-            elif "PickUpPiece" in message:
-                Thread(target=self.handle_pick_up_message, args=player_info, daemon=True).start()
+                elif "PickUpPiece" in message:
+                    Thread(target=self.handle_pick_up_message, args=[player_info], daemon=True).start()
 
 
-                # TODO: other types of messages:
+                    # TODO: other types of messages:
+            except Exception as e:
+                self.verbose_debug("Is this an error I see before me? " + str(e), True)
+                raise e
 
     def get_num_of_players(self):
         return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
