@@ -55,27 +55,37 @@ class FieldInfo:
         self.x = x
         self.y = y
         self.timestamp = timestamp
-        self.player_id = -1
+        self.player_id = "-1"
         if player_id is not None:
             self.player_id = player_id
 
     @property
     def is_occupied(self):
-        return self.player_id != -1
+        return self.player_id != "-1"
 
     @property
     def location(self):
         return self.x, self.y
 
-    def __setitem__(self, key: int, value: int):
-        if key != 0 and key != 1:
-            raise IndexError
-        if key == 0:
-            self.x = value
-        if key == 1:
-            self.y = value
+    def __setitem__(self, key, value):
+        if isinstance(key, int) and isinstance(value, int):
+            if key != 0 and key != 1:
+                raise IndexError
+            if key == 0:
+                self.x = value
+            if key == 1:
+                self.y = value
+        elif isinstance(key, tuple) and isinstance(value, tuple):
+            if not isinstance(key[0], int) or not isinstance(key[1], int):
+                raise KeyError
+            if not isinstance(value[0], int) or not isinstance(value[1], int):
+                raise KeyError
+            self.__setitem__(key[0], value[0])
+            self.__setitem__(key[1], value[1])
+        else:
+            raise TypeError
 
-    def __getitem__(self, key: int):
+    def __getitem__(self, key):
         if key != 0 and key != 1:
             raise IndexError
         if key == 0:
@@ -92,7 +102,7 @@ class TaskFieldInfo(FieldInfo):
         self.piece_id = piece_id
 
     def has_piece(self):
-        return self.piece_id != -1
+        return self.piece_id != "-1"
 
 
 class GoalFieldInfo(FieldInfo):
@@ -104,7 +114,7 @@ class GoalFieldInfo(FieldInfo):
 
 
 class PieceInfo:
-    def __init__(self, id=-1, timestamp=datetime.now(), piece_type=PieceType.NORMAL, player_id=None):
+    def __init__(self, id="-1", timestamp=datetime.now(), piece_type=PieceType.UNKNOWN, player_id=None):
         self.id = id
         self.timestamp = timestamp
         self.piece_type = piece_type
@@ -126,7 +136,7 @@ class ClientInfo:
 
 
 class GameInfo:
-    def __init__(self, id=-1, name="", task_fields=None, goal_fields=None, pieces=None, board_width=0, task_height=0,
+    def __init__(self, id="-1", name="", task_fields=None, goal_fields=None, pieces=None, board_width=0, task_height=0,
                  goals_height=0, max_blue_players=0, max_red_players=0, open=True, finished=False, game_master_id="",
                  latest_timestamp=""):
         self.id = id
@@ -156,7 +166,7 @@ class GameInfo:
 
     def check_for_empty_task_fields(self):
         for task_field in self.task_fields.values():
-            if task_field.piece_id == -1:
+            if task_field.piece_id == "-1":
                 return True
 
         return False
@@ -165,7 +175,7 @@ class GameInfo:
         if (x, y) in self.task_fields.keys():
             return self.task_fields[x, y].has_piece()
         else:
-            return False
+            raise KeyError
 
     def is_task_field(self, location: tuple):
         return (location[0], location[1]) in self.task_fields.keys()
@@ -238,9 +248,15 @@ class GameInfo:
 class PlayerInfo():
     """used by GameMaster only (for now, at least...)"""
 
-    def __init__(self, id="-1", team=None, info: GameInfo = None, type=None, location: tuple = None, guid=None):
+    def __init__(self, id="-1", team=None, info: GameInfo = None, type=None, location: tuple = None, guid=None,
+                 piece_id=None):
         self.id = id
-        self.info = info
+        self.type = type
+        if info is not None:
+            self.info = info
+        else:
+            self.info = GameInfo()
         self.team = team
         self.location = location
+        self.piece_id = piece_id
         self.guid = guid

@@ -102,20 +102,30 @@ def GetGames():
 
 def Data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: dict = None, pieces: dict = None,
          player_location: tuple = None):
+    """
+    :param player_id: target player's id
+    :param game_finished: bool value, should be True if the game has ended
+    :param task_fields: dict: id -> TaskFieldInfo
+    :param goal_fields: dict: id -> GoalFieldInfo
+    :param pieces: dict: id -> PieceInfo
+    :param player_location: tuple x,y
+    :return:
+    """
     root = __player_message("Data", player_id)
     root.set("gameFinished", str(game_finished).lower())
 
     # add TaskFields collection:
-    c_task_fields = __append_element(root, "TaskFields")
     if task_fields is not None:
+        c_task_fields = __append_element(root, "TaskFields")
+
         # add each TaskField to the collection:
         for (x, y), field in task_fields:
             e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(),
                             "distanceToPiece": str(field.distance_to_piece)}
-            if field.player_id is not None:
+            if field.player_id is not None and field.player_id != -1:
                 e_attributes["playerId"] = str(field.player_id)
-            if field.piece_id is not None:
-                e_attributes["pieceID"] = str(field.piece_id)
+            if field.piece_id is not None and field.piece_id != -1:
+                e_attributes["pieceId"] = str(field.piece_id)
             __append_element(c_task_fields, "TaskField", e_attributes)
 
     # add GoalFields collection:
@@ -126,10 +136,10 @@ def Data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
         for (x, y), field in goal_fields.items():
             e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(), "type": field.type,
                             "team": field.allegiance}
-            if field.player_id is not None:
+            if field.player_id is not None and field.player_id != -1:
                 e_attributes["playerId"] = str(field.player_id)
-            if field.piece_id is not None:
-                e_attributes["pieceID"] = str(field.piece_id)
+            if field.piece_id is not None and field.piece_id != -1:
+                e_attributes["pieceId"] = str(field.piece_id)
             __append_element(c_goal_fields, "GoalField", e_attributes)
 
     # add Pieces collection:
@@ -139,7 +149,7 @@ def Data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
         # add each Piece to the collection:
         for piece in pieces.values():
             e_attributes = {"id": piece.id, "timestamp": datetime.now(), "type": piece.type}
-            if piece.player_id is not None:
+            if piece.player_id is not None and piece.player_id != -1:
                 e_attributes["playerId"] = piece.player_id
             __append_element(c_pieces, "Piece", e_attributes)
 

@@ -3,7 +3,6 @@ import os
 import uuid
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
-from datetime import datetime
 from random import random, randint
 from threading import Thread
 from time import sleep
@@ -223,7 +222,7 @@ class GameMaster(Client):
                     y = task_field.y
                     break
 
-        new_piece = PieceInfo(piece_id, datetime.now())
+        new_piece = PieceInfo(piece_id)
 
         if random() >= self.sham_probability:
             new_piece.piece_type = PieceType.NORMAL
@@ -268,6 +267,7 @@ class GameMaster(Client):
             role = PlayerType.MEMBER.value
 
         self.info.teams[team][player_id] = PlayerInfo(player_id, team, type=role, guid=private_guid)
+        self.info.teams[team][player_id].info.initialize_fields(self.info.goals_height, self.info.task_height)
         return team, role
 
     def find_player_by_guid(self, guid):
@@ -282,15 +282,10 @@ class GameMaster(Client):
                 if team[player].id == id:
                     return team[player]
 
-    def handle_move_message(self, move_message):
+    def handle_move_message(self, direction, player_info: PlayerInfo):
 
         sleep(float(self.move_delay) / 1000)
 
-        root = ET.fromstring(move_message)
-
-        guid = root.get('playerGuid')
-        direction = root.get('direction')
-        player_info = self.find_player_by_guid(guid)
         player_location = player_info.location
         new_location = player_location
         piece_dict = None
@@ -346,13 +341,11 @@ class GameMaster(Client):
         elif self.info.is_out_of_bounds(new_location):
             self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
-    def handle_discover_message(self, discover_message):
+    def handle_discover_message(self, player_info: PlayerInfo):
 
         sleep(float(self.discover_delay) / 1000)
 
-        root = ET.fromstring(discover_message)
-        player_id = root.attrib.get('playerId')
-        player_info = self.find_player_by_id(player_id)
+        player_id = player_info.id
 
         goal_fields = {}
         task_fields = {}
@@ -363,27 +356,96 @@ class GameMaster(Client):
 
             # if neighbour is a TaskField, update info about a player who is standing on that Field, and about distance to piece
             if self.info.is_task_field((x, y)):
-                player_info.task_fields[x, y].player_id = neighbour.player_id
-                player_info.task_fields[x, y].distance_to_piece = neighbour.distance_to_piece
+                player_info.info.task_fields[x, y].player_id = neighbour.player_id
+                player_info.info.task_fields[x, y].distance_to_piece = neighbour.distance_to_piece
 
                 # if this field has a piece, check if player knows about it
                 if neighbour.has_piece():
-                    if neighbour.piece_id not in player_info.pieces.keys():
-                        # if he doesn't know, add it to his dict
-                        player_info.pieces[neighbour.piece_id] = PieceInfo(neighbour.piece_id,
-                                                                           piece_type=PieceType.UNKNOWN.value)
-                    pieces = player_info.pieces
-                    player_info.task_fields[x, y].piece_id = neighbour.piece_id
+                    if neighbour.piece_id not in player_info.info.pieces.keys():
+                        # if he doesn't know, add an unknown piece to his info
+                        player_info.info.pieces[neighbour.piece_id] = PieceInfo(neighbour.piece_id)
+                    pieces = player_info.info.pieces
+                    player_info.info.task_fields[x, y].piece_id = neighbour.piece_id
                 if len(pieces) < 1:
                     pieces = None
-                task_fields[x, y] = player_info.task_fields[x, y]
+                task_fields[x, y] = player_info.info.task_fields[x, y]
 
             else:
                 # it is a goal field.
-                player_info.goal_fields[x, y].player_id = neighbour.player_id
-                goal_fields[x, y] = player_info.goal_fields[x, y]
+                player_info.info.goal_fields[x, y].player_id = neighbour.player_id
+                goal_fields[x, y] = player_info.info.goal_fields[x, y]
 
         self.send(messages.Data(player_id, self.info.finished, task_fields, goal_fields, pieces))
+
+    def handle_pick_up_message(self, player_info: PlayerInfo):
+
+        sleep(float(self.pickup_delay) / 1000)
+
+        location = player_info.location
+
+        # check if the field is a task field:
+        if self.info.is_task_field(location):
+            # then check if there is a piece on this field:
+            if self.info.has_piece(location[0], location[1]):
+                # update our knowledge:
+                piece_id = self.info.task_fields[location].piece_id
+                self.info.pieces[piece_id].player_id = player_info.id
+                self.info.task_fields[location].piece_id = "-1"  # setting as empty
+                player_info.piece_id = piece_id
+
+                # update player's knowledge:
+                player_info.info.pieces[piece_id].player_id = player_info.id
+                player_info.info.task_fields[location].piece_id = "-1"
+
+                # send him piece Data with his piece
+                self.send(
+                    messages.Data(player_info.id, self.info.finished, pieces={piece_id: self.info.pieces[piece_id]}))
+
+            else:
+                # no piece on this field. respond with an empty Data message
+                self.send(messages.Data(player_info.id, self.info.finished))
+        else:
+            # piece isn't a task field, there can be no pieces on it to pick up, respond with an empty Data message
+            self.send(messages.Data(player_info.id, self.info.finished))
+
+    def handle_place_message(self, player_info: PlayerInfo):
+
+        sleep(float(self.placing_delay) / 1000)
+
+        piece_id = "-1"
+        # check if that player really has a piece by iterating over our collection of pieces:
+        for piece_info in self.info.pieces:
+            if piece_info.player_id == player_info.piece_id:
+                piece_id = piece_info.id
+        else:
+            # seems like the player doesn't have a piece at all. send him an empty Data message
+            self.send(messages.Data(player_info.id, self.info.finished))
+
+        if piece_id != "-1":
+            # check if the player is standing on TaskField or GoalField:
+            if self.info.is_task_field(player_info.location):
+                # update our info
+                field = self.info.task_fields[player_info.location]
+                field.piece_id = piece_id
+                self.info.pieces[piece_id].player_id = "-1"  # mark as untaken.
+
+                # update player's info
+                player_info.info.task_fields[player_info.location].piece_id = piece_id
+                player_info.info.pieces[piece_id].player_id = "-1"  # untaken
+
+                # send him a response
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.id: field}))
+
+            else:
+                # the field is a goal field.
+                # check if the piece is legit:
+                if self.info.pieces[piece_id].piece_type == PieceType.NORMAL.value:
+                    field = self.info.goal_fields[player_info.location]
+                    # send information about the true nature of this goal field
+                    self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.id: field}))
+                else:
+                    # piece is a sham, send an empty Data message
+                    self.send(messages.Data(player_info.id, self.info.finished))
 
     def play(self):
 
@@ -401,12 +463,24 @@ class GameMaster(Client):
                 raise ConnectionAbortedError
 
             # handling depends on type of message:
+            root = ET.fromstring(message)
+
+            player_guid = root.attrib.get("playerGuid")
+            player_info = self.find_player_by_guid(player_guid)
 
             if "Move" in message:
-                Thread(target=self.handle_move_message, args=message, daemon=True).start()
+                direction = root.get('direction')
+                Thread(target=self.handle_move_message, args=(direction, player_info), daemon=True).start()
 
             elif "Discover" in message:
-                Thread(target=self.handle_discover_message, args=message, daemon=True).start()
+                Thread(target=self.handle_discover_message, args=player_info, daemon=True).start()
+
+            elif "PlacePiece" in message:
+                Thread(target=self.handle_place_message, args=player_info, daemon=True).start()
+
+            elif "PickUpPiece" in message:
+                Thread(target=self.handle_pick_up_message, args=player_info, daemon=True).start()
+
 
                 # TODO: other types of messages:
 
