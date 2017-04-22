@@ -45,7 +45,7 @@ class BaseStrategy:
             else:
                 choice = self.go_to_goal_fields()
 
-        elif self.game_info.is_task_field(self.current_location):
+        elif not self.game_info.is_task_field(self.current_location):
             # we do not have a piece. let's go to task fields to collect one.
             choice = self.go_to_task_fields()
 
@@ -115,7 +115,7 @@ class BaseStrategy:
     def move_toward_piece(self):
 
         # we definitely should be in task fields:
-        if self.game_info.is_task_field(self.current_location):
+        if not self.game_info.is_task_field(self.current_location):
             raise StrategicError(
                 "Player should be in a Task Field, but wasn't! Location: " + str(self.current_location))
 

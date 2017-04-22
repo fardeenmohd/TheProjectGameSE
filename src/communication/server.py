@@ -222,6 +222,7 @@ class CommunicationServer:
 
                 gm_id = game_info.game_master_id
                 player.game_master_id = gm_id
+                player.game_id = self.clients[gm_id].game_id
                 self.send(self.clients[gm_id], join_game_message)
                 return True
         # no game with this name, send rejection
@@ -268,11 +269,11 @@ class CommunicationServer:
 
                 elif "Data" in gm_msg:
                     player_id = msg_root.attrib["playerId"]
-                    game_id = msg_root.attrib["gameId"]
                     finished = msg_root.attrib["gameFinished"]
                     if finished == "true":
-                        del self.games[game_id]
-                    self.send(gm_msg, player_id)
+                        del self.games[self.clients[player_id].game_id]
+                        pass
+                    self.send(self.clients[player_id], gm_msg)
 
                 else:
                     # DEFAULT MESSAGE HANDLING:
@@ -311,6 +312,7 @@ class CommunicationServer:
             self.games[game_id] = GameInfo(id=game_id, name=new_game_name, max_blue_players=new_blue_players,
                                            max_red_players=new_red_players,
                                            open=True, game_master_id=gm.id)
+            gm.game_id = game_id
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
@@ -333,6 +335,7 @@ class CommunicationServer:
         """
         message = str(message)
         recipient.socket.send(message.encode())
+        sleep(0.001)
         self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
 
     def send_to_all_players(self, message: str):
@@ -377,7 +380,6 @@ class CommunicationServer:
                     for dude in self.clients.values():
                         if dude.tag == ClientTypeTag.PLAYER and dude.game_master_id == client.id:
                             self.send(dude, messages.GameMasterDisconnected(game_info.id))
-
 
                     del self.games[game_info.id]
                     self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")

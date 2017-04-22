@@ -124,11 +124,12 @@ class PieceInfo:
 class ClientInfo:
     """might not actually be used that much, encapsulate some information about client id, their type etc."""
 
-    def __init__(self, id="-1", tag=ClientTypeTag.CLIENT, socket=None, game_name="", game_master_id="-1"):
+    def __init__(self, id="-1", tag=ClientTypeTag.CLIENT, socket=None, game_name="", game_master_id="-1", game_id="-1"):
         self.id = id
         self.tag = tag
         self.socket = socket
         self.game_name = game_name
+        self.game_id = game_id
         self.game_master_id = game_master_id
 
     def get_tag(self):

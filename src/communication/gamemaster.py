@@ -216,7 +216,7 @@ class GameMaster(Client):
             i += 1
 
         if self.info.has_piece(x, y):
-            for task_field in self.info.task_fields:
+            for task_field in self.info.task_fields.values():
                 if not task_field.has_piece():
                     x = task_field.x
                     y = task_field.y
@@ -225,9 +225,9 @@ class GameMaster(Client):
         new_piece = PieceInfo(piece_id)
 
         if random() >= self.sham_probability:
-            new_piece.type = PieceType.NORMAL
+            new_piece.type = PieceType.NORMAL.value
         else:
-            new_piece.type = PieceType.SHAM
+            new_piece.type = PieceType.SHAM.value
 
         found_field = self.info.task_fields[x, y]
         # update distance_to_piece in all fields:
@@ -240,7 +240,7 @@ class GameMaster(Client):
         self.info.pieces[piece_id] = new_piece
         self.piece_indexer += 1
         self.verbose_debug(
-            "Added a " + new_piece.type + " piece with id: " + piece_id + "at coordinates " + str(x) + ", " + str(
+            "Added a " + new_piece.type + " piece with id: " + piece_id + " at coordinates " + str(x) + ", " + str(
                 y) + ".")
 
     def add_player(self, player_id, pref_role, pref_team, private_guid):
@@ -292,25 +292,25 @@ class GameMaster(Client):
         piece_dict = None
 
         if direction == Direction.UP.value:
-            new_location[1] += 1
+            new_location = player_location[0], player_location[1] + 1
 
         if direction == Direction.DOWN.value:
-            new_location[1] -= 1
+            new_location = player_location[0], player_location[1] - 1
 
         if direction == Direction.LEFT.value:
-            new_location[0] -= 1
+            new_location = player_location[0] - 1, player_location[1]
 
         if direction == Direction.RIGHT.value:
-            new_location[0] += 1
+            new_location = player_location[0] + 1, player_location[1]
 
         if self.info.is_task_field(new_location):
             new_task_field = self.info.task_fields[new_location]
 
-            if new_task_field.is_occupied():
+            if new_task_field.is_occupied:
                 # can't move, stay in the same location.
                 new_location = player_info.location
 
-            if new_task_field.has_piece(new_location):
+            if new_task_field.has_piece():
                 piece_id = new_task_field.piece_id
 
                 # check if the Player already knows what type this piece is:
@@ -331,7 +331,7 @@ class GameMaster(Client):
         elif self.info.is_goal_field(new_location):
 
             new_goal_field = copy.deepcopy(self.info.goal_fields[new_location])
-            if new_goal_field.is_occupied():
+            if new_goal_field.is_occupied:
                 new_location = player_info.location
 
             # use the type that the player knows.
@@ -353,7 +353,7 @@ class GameMaster(Client):
         pieces = {}
 
         # get all 8 neighbours
-        for (x, y), neighbour in player_info.info.get_neighbours(player_info.location, True).items():
+        for (x, y), neighbour in self.info.get_neighbours(player_info.location, True).items():
 
             # if neighbour is a TaskField, update info about a player who is standing on that Field, and about distance to piece
             if self.info.is_task_field((x, y)):
@@ -367,8 +367,8 @@ class GameMaster(Client):
                         player_info.info.pieces[neighbour.piece_id] = PieceInfo(neighbour.piece_id)
                     pieces = player_info.info.pieces
                     player_info.info.task_fields[x, y].piece_id = neighbour.piece_id
-                if len(pieces) < 1:
-                    pieces = None
+                    if len(pieces) < 1:
+                        pieces = None
                 task_fields[x, y] = player_info.info.task_fields[x, y]
 
             else:
@@ -455,7 +455,7 @@ class GameMaster(Client):
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
 
-        Thread(target=self.place_pieces).start()
+        Thread(target=self.place_pieces, daemon=True).start()
 
         while self.game_on:
 
