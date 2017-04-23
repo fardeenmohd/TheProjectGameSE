@@ -413,9 +413,12 @@ class GameMaster(Client):
                 player_info.piece_id = piece_id
 
                 # update player's knowledge:
-                player_info.info.pieces[piece_id].player_id = player_info.id
-                player_info.info.task_fields[location].piece_id = "-1"
-
+                if piece_id in player_info.info.pieces:
+                    player_info.info.pieces[piece_id].player_id = player_info.id
+                    player_info.info.task_fields[location].piece_id = "-1"
+                else:
+                    player_info.info.pieces[piece_id] = PieceInfo(id=piece_id, type=PieceType.UNKNOWN.value, player_id=player_info.id)
+                    player_info.info.task_fields[location].piece_id = "-1"
                 # send him piece Data with his info about the piece
                 self.send(
                     messages.Data(player_info.id, self.info.finished,
