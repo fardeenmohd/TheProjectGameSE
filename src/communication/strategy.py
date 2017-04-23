@@ -32,7 +32,7 @@ class BaseStrategy:
         self.current_location = location
         self.game_info = game_info
         self.last_move = Decision(Decision.NULLDECISION)
-        self.have_piece = -1  # by default, the player doesn't have a piece.
+        self.have_piece = "-1"  # by default, the player doesn't have a piece.
         # if self.have_piece is different from -1, then it is the id of the currently held piece
 
     def get_next_move(self, new_location: tuple):
@@ -40,7 +40,7 @@ class BaseStrategy:
         self.current_location = new_location
 
         # if we have a piece, we should try to place it if we're in our goal fields.
-        if self.have_piece > -1:
+        if self.have_piece != "-1":
             if self.game_info.is_goal_field(self.current_location):
                 choice = self.try_and_place()
             else:
@@ -73,13 +73,14 @@ class BaseStrategy:
 
         # first find if our would-be goal field is not already discovered:
         field = self.game_info.goal_fields[self.current_location[0], self.current_location[1]]
-        if not field.type == GoalFieldType.GOAL.value and not field.type == GoalFieldType.NON_GOAL:
+
+        if field.type == GoalFieldType.UNKNOWN.value:
             return Decision(Decision.PLACE)
         else:
             # our field was already discovered as a goal. let's look for a different one.
             neighbours = self.game_info.get_neighbours(self.current_location)
             for neighbour in neighbours.values():
-                if self.game_info.is_goal_field(neighbour.location) and neighbour.type == GoalFieldType.UNKNOWN:
+                if self.game_info.is_goal_field(neighbour.location) and neighbour.type == GoalFieldType.UNKNOWN.value:
                     return Decision(Decision.MOVE, self.get_direction_to(neighbour))
             # no good neighbour found. we have to look for a different field to put our piece:
             return self.look_for_empty_goal()

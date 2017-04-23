@@ -420,7 +420,7 @@ class GameMaster(Client):
         piece_id = "-1"
         # check if that player really has a piece by iterating over our collection of pieces:
         for piece_info in self.info.pieces.values():
-            if piece_info.player_id == player_info.piece_id:
+            if piece_info.player_id == player_info.id:
                 piece_id = piece_info.id
         else:
             # seems like the player doesn't have a piece at all. send him an empty Data message
@@ -439,7 +439,7 @@ class GameMaster(Client):
                 player_info.info.pieces[piece_id].player_id = "-1"  # untaken
 
                 # send him a response
-                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.id: field}))
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.location: field}))
 
             else:
                 # the field is a goal field.
@@ -447,7 +447,7 @@ class GameMaster(Client):
                 if self.info.pieces[piece_id].type == PieceType.NORMAL.value:
                     field = self.info.goal_fields[player_info.location]
                     # send information about the true nature of this goal field
-                    self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.id: field}))
+                    self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.location: field}))
                 else:
                     # piece is a sham, send an empty Data message
                     self.send(messages.Data(player_info.id, self.info.finished))

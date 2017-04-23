@@ -14,7 +14,7 @@ class Client:
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
-    MESSAGE_BUFFER_SIZE = 1024
+    MESSAGE_BUFFER_SIZE = 2048
 
     def __init__(self, index=1, verbose=False):
         """

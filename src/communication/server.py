@@ -17,7 +17,7 @@ ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
-    DEFAULT_BUFFER_SIZE = 1024
+    DEFAULT_BUFFER_SIZE = 2048
     DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()

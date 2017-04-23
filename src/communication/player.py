@@ -57,6 +57,7 @@ class Player(Client):
             self.Guid = root.attrib.get('privateGuid')
             self.game_info.id = int(root.attrib.get('gameId'))
             self.game_info.name = self.game_name
+            self.id = root.attrib.get('playerId')
 
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
@@ -137,7 +138,11 @@ class Player(Client):
                     id = piece.attrib.get('id')
                     timestamp = piece.attrib.get('timestamp')
                     type = piece.attrib.get('type')
-                    self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
+                    player_id = piece.attrib.get('playerId')
+                    if player_id is not None:
+                        self.game_info.pieces[id] = PieceInfo(id, timestamp, type, player_id)
+                    else:
+                        self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             if player_location is not None:
@@ -171,7 +176,7 @@ class Player(Client):
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
-                self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
+                self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role))
 
                 confirmation = self.receive()
                 if confirmation is not None:
@@ -215,12 +220,18 @@ class Player(Client):
                 # normal response!
                 self.handle_data(response)
                 # TODO: after "handling" the data we need to extract some additional knowledge from it.
-                # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded and update self.strategy accordingly
+                # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded
+                # todo: and we need to update self.game_info and self.strategy accordingly
                 # e.g. if pick-up or place was succesful, update self.strategy.have_piece
+                if self.strategy.last_move.choice == Decision.PICK_UP:
+                    # if last move was picking-up, let;'s check if we actually have a piece now.
+                    for piece_info in self.game_info.pieces.values():
+                        if piece_info.player_id == self.id:
+                            self.strategy.have_piece = piece_info.id
+                    else:
+                        self.strategy.have_piece = -1
 
-
-
-                # TODO: add knowledge exchange sending and receiving when needed
+                        # TODO: add knowledge exchange sending and receiving when needed
 
     def choose_message(self, decision):
 
