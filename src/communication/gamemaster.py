@@ -61,7 +61,7 @@ class GameMaster(Client):
         self.info = GameInfo(goal_fields=self.goals, board_width=board_width, task_height=task_area_length,
                              goals_height=goal_area_length, max_blue_players=self.team_limit,
                              max_red_players=self.team_limit)
-        self.num_of_goal_fields = self.info.get_num_of_goal_fields()
+        self.num_of_goal_fields = len(self.goals.keys()) / 2
 
     def parse_action_costs(self):
         root = parse_game_master_settings()
