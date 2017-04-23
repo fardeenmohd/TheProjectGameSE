@@ -75,6 +75,8 @@ class BaseStrategy:
         field = self.game_info.goal_fields[self.current_location[0], self.current_location[1]]
 
         if field.type == GoalFieldType.UNKNOWN.value:
+            # we can safely place the piece! and remove it from self.
+            self.have_piece = "-1"
             return Decision(Decision.PLACE)
         else:
             # our field was already discovered as a goal. let's look for a different one.
