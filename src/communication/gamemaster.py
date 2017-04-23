@@ -61,6 +61,7 @@ class GameMaster(Client):
         self.info = GameInfo(goal_fields=self.goals, board_width=board_width, task_height=task_area_length,
                              goals_height=goal_area_length, max_blue_players=self.team_limit,
                              max_red_players=self.team_limit)
+        self.num_of_goal_fields = self.info.get_num_of_goal_fields()
 
     def parse_action_costs(self):
         root = parse_game_master_settings()
@@ -82,7 +83,8 @@ class GameMaster(Client):
         self.typeTag = ClientTypeTag.GAME_MASTER
         self.game_on = False
         self.player_indexer = 0
-
+        self.num_occupied_red_goals = 0
+        self.num_occupied_blue_goals = 0
         self.parse_game_definition()
         self.parse_action_costs()
 
@@ -480,9 +482,29 @@ class GameMaster(Client):
 
                     # send information about the true nature of this goal field
                     self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.location: field}))
+
+                    # player is placing a piece in a goal field so we check for game over
+                    victorious_team = self.check_for_game_over(player_info)
+                    # TODO send GameFinished message to server when we know what time won,
+                    #  it can be down in check_for_game_over()
                 else:
                     # piece is a sham, send an empty Data message
                     self.send(messages.Data(player_info.id, self.info.finished))
+
+    # Returns the team allegiance that won the game, otherwise returns None
+    def check_for_game_over(self, player_info: PlayerInfo) -> Allegiance:
+        if player_info.team == Allegiance.RED.value:
+            self.num_occupied_red_goals += 1
+            if self.num_occupied_red_goals == self.num_of_goal_fields:
+                self.verbose_debug("RED TEAM HAS WON THE GAME!", True)
+                return Allegiance.RED
+
+        elif player_info.team == Allegiance.BLUE.value:
+            self.num_occupied_blue_goals += 1
+            if self.num_occupied_blue_goals == self.num_of_goal_fields:
+                self.verbose_debug("BLUE TEAM HAS WON THE GAME!", True)
+                return Allegiance.BLUE
+        return None
 
     def play(self):
 
