@@ -3,8 +3,7 @@ from unittest import TestCase
 from lxml.etree import DocumentInvalid
 
 from src.communication.info import TaskFieldInfo
-from src.communication.messages_new import *
-from datetime import datetime
+from src.communication.messages import *
 
 
 class TestClass(TestCase):
@@ -16,7 +15,7 @@ class TestClass(TestCase):
 
         flag = False  # will be set to True if the message doesn't fit with the schema.
         try:
-            move(game_id, player_guid, direction)
+            Move(game_id, player_guid, direction)
         except DocumentInvalid:
             flag = True
 
@@ -25,7 +24,7 @@ class TestClass(TestCase):
     def test_getgames(self):
         # check if generated GetGames xml is the same as the example
 
-        generated_xml = get_games()
+        generated_xml = GetGames()
         sample_xml = open("../messages/GetGames.xml").read()
 
         flag = generated_xml == sample_xml

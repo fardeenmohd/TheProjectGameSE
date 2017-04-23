@@ -6,3 +6,8 @@ class UnexpectedServerMessage(BaseException):
 class UnexpectedClientMessage(BaseException):
     # server received an unexpected message from client
     pass
+
+
+class StrategicError(BaseException):
+    # something wrong in strategy...
+    pass

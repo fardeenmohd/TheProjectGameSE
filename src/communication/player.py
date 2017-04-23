@@ -2,10 +2,11 @@
 import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 
-from src.communication import messages_new
+from src.communication import messages
 from src.communication.client import Client
-from src.communication.info import GameInfo, PlayerType, GoalFieldInfo, Allegiance, TaskFieldInfo, \
-    PieceInfo, ClientTypeTag
+from src.communication.info import GameInfo, PlayerType, Allegiance, PieceInfo, ClientTypeTag, PlayerInfo
+from src.communication.strategy import StrategyFactory, Decision
+from src.communication.unexpected import UnexpectedServerMessage
 
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
@@ -39,33 +40,40 @@ class Player(Client):
         self.open_games = []
         self.game_name = game_name
         self.team = 'Not Assigned'
-        self.role = 'Not Assigned'
+        self.type = 'Not Assigned'
         self.location = tuple()
-        self.all_players = []
+        self.game_on = False
 
-    def confirmation_status_handling(self, confirmation_message):
+        self.strategy = None
+
+    def handle_confirmation(self, message):
         """
 
-        :param confirmation_message:
+        :param message:
         :return: Parses the confirmation message and extracts game information
         """
-        if "ConfirmJoiningGame" in confirmation_message:
-            root = ET.fromstring(confirmation_message)
+        if "ConfirmJoiningGame" in message:
+            root = ET.fromstring(message)
             self.Guid = root.attrib.get('privateGuid')
             self.game_info.id = int(root.attrib.get('gameId'))
             self.game_info.name = self.game_name
+            self.id = root.attrib.get('playerId')
 
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
-                self.role = player_definition.attrib.get('type')
-
+                self.type = player_definition.attrib.get('type')
             return True
-        else:
-            print("Got rejected by the server so shutting down")
+
+        elif "RejectJoiningGame" in message:
+            self.verbose_debug("Got rejected by the server, so shutting down.")
             self.shutdown()
             return False
 
-    def game_message_handling(self, game_message):
+        else:
+            self.verbose_debug("Unexpected message from server!")
+            raise UnexpectedServerMessage
+
+    def handle_game(self, game_message):
         """
 
         :param game_message:
@@ -83,61 +91,17 @@ class Player(Client):
             y = int(player_location.attrib.get('y'))
             self.location = (x, y)
 
-        red_player_count = 0
-        blue_player_count = 0
-
         for player_list in root.findall(REGISTERED_GAMES_TAG + "Players"):
-            for player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
-                self.all_players.append(
-                    (player.attrib.get('team'), player.attrib.get('type'), int(player.attrib.get('id'))))
+            for in_player in player_list.findall(REGISTERED_GAMES_TAG + "Player"):
+                in_team = in_player.attrib.get('team')
+                in_type = in_player.attrib.get('type')
+                in_id = in_player.attrib.get('id')
+                self.game_info.teams[in_team][in_id] = PlayerInfo(in_id, in_type, in_type)
 
-                if player.attrib.get('team') is Allegiance.BLUE.value:
-                    self.game_info.blue_player_list[player.attrib.get('id')] = player.attrib.get('type')
-                    blue_player_count += 1
-
-                if player.attrib.get('team') is Allegiance.RED.value:
-                    self.game_info.red_player_list[player.attrib.get('id')] = player.attrib.get('type')
-                    red_player_count += 1
-
-        self.game_info.max_red_players = red_player_count
-        self.game_info.max_blue_players = blue_player_count
-
-        y = 2 * self.game_info.goals_height + self.game_info.task_height - 1
-        for i in range(self.game_info.goals_height):
-            for x in range(self.game_info.board_width):
-                if (x, y) not in self.game_info.goal_fields.keys():
-                    self.game_info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.RED)
-            y -= 1
-
-        for i in range(self.game_info.task_height):
-            for x in range(self.game_info.board_width):
-                self.game_info.task_fields[x, y] = TaskFieldInfo(x, y)
-            y -= 1
-
-        for i in range(self.game_info.goals_height):
-            for x in range(self.game_info.board_width):
-                if (x, y) not in self.game_info.goal_fields.keys():
-                    self.game_info.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE)
-            y -= 1
-
-    def move_message(self, direction):
-        """
-        :param direction: Move direction
-        :return: Move direction message
-        """
-        return messages_new.move(self.game_info.id, self.Guid, direction)
-
-    def discover_message(self):
-        return messages_new.discover(self.game_info.id, self.Guid)
-
-    def pickup_message(self):
-        return messages_new.pickup(self.game_info.id, self.Guid)
-
-    def place_message(self):
-        return messages_new.place(self.game_info.id, self.Guid)
+        self.game_info.initialize_fields()
 
     def test_piece_message(self):
-        return messages_new.test_piece(self.game_info.id, self.Guid)
+        return messages.TestPiece(self.game_info.id, self.Guid)
 
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
@@ -165,27 +129,43 @@ class Player(Client):
                     if goal_field.attrib.get('playerId') is not None:
                         self.game_info.goal_fields[x, y].player_id = int(goal_field.attrib.get('playerId'))
                     self.game_info.goal_fields[x, y].allegiance = goal_field.attrib.get('team')
-
                     type = goal_field.attrib.get('type')
                     self.game_info.goal_fields[x, y].type = type
 
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
             if piece_list is not None:
                 for piece in piece_list.findall(REGISTERED_GAMES_TAG + "Piece"):
-                    id = int(piece.attrib.get('id'))
+                    id = piece.attrib.get('id')
                     timestamp = piece.attrib.get('timestamp')
                     type = piece.attrib.get('type')
-                    self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
+                    player_id = piece.attrib.get('playerId')
+                    if player_id is not None:
+                        self.game_info.pieces[id] = PieceInfo(id, timestamp, type, player_id)
+                    else:
+                        self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             if player_location is not None:
-                x = int(task_field.attrib.get('x'))
-                y = int(task_field.attrib.get('y'))
+                x = int(player_location.attrib.get('x'))
+                y = int(player_location.attrib.get('y'))
                 self.location = (x, y)
 
-    def play(self):
-        self.send(messages_new.get_games())
-        print(messages_new.get_games())
+    def receive(self):
+        """
+        overriding the parent method to implement re-joining when GM disconnects
+        """
+        received = super(Player, self).receive()
+        if "GameMasterDisconnected" in received:
+            # clean up our knowledge and try to join to the game again.
+            self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
+            if not self.try_join(self.game_name):
+                # if we failed to join, kys
+                self.verbose_debug("Failed to re-join game. Shutting down.")
+                self.shutdown()
+        return received
+
+    def try_join(self, game_name):
+        self.send(messages.GetGames())
         games = self.receive()
 
         if 'RegisteredGames' in games:
@@ -196,42 +176,77 @@ class Player(Client):
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
-                self.send(messages_new.join_game(temp_game_name, temp_preferred_team, temp_preferred_role, self.id))
+                self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role))
+
                 confirmation = self.receive()
                 if confirmation is not None:
-                    self.confirmation_status_handling(confirmation)
-                game_info = self.receive()
-                if game_info is not None:
-                    self.game_message_handling(game_info)
+                    self.handle_confirmation(confirmation)
+                else:
+                    raise UnexpectedServerMessage
 
-                """ ----------message handling for future --------
-                self.send(self.move_message(Direction.UP))
-                move_response = self.receive()
-                if move_response is not None:
-                    self.handle_data(move_response)
+                game_message = self.receive()
+                if game_message is not None:
+                    self.handle_game(game_message)
+                    return True
+                else:
+                    raise UnexpectedServerMessage
+        return False
 
-                self.send(self.discover_message())
-                discover_response = self.receive()
-                if discover_response is not None:
-                    self.handle_data(discover_response)
+    def play(self):
+        self.game_on = True
+        self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
 
-                self.send(self.pickup_message())
-                pickup_response = self.receive()
-                if pickup_response is not None:
-                    self.handle_data(pickup_response)
+        while self.game_on:
+            decision = self.strategy.get_next_move(self.location)
+            if self.verbose:
+                self.verbose_debug("Next decision is: " + str(decision.choice))
+                if decision.additional_info is not None:
+                    self.verbose_debug("Additional info: " + str(decision.additional_info))
 
-                self.send(self.place_message())
-                place_response = self.receive()
-                if place_response is not None:
-                    self.handle_data(place_response)
+            self.send(self.choose_message(decision))
+            # """ ----------message handling for future --------
+            # self.send(self.test_piece_message())
+            # test_piece_response = self.receive()
+            # if test_piece_response is not None:
+            #     self.handle_data(test_piece_response)
+            # """
+            # ... after sending...
+            response = self.receive()
+            if response is None:
+                self.verbose_debug("Something wrong happened to the server! Shutting down.")
+                self.shutdown()
 
-                self.send(self.test_piece_message())
-                test_piece_response = self.receive()
-                if test_piece_response is not None:
-                    self.handle_data(test_piece_response)
+            else:
+                # normal response!
+                self.handle_data(response)
+                # TODO: after "handling" the data we need to extract some additional knowledge from it.
+                # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded
+                # todo: and we need to update self.game_info and self.strategy accordingly
+                # e.g. if pick-up or place was succesful, update self.strategy.have_piece
+                if self.strategy.last_move.choice == Decision.PICK_UP:
+                    # if last move was picking-up, let;'s check if we actually have a piece now.
+                    for piece_info in self.game_info.pieces.values():
+                        if piece_info.player_id == self.id:
+                            self.strategy.have_piece = piece_info.id
+                    else:
+                        self.strategy.have_piece = -1
 
-                """
-                # TODO: add knowledge exchange sending and receiving when needed
+                        # TODO: add knowledge exchange sending and receiving when needed
+
+    def choose_message(self, decision):
+
+        if decision.choice == Decision.DISCOVER:
+            return messages.Discover(self.game_info.id, self.Guid)
+
+        elif decision.choice == Decision.MOVE:
+            direction = decision.additional_info
+            return messages.Move(self.game_info.id, self.Guid, direction)
+
+        elif decision.choice == Decision.PICK_UP:
+            return messages.PickUpPiece(self.game_info.id, self.Guid)
+
+        elif decision.choice == Decision.PLACE:
+            return messages.PlacePiece(self.game_info.id, self.Guid)
 
 
 if __name__ == '__main__':
@@ -240,8 +255,9 @@ if __name__ == '__main__':
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
-                p.play()
-                p.shutdown()
+                if p.try_join(game_name):
+                    p.play()
+                    p.shutdown()
 
 
     parser = ArgumentParser()

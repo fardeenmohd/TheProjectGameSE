@@ -3,7 +3,6 @@ from datetime import datetime
 
 from lxml import etree
 
-# constants:
 XSD_PATH = "../messages/TheProjectGameCommunication.xsd"
 XML_NAMESPACE = "https://se2.mini.pw.edu.pl/17-results/"
 NAMESPACE_PREFIX = "{%s}" % XML_NAMESPACE
@@ -64,71 +63,69 @@ def __append_element(root, tag, attrib=None):
     return etree.SubElement(root, NAMESPACE_PREFIX + tag, attrib, NSMAP)
 
 
-# TODO: change message-method names (e.g. move, pickup) in this file to CamelCase (use PyCharm's Refactor->Rename tool)
-# (so, after refactoring the names should be e.g. Move, PickUp, JoinGame...)
-
-def move(game_id, player_guid, direction):
+def Move(game_id, player_guid, direction: str):
     root = __game_message("Move", game_id, player_guid)
     root.set("direction", direction)
     return __validate_encode(root)
 
 
-def pick_up_piece(game_id, player_guid):
+def PickUpPiece(game_id, player_guid):
     root = __game_message("PickUpPiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def place_piece(game_id, player_guid):
+def PlacePiece(game_id, player_guid):
     root = __game_message("PlacePiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def test_piece(game_id, player_guid):
+def TestPiece(game_id, player_guid):
     root = __game_message("TestPiece", game_id, player_guid)
     return __validate_encode(root)
 
 
-def discover(game_id, player_guid):
+def Discover(game_id, player_guid):
     root = __game_message("Discover", game_id, player_guid)
     return __validate_encode(root)
 
 
-def authorize_knowledge_exchange(game_id, player_guid, with_player_id):
+def AuthorizeKnowledgeExchange(game_id, player_guid, with_player_id):
     root = __game_message("AuthorizeKnowledgeExchange", game_id, player_guid)
     root.set("withPlayerId", str(with_player_id))
     return __validate_encode(root)
 
 
-def get_games():
+def GetGames():
     root = __base_message("GetGames")
     return __validate_encode(root)
 
 
-def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: dict = None, pieces: dict = None,
-         player_location=None):
+def Data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: dict = None, pieces: dict = None,
+         player_location: tuple = None):
     """
-    :param player_location: tuple (x,y)
+    :param player_id: target player's id
+    :param game_finished: bool value, should be True if the game has ended
+    :param task_fields: dict: id -> TaskFieldInfo
+    :param goal_fields: dict: id -> GoalFieldInfo
+    :param pieces: dict: id -> PieceInfo
+    :param player_location: tuple x,y
+    :return:
     """
     root = __player_message("Data", player_id)
     root.set("gameFinished", str(game_finished).lower())
-
-    # add PlayerLocation element:
-    if player_location is not None:
-        e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
-        __append_element(root, etree.Element("PlayerLocation", e_player_location))
 
     # add TaskFields collection:
     if task_fields is not None:
         c_task_fields = __append_element(root, "TaskFields")
 
         # add each TaskField to the collection:
-        for (x, y), field in task_fields:
-            e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(),
+        for (x, y), field in task_fields.items():
+            e_attributes = {"x": str(x), "y": str(y), "timestamp": str(datetime.now().isoformat()),
                             "distanceToPiece": str(field.distance_to_piece)}
-            if field.player_id is not None:
+            if field.player_id is not None and field.player_id != "-1":
                 e_attributes["playerId"] = str(field.player_id)
-            if field.piece_id is not None:
-                e_attributes["pieceID"] = str(field.piece_id)
+            if field.piece_id is not None and field.piece_id != "-1":
+                e_attributes["pieceId"] = str(field.piece_id)
             __append_element(c_task_fields, "TaskField", e_attributes)
 
     # add GoalFields collection:
@@ -137,32 +134,34 @@ def data(player_id, game_finished: bool, task_fields: dict = None, goal_fields: 
 
         # add each GoalField to the collection:
         for (x, y), field in goal_fields.items():
-            e_attributes = {"x": str(x), "y": str(y), "timestamp": datetime.now(), "type": field.type,
+            e_attributes = {"x": str(x), "y": str(y), "timestamp": str(datetime.now().isoformat()), "type": field.type,
                             "team": field.allegiance}
-            if field.player_id is not None:
+            if field.player_id is not None and field.player_id != "-1":
                 e_attributes["playerId"] = str(field.player_id)
-            if field.piece_id is not None:
-                e_attributes["pieceID"] = str(field.piece_id)
             __append_element(c_goal_fields, "GoalField", e_attributes)
 
     # add Pieces collection:
-    if pieces is not None:
+    if pieces is not None and len(pieces) > 0:
         c_pieces = __append_element(root, "Pieces")
 
         # add each Piece to the collection:
         for piece in pieces.values():
-            e_attributes = {"id": piece.id, "timestamp": datetime.now(), "type": piece.type}
-            if piece.player_id is not None:
+            e_attributes = {"id": piece.id, "timestamp": str(datetime.now().isoformat()), "type": piece.type}
+            if piece.player_id is not None and piece.player_id != "-1":
                 e_attributes["playerId"] = piece.player_id
             __append_element(c_pieces, "Piece", e_attributes)
+
+    # add PlayerLocation element:
+    if player_location is not None:
+        e_player_location = {"x": str(player_location[0]), "y": str(player_location[1])}
+        __append_element(root, "PlayerLocation", e_player_location)
 
     return __validate_encode(root)
 
 
-def game(player_id, teams: dict, board_width, tasks_height, goals_height, player_location: tuple):
+def Game(player_id, teams: dict, board_width, tasks_height, goals_height, player_location: tuple):
     """
     :param teams: A dict of dicts: team => {player_id => PlayerInfo}
-    :param player_location: a tuple (x,y)
     """
     root = __player_message("Game", player_id)
 
@@ -187,48 +186,48 @@ def game(player_id, teams: dict, board_width, tasks_height, goals_height, player
     return __validate_encode(root)
 
 
-def knowledge_exchange_request(player_id, sender_player_id):
+def KnowledgeExchangeRequest(player_id, sender_player_id):
     root = __between_players_message("KnowledgeExchangeRequest", player_id, sender_player_id)
     return __validate_encode(root)
 
 
-def accept_exchange_request(player_id, sender_player_id):
+def AcceptExchangeRequest(player_id, sender_player_id):
     root = __between_players_message("AcceptExchangeRequest", player_id, sender_player_id)
     return __validate_encode(root)
 
 
-def reject_knowledge_exchange(player_id, sender_player_id, permanent):
+def RejectKnowledgeExchange(player_id, sender_player_id, permanent):
     root = __between_players_message("RejectKnowledgeExchange", player_id, sender_player_id)
     root.set("permanent", str(permanent).lower())
     return __validate_encode(root)
 
 
-def register_game(game_name, blue_team_players, red_team_players):
+def RegisterGame(game_name, blue_team_players, red_team_players):
     root = __base_message("RegisterGame")
     __append_element(root, "NewGameInfo", {"gameName": game_name, "redTeamPlayers": str(red_team_players),
                                            "blueTeamPlayers": str(blue_team_players)})
     return __validate_encode(root)
 
 
-def confirm_game_registration(game_id):
+def ConfirmGameRegistration(game_id):
     root = __base_message("ConfirmGameRegistration")
     root.set("gameId", str(game_id))
     return __validate_encode(root)
 
 
-def reject_game_registration(game_name):
+def RejectGameRegistration(game_name):
     root = __base_message("RejectGameRegistration")
     root.set("gameName", str(game_name))
     return __validate_encode(root)
 
 
-def game_started(game_id):
+def GameStarted(game_id):
     root = __base_message("GameStarted")
     root.set("gameId", str(game_id))
     return __validate_encode(root)
 
 
-def registered_games(games: dict):
+def RegisteredGames(games: dict):
     """
     :param games: a dict of: game_id => GameInfo
     """
@@ -241,7 +240,7 @@ def registered_games(games: dict):
     return __validate_encode(root)
 
 
-def join_game(game_name, pref_team, pref_type, player_id=None):
+def JoinGame(game_name, pref_team, pref_type, player_id=None):
     root = __base_message("JoinGame")
     root.set("gameName", game_name)
     root.set("preferredTeam", pref_team)
@@ -251,7 +250,7 @@ def join_game(game_name, pref_team, pref_type, player_id=None):
     return __validate_encode(root)
 
 
-def confirm_joining_game(player_id, game_id, player_guid, team, type):
+def ConfirmJoiningGame(player_id, game_id, player_guid, team, type):
     root = __player_message("ConfirmJoiningGame", player_id)
     root.set("privateGuid", str(player_guid))
     root.set("gameId", str(game_id))
@@ -260,13 +259,13 @@ def confirm_joining_game(player_id, game_id, player_guid, team, type):
     return __validate_encode(root)
 
 
-def reject_joining_game(player_id, game_name):
+def RejectJoiningGame(player_id, game_name):
     root = __player_message("RejectJoiningGame", player_id)
     root.set("gameName", game_name)
     return __validate_encode(root)
 
 
-def game_master_disconnected(game_id):
+def GameMasterDisconnected(game_id):
     root = __base_message("GameMasterDisconnected")
     root.set("gameId", game_id)
     return __validate_encode(root)

@@ -14,7 +14,7 @@ class Client:
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
-    MESSAGE_BUFFER_SIZE = 1024
+    MESSAGE_BUFFER_SIZE = 2048
 
     def __init__(self, index=1, verbose=False):
         """
@@ -49,17 +49,10 @@ class Client:
             try:
                 self.verbose_debug("Trying to connect to server " + str(hostname + " at port " + str(port) + "."))
                 if self.socket.connect_ex((hostname, port)) == 0:
-                    # try to receive the initial "greeting" byte from Server
-                    received = self.socket.recv(1)
-                    if received.decode() == '1':
-                        # # say hello to the server
-                        # self.send("1")
-                        self.connected = True
-                        self.verbose_debug("Succesfully connected to server.")
-                        return True
-                    else:
-                        self.verbose_debug("Message was not number 1! It actually was: " + received, True)
-                        raise socket.error
+                    self.connected = True
+                    self.verbose_debug("Succesfully connected to server.")
+                    return True
+
                 else:
                     raise socket.error
 
@@ -123,6 +116,7 @@ class Client:
     def send(self, message):
         try:
             self.socket.send(message.encode())
+            sleep(0.01)  # sleep for 1 ms just in case
             self.last_message = message
             self.verbose_debug("Sent to server: \"" + message + "\".")
         except socket.error as e:
@@ -134,8 +128,10 @@ class Client:
             received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
-            self.verbose_debug("Received from server: \"" + received_data + "\".")
-            return received_data
+            else:
+                self.verbose_debug("Received from server: \"" + received_data + "\".")
+                sleep(0.01)
+                return received_data
 
         except ConnectionAbortedError:
             self.verbose_debug("Server has shut down. Shutting down the client as well.", True)

@@ -6,7 +6,7 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 
-from src.communication import messages_new
+from src.communication import messages
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 from src.communication.unexpected import UnexpectedClientMessage
 
@@ -17,26 +17,27 @@ ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
-    DEFAULT_BUFFER_SIZE = 1024
+    DEFAULT_BUFFER_SIZE = 2048
     DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
-    DEFAULT_CLIENT_LIMIT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
 
-    def __init__(self, verbose: bool, host: str=DEFAULT_HOSTNAME, port: int=DEFAULT_PORT,
-                 client_limit: int=DEFAULT_CLIENT_LIMIT):
+    # below list contains messages which are addressed to a different player, NOT GM
+    TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
+                          "RejectKnowledgeExchange"]
+
+    def __init__(self, verbose: bool, hostname: str = DEFAULT_HOSTNAME, port: int = DEFAULT_PORT):
         """
         constructor.
         :param verbose:
-        :param host:
+        :param hostname:
         :param port:
         """
 
         # declare fields:
         self.running = True
-        self.host = host
+        self.host = hostname
         self.port = port
-        self.clientLimit = client_limit
         self.verbose = verbose
 
         self.socket = socket.socket()
@@ -46,15 +47,15 @@ class CommunicationServer:
         self.games_indexer = 0
 
         try:
-            self.socket.bind((host, port))
+            self.socket.bind((hostname, port))
 
         except OSError as e:
             self.verbose_debug("Error while setting up the socket: " + str(e), True)
             raise e
 
-        self.verbose_debug("Created server with hostname: " + host + " on port " + str(port), True)
+        self.verbose_debug("Created server with hostname: " + hostname + " on port " + str(port), True)
 
-    def verbose_debug(self, message: str, important: bool=False):
+    def verbose_debug(self, message: str, important: bool = False):
         """
         if in verbose mode, print out the given message with a timestamp
         :param message: message to be printed
@@ -67,7 +68,7 @@ class CommunicationServer:
     def print_state(self):
         """
         method running on a separate Thread, prints the current state of the server every couple of seconds
-        time between each printing of debug messages is specified by the constant CommunicationServer.INTER_PRINT_STATE_TIME
+        time between each printing of debug messages is specified by the constant NTER_PRINT_STATE_TIME
         """
         while self.running:
             self.verbose_debug("Currently there are " + str(len(self.clients)) + " clients connected.")
@@ -126,28 +127,15 @@ class CommunicationServer:
         while self.running:
             # block and wait until a client connects:
             client_socket, address = self.socket.accept()
+            self.register_connection(client_socket, str(self.client_indexer))
+            self.client_indexer += 1
 
-            if len(self.clients) < self.clientLimit:
-                # if client limit not exceeded, handle the new client:
-                # send a single byte which says "greetings"
-                self.verbose_debug("Accepted some client, sending greeting byte...")
-                client_socket.send('1'.encode())
-                self.register_connection(client_socket, self.client_indexer)
-                self.client_indexer += 1
-            else:
-                # if client limit exceeded, send a "sorry, server full" byte:
-                client_socket.send('0'.encode())
-                client_socket.close()
-                sleep(1)
-
-    def register_connection(self, client_socket: socket, client_id: int):
+    def register_connection(self, client_socket: socket, client_id: str):
         new_client = ClientInfo(client_id, socket=client_socket)
         self.clients[client_id] = new_client
 
         self.verbose_debug(
             "New client: " + new_client.get_tag() + " with address " + str(client_socket.getsockname()) + " connected.")
-        if len(self.clients) == self.clientLimit:
-            self.verbose_debug("Client capacity reached.")
 
         Thread(target=self.handle_client, args=[new_client], daemon=True).start()
 
@@ -180,7 +168,7 @@ class CommunicationServer:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
-        except ConnectionAbortedError:
+        except (ConnectionAbortedError, ConnectionResetError):
             self.disconnect_client(new_client.id)
 
         except Exception as e:
@@ -190,70 +178,86 @@ class CommunicationServer:
             raise e
 
     def handle_player(self, player: ClientInfo):
-        # first_message was a GetGames xml
-        self.send(player, messages_new.registered_games(self.games))
-        players_game_name = ""
-        while self.running:
-            received = self.receive(player)
+        # first_message was a GetGames xml, so let's get all the open games:
+        open_games = {}
+        for game in self.games.values():
+            if game.open:
+                open_games[game.id] = game
 
-            if received is None:
+        # and send them to this player
+        self.send(player, messages.RegisteredGames(open_games))
+
+        while self.running:
+            player_message = self.receive(player)
+            message_root = ET.fromstring(player_message)
+
+            if player_message is None:
                 raise ConnectionAbortedError
 
-            # parse the message, relay it to GM
+            # parse the message:
+            if "JoinGame" in player_message:
+                self.handle_join(player, player_message)
 
-            if "JoinGame" in received:
-                join_game_root = ET.fromstring(received)
+            elif any(message in player_message for message in self.TO_PLAYER_MESSAGES):
+                self.send(self.clients[message_root.attrib["playerId"]], player_message)
 
-                # check if game with this name exists:
-                players_game_name = join_game_root.attrib["gameName"]
-
-                for game_index, game_info in self.games.items():
-                    if game_info.name == players_game_name:
-                        # game found, so we will update JoinGame with player_id and send it to GM:
-                        join_game_root.attrib["playerId"] = str(player.id)
-                        join_game_message = ET.tostring(join_game_root, encoding='unicode', method='xml')
-
-                        # find the right GM:
-                        self.relay_msg_to_gm(join_game_message, players_game_name)
-
-                    else:
-                        # no game with this name, send rejection
-                        self.send(player, messages_new.reject_joining_game(player.id, players_game_name))
-
-            elif "KnowledgeExchangeRequest" in received or "Data" in received:
-                knowledge_exchanged_root = ET.fromstring(received)
-                self.send(self.clients[int(knowledge_exchanged_root.attrib["playerId"])], received)
+            elif "GetGames" in player_message:
+                # he's trying to re-join so let's handle him again!
+                self.handle_player(player)
 
             else:
-                self.relay_msg_to_gm(received, players_game_name)
+                # DEFAULT HANDLING: relay the message to GM
+                self.send(self.clients[player.game_master_id], player_message)
+
+    def handle_join(self, player, player_message):
+        message_root = ET.fromstring(player_message)
+        # check if game with this name exists:
+        players_game_name = message_root.attrib["gameName"]
+
+        for game_index, game_info in self.games.items():
+            if game_info.name == players_game_name:
+                # game found, so we will update JoinGame with player_id and send it to GM:
+                message_root.attrib["playerId"] = str(player.id)
+                join_game_message = ET.tostring(message_root, encoding='unicode', method='xml')
+
+                gm_id = game_info.game_master_id
+                player.game_master_id = gm_id
+                player.game_id = self.clients[gm_id].game_id
+                self.send(self.clients[gm_id], join_game_message)
+                return True
+        # no game with this name, send rejection
+        self.send(player, messages.RejectJoiningGame(player.id, players_game_name))
+        return False
 
     def handle_gm(self, gm: ClientInfo, registration_msg: str):
         # first_message should be a RegisterGames xml
 
         if not self.try_register_game(gm, registration_msg):
             # registration failed. send rejection:
-            self.send(gm, messages_new.reject_game_registration(gm.game_name))
+            self.send(gm, messages.RejectGameRegistration(gm.game_name))
 
             # GM will be trying again, so let's wait for his second attempt:
             second_attempt_message = self.receive(gm)
             if not self.try_register_game(gm, second_attempt_message):
                 # registration failed, again. send rejection:
-                self.send(gm, messages_new.reject_game_registration(gm.game_name))
+                self.send(gm, messages.RejectGameRegistration(gm.game_name))
                 # gm should not try to register anymore, so if we receive any message now then it's an error:
                 should_not_be_a_message = self.receive(gm)
                 if len(should_not_be_a_message) > 0:
                     raise UnexpectedClientMessage(
                         "GameMaster tried to register a game again, while he should have switched off!")
+        else:
+            ###############REGISTERING GAME DONE###################
+            # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
+            while self.running and gm.id in self.clients.keys():
+                gm_msg = self.receive(gm)
 
-        ###############REGISTERING GAME DONE###################
-        # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
-        while self.running:
-            # TODO move this code to a handle_gm_msg function?
-            gm_msg = self.receive(gm)
+                if gm_msg is None:
+                    raise ConnectionAbortedError
 
-            if gm_msg is None:
-                raise ConnectionAbortedError
+                msg_root = ET.fromstring(gm_msg)
 
+<<<<<<< HEAD
             if "ConfirmJoiningGame" in gm_msg:
                 confirm_root = ET.fromstring(gm_msg)
                 self.send(self.clients[int(confirm_root.attrib.get("playerId"))], gm_msg)
@@ -281,6 +285,29 @@ class CommunicationServer:
 
                 except ET.ParseError:
                     print('Corrupt or invalid XML sent by GM: \n {} '.format(gm_msg))
+=======
+                # non-default message types:
+                if "ConfirmJoiningGame" in gm_msg:
+                    player_id = msg_root.attrib["playerId"]
+                    self.clients[player_id].game_master_id = gm.id
+                    self.send(self.clients[player_id], gm_msg)
+
+                elif "GameStarted" in gm_msg:
+                    game_id = msg_root.attrib["gameId"]
+                    self.games[game_id].open = False
+
+                elif "Data" in gm_msg:
+                    player_id = msg_root.attrib["playerId"]
+                    finished = msg_root.attrib["gameFinished"]
+                    if finished == "true":
+                        del self.games[self.clients[player_id].game_id]
+                        pass
+                    self.send(self.clients[player_id], gm_msg)
+
+                else:
+                    # DEFAULT MESSAGE HANDLING:
+                    self.relay_msg_to_player(gm_msg)
+>>>>>>> 3e4b8a3dc34f3031a3062db7744992028445f8ef
 
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
@@ -289,6 +316,8 @@ class CommunicationServer:
         :param register_game_message: string containing a RegisterGame message
         :returns True, if succeeded, False if it didnt
         """
+        if register_game_message is None:
+            raise ConnectionAbortedError
         register_games_root = ET.fromstring(register_game_message)
 
         new_game_info = register_games_root[0]  # access index 0 because info is in the first (and only) child of root
@@ -298,54 +327,34 @@ class CommunicationServer:
         new_red_players = new_game_info.attrib["redTeamPlayers"]
         # done parsing.
 
+        gm.game_name = new_game_name
+
         # check if game with this name exists:
         if len([game for game_index, game in self.games.items() if game.name == new_game_name]) > 0:
             # reject the registration.
             self.verbose_debug(
-                gm.get_tag() + " tried to register a game with name: \"" + new_game_name + "\". Rejecting, because there "
-                                                                                           "already is a game with this "
-                                                                                           "name.")
+                gm.get_tag() + " tried to register a game: \"" + new_game_name + "\". Rejecting, because name is taken.")
             return False
 
         else:
             # create the new game:
-            self.games[self.games_indexer] = GameInfo(id=self.games_indexer, name=new_game_name,
-                                                      blue_players=new_blue_players, red_players=new_red_players,
-                                                      open=True)
-            gm.game_name = new_game_name
+            game_id = str(self.games_indexer)
+            self.games[game_id] = GameInfo(id=game_id, name=new_game_name, max_blue_players=new_blue_players,
+                                           max_red_players=new_red_players,
+                                           open=True, game_master_id=gm.id)
+            gm.game_id = game_id
             self.verbose_debug(
                 gm.get_tag() + " registered a new game, with name: " + new_game_name + " num of blue players: " + str(
                     new_blue_players) + " num of red players: " + str(new_red_players))
-            self.send(gm, messages_new.confirm_game_registration(self.games[self.games_indexer].id))
+            self.send(gm, messages.ConfirmGameRegistration(game_id))
             self.games_indexer += 1
             return True
 
-    def wait_for_message(self, message_name: str, client, max_attempts: int=10):
-        """
-        This method blocks until it receives a certain message, it will try max_attempts amount of times to receive it
-        Then it returns the full message when it is received
-        :param message_name:
-        :param client:
-        :param max_attempts:
-        :return:
-        """
-        received_data = self.receive(client)
-        attempts = 1
-        while message_name not in received_data and self.running and attempts <= max_attempts:
-            received_data = self.receive(client)
-            attempts += 1
-        return received_data
-
-    def relay_msg_to_gm(self, msg: str, game_name: str):
-        """
-        Relays msg to the GM handling the same game name as game_name
-        :param msg: message to be sent as string
-        :param game_name: name of GM's game
-        :return:
-        """
-        for client_index, client in self.clients.items():
-            if client.tag == ClientTypeTag.GAME_MASTER and client.game_name == game_name:
-                self.send(client, msg)
+    def relay_msg_to_player(self, gm_msg):
+        # the message should be a "PlayerMessage", so it definitely needs to have playerId in root attributes.
+        msg_root = ET.fromstring(gm_msg)
+        player_id = msg_root.attrib["playerId"]
+        self.send(self.clients[player_id], gm_msg)
 
     def send(self, recipient: ClientInfo, message: str):
         """
@@ -356,6 +365,7 @@ class CommunicationServer:
         """
         message = str(message)
         recipient.socket.send(message.encode())
+        sleep(0.001)
         self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
 
     def send_to_all_players(self, message: str):
@@ -368,42 +378,55 @@ class CommunicationServer:
         """
         :type client: ClientInfo
         """
+
+        # check if the client hadn't disconnected before we can read a message:
+        if client.id not in self.clients.keys():
+            raise ConnectionResetError
         try:
             received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
             if len(received_data) < 1 or received_data is None:
-                raise ConnectionAbortedError
+                raise ConnectionResetError
+
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
+            sleep(0.01)
             return received_data
 
-        except (ConnectionAbortedError, ConnectionResetError):
+        except (ConnectionAbortedError, ConnectionResetError) as e:
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
             self.disconnect_client(client.id)
+            raise e
 
-    def disconnect_client(self, client_index: int):
+    def disconnect_client(self, client_id: int):
 
-        if client_index not in self.clients.keys():
+        if client_id not in self.clients.keys():
             return
+        client = self.clients[client_id]
 
-        client = self.clients[client_index]
-        # close the socket
-        try:
-            client.socket.close()
-            temp = dict(self.clients)
-            del temp[client_index]
-            self.clients = temp
-
-        except socket.error as e:
-            self.verbose_debug("Couldn't close socket?! " + str(e), True)
-
-            # if the client was a GM, remove his game from server:
+        # if the client was a GM, remove his game from server:
         if client.tag == ClientTypeTag.GAME_MASTER:
             for game_info in self.games.values():
-                if game_info.name == client.game_name:
+                if game_info.name == client.game_name and game_info.game_master_id == client_id:
+                    # find all players who were connected to this game and send them a GameMasterdisconneted message
+                    for dude in self.clients.values():
+                        if dude.tag == ClientTypeTag.PLAYER and dude.game_master_id == client.id:
+                            self.send(dude, messages.GameMasterDisconnected(game_info.id))
+
                     del self.games[game_info.id]
                     self.verbose_debug("Closed " + client.get_tag() + "'s game (name was: " + game_info.name + ").")
                     break
             else:
-                self.verbose_debug("Couldn't close " + client.get_tag() + "'s game - it wasn't found on the server.")
+                self.verbose_debug(
+                    "Couldn't close " + client.get_tag() + "'s game - it wasn't found on the server.")
+
+        # close the socket
+        try:
+            client.socket.close()
+            temp = dict(self.clients)
+            del temp[client_id]
+            self.clients = temp
+
+        except socket.error as e:
+            self.verbose_debug("Couldn't close socket?! " + str(e), True)
 
     def shutdown(self):
         self.running = False
