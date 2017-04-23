@@ -203,6 +203,7 @@ class Player(Client):
                 if decision.additional_info is not None:
                     self.verbose_debug("Additional info: " + str(decision.additional_info))
 
+
             self.send(self.choose_message(decision))
             # """ ----------message handling for future --------
             # self.send(self.test_piece_message())
@@ -222,14 +223,14 @@ class Player(Client):
                 # TODO: after "handling" the data we need to extract some additional knowledge from it.
                 # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded
                 # todo: and we need to update self.game_info and self.strategy accordingly
-                # e.g. if pick-up or place was succesful, update self.strategy.have_piece
-                if self.strategy.last_move.choice == Decision.PICK_UP:
-                    # if last move was picking-up, let;'s check if we actually have a piece now.
-                    for piece_info in self.game_info.pieces.values():
-                        if piece_info.player_id == self.id:
-                            self.strategy.have_piece = piece_info.id
-                    else:
-                        self.strategy.have_piece = -1
+
+                # check if we have a piece now
+                for piece_info in self.game_info.pieces.values():
+                    if piece_info.player_id == self.id:
+                        self.strategy.have_piece = piece_info.id
+                        break
+                else:
+                    self.strategy.have_piece = "-1"
 
                         # TODO: add knowledge exchange sending and receiving when needed
 

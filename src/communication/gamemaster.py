@@ -33,7 +33,7 @@ class GameMaster(Client):
         self.keep_alive_interval = int(root.attrib.get('KeepAliveInterval'))
         self.retry_register_game_interval = int(root.attrib.get('RetryRegisterGameInterval'))
 
-        goals = {}
+        self.goals = {}
 
         board_width = 0
         task_area_length = 0
@@ -45,7 +45,7 @@ class GameMaster(Client):
                 colour = goal.get("team")
                 x = int(goal.get("x"))
                 y = int(goal.get("y"))
-                goals[x, y] = GoalFieldInfo(x, y, colour, type=GoalFieldType.GOAL)
+                self.goals[x, y] = GoalFieldInfo(x, y, colour, type=GoalFieldType.GOAL.value)
 
             self.sham_probability = float(game_attributes.find(GAME_SETTINGS_TAG + "ShamProbability").text)
             self.placing_pieces_frequency = int(
@@ -58,7 +58,7 @@ class GameMaster(Client):
             self.game_name = game_attributes.find(GAME_SETTINGS_TAG + "GameName").text
             self.team_limit = int(game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
 
-        self.info = GameInfo(goal_fields=goals, board_width=board_width, task_height=task_area_length,
+        self.info = GameInfo(goal_fields=self.goals, board_width=board_width, task_height=task_area_length,
                              goals_height=goal_area_length, max_blue_players=self.team_limit,
                              max_red_players=self.team_limit)
 
@@ -76,6 +76,7 @@ class GameMaster(Client):
     def __init__(self, verbose=False):
         super().__init__(verbose=verbose)
 
+        self.PIECE_DICT_PRELOAD_CAPACITY = 256
         self.RANDOMIZATION_ATTEMPTS = 10
         self.piece_indexer = 0
         self.typeTag = ClientTypeTag.GAME_MASTER
@@ -163,6 +164,13 @@ class GameMaster(Client):
         # now that the players have connected, we can prepare the game
         self.info.initialize_fields()
 
+        # set-up the goal fields:
+        for goal_field in self.info.goal_fields.values():
+            if goal_field.location in self.goals.keys():
+                goal_field.type = GoalFieldType.GOAL.value
+            else:
+                goal_field.type = GoalFieldType.NON_GOAL.value
+
         # place the players:
         for player_id in self.info.teams[Allegiance.RED.value].keys():
             x = randint(0, self.info.board_width - 1)
@@ -189,8 +197,12 @@ class GameMaster(Client):
             self.info.teams[Allegiance.BLUE.value][player_id].location = (x, y)
 
         # create the first pieces:
-        for i in range(self.initial_number_of_pieces):
-            self.add_piece()
+        for i in range(self.PIECE_DICT_PRELOAD_CAPACITY):
+            # using pre-loading of the dict to avoid thread synchronization problems due to changing size of dict
+            if i <= self.initial_number_of_pieces:
+                self.add_piece()
+            else:
+                self.info.pieces[str(i)] = PieceInfo()
 
     def place_pieces(self):
         while self.game_on:
@@ -312,7 +324,7 @@ class GameMaster(Client):
                 # can't move, stay in the same location.
                 player_info.location = old_location
 
-            if new_task_field.has_piece():
+            elif new_task_field.has_piece():
                 piece_id = new_task_field.piece_id
 
                 # check if the Player already knows what type this piece is:
@@ -391,20 +403,23 @@ class GameMaster(Client):
         # check if the field is a task field:
         if self.info.is_task_field(location):
             # then check if there is a piece on this field:
+
             if self.info.has_piece(location[0], location[1]):
-                # update our knowledge:
+                # update GM's knowledge:
                 piece_id = self.info.task_fields[location].piece_id
                 self.info.pieces[piece_id].player_id = player_info.id
                 self.info.task_fields[location].piece_id = "-1"  # setting as empty
+
                 player_info.piece_id = piece_id
 
                 # update player's knowledge:
                 player_info.info.pieces[piece_id].player_id = player_info.id
                 player_info.info.task_fields[location].piece_id = "-1"
 
-                # send him piece Data with his piece
+                # send him piece Data with his info about the piece
                 self.send(
-                    messages.Data(player_info.id, self.info.finished, pieces={piece_id: self.info.pieces[piece_id]}))
+                    messages.Data(player_info.id, self.info.finished,
+                                  pieces={piece_id: player_info.info.pieces[piece_id]}))
 
             else:
                 # no piece on this field. respond with an empty Data message
@@ -417,35 +432,49 @@ class GameMaster(Client):
 
         sleep(float(self.placing_delay) / 1000)
 
-        piece_id = "-1"
-        # check if that player really has a piece by iterating over our collection of pieces:
-        for piece_info in self.info.pieces.values():
-            if piece_info.player_id == player_info.id:
-                piece_id = piece_info.id
-        else:
+        # check if that player really has a piece:
+        piece_id = player_info.piece_id
+        if piece_id == "-1" or piece_id is None:
             # seems like the player doesn't have a piece at all. send him an empty Data message
             self.send(messages.Data(player_info.id, self.info.finished))
 
-        if piece_id != "-1":
+        else:
             # check if the player is standing on TaskField or GoalField:
             if self.info.is_task_field(player_info.location):
-                # update our info
-                field = self.info.task_fields[player_info.location]
-                field.piece_id = piece_id
+                # update GM's info
+                self.info.task_fields[player_info.location].piece_id = piece_id
                 self.info.pieces[piece_id].player_id = "-1"  # mark as untaken.
 
                 # update player's info
                 player_info.info.task_fields[player_info.location].piece_id = piece_id
                 player_info.info.pieces[piece_id].player_id = "-1"  # untaken
 
+                field = player_info.info.task_fields[player_info.location]
+
                 # send him a response
-                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.location: field}))
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.id: field}))
 
             else:
                 # the field is a goal field.
+
+                # warning: this piece will never be picked up. as such it should be deleted from the dict of all pieces.
+                # however, i want to avoid thread synchronization problems that could occur due to changing the size of a dict during runtime
+                # hence i set the owner of a piece to -1 :)
+
+                # update GM's info:
+                self.info.pieces[piece_id].player_id = "-1"
+
+                # update player info.
+                player_info.piece_id = "-1"  # he holds nothing.
+                player_info.info.pieces[piece_id].player_id = "-1"
+
                 # check if the piece is legit:
                 if self.info.pieces[piece_id].type == PieceType.NORMAL.value:
+
+                    # update player info about this field
                     field = self.info.goal_fields[player_info.location]
+                    player_info.info.goal_fields[player_info.location].type = field.type
+
                     # send information about the true nature of this goal field
                     self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.location: field}))
                 else:

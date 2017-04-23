@@ -252,7 +252,7 @@ class PlayerInfo():
     """used by GameMaster only (for now, at least...)"""
 
     def __init__(self, id="-1", team=None, info: GameInfo = None, type=None, location: tuple = None, guid=None,
-                 piece_id=None):
+                 piece_id="-1"):
         self.id = id
         self.type = type
         if info is not None:
