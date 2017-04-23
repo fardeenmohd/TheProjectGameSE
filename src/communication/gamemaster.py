@@ -10,7 +10,7 @@ from time import sleep
 from src.communication import messages
 from src.communication.client import Client
 from src.communication.info import GameInfo, Direction, GoalFieldInfo, Allegiance, PieceInfo, PieceType, \
-    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
+    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo, TaskFieldInfo
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -245,10 +245,7 @@ class GameMaster(Client):
 
         found_field = self.info.task_fields[x, y]
         # update distance_to_piece in all fields:
-        for field in self.info.task_fields.values():
-            distance = self.info.manhattan_distance(field, found_field)
-            if field.distance_to_piece == -1 or field.distance_to_piece > distance:
-                field.distance_to_piece = distance
+        self.gm_update_field_distances(found_field)
 
         self.info.task_fields[x, y].piece_id = piece_id
         self.info.pieces[piece_id] = new_piece
@@ -412,6 +409,10 @@ class GameMaster(Client):
                 self.info.pieces[piece_id].player_id = player_info.id
                 self.info.task_fields[location].piece_id = "-1"  # setting as empty
 
+                # we update the GM's info of distance to pieces so it sends valid data later to player
+                # do it in the same way as in add_piece
+                self.gm_update_field_distances(self.info.task_fields[location])
+
                 player_info.piece_id = piece_id
 
                 # update player's knowledge:
@@ -485,6 +486,9 @@ class GameMaster(Client):
 
                     # player is placing a piece in a goal field so we check for game over
                     victorious_team = self.check_for_game_over(player_info)
+                    if victorious_team is not None:
+                        # for now shutdown gm
+                        self.shutdown()
                     # TODO send GameFinished message to server when we know what time won,
                     #  it can be down in check_for_game_over()
                 else:
@@ -505,6 +509,13 @@ class GameMaster(Client):
                 self.verbose_debug("BLUE TEAM HAS WON THE GAME!", True)
                 return Allegiance.BLUE
         return None
+
+    def gm_update_field_distances(self, input_field: TaskFieldInfo):
+        # updates the GM's knowledge of all distances to the given field
+        for field in self.info.task_fields.values():
+            distance = self.info.manhattan_distance(field, input_field)
+            if field.distance_to_piece == -1 or field.distance_to_piece > distance:
+                field.distance_to_piece = distance
 
     def play(self):
 

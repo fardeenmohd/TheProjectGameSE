@@ -218,10 +218,6 @@ class GameInfo:
     def whole_board_length(self):
         return 2 * self.goals_height + self.task_height - 1
 
-    def get_num_of_goal_fields(self) -> int:
-        #  Should only be called after have initialized self.goals_height and self.board_width
-        return self.goals_height * self.board_width
-
     def initialize_fields(self, goals_height=None, task_height=None, board_width=None):
 
         if goals_height is not None:
