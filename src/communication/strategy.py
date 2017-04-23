@@ -35,8 +35,9 @@ class BaseStrategy:
         self.have_piece = -1  # by default, the player doesn't have a piece.
         # if self.have_piece is different from -1, then it is the id of the currently held piece
 
-    def get_next_move(self):
+    def get_next_move(self, new_location: tuple):
         # THE MAIN STRATEGY METHOD
+        self.current_location = new_location
 
         # if we have a piece, we should try to place it if we're in our goal fields.
         if self.have_piece > -1:
@@ -72,27 +73,24 @@ class BaseStrategy:
 
         # first find if our would-be goal field is not already discovered:
         field = self.game_info.goal_fields[self.current_location[0], self.current_location[1]]
-        if field.type == GoalFieldType.UNKNOWN:
+        if not field.type == GoalFieldType.GOAL.value and not field.type == GoalFieldType.NON_GOAL:
             return Decision(Decision.PLACE)
         else:
             # our field was already discovered as a goal. let's look for a different one.
             neighbours = self.game_info.get_neighbours(self.current_location)
             for neighbour in neighbours.values():
-                if neighbour.type == GoalFieldType.UNKNOWN:
-                    good_neighbour = neighbour
-                    break
-            else:
-                # no good neighbour found. we have to look for a different field to put our piece:
-                return self.look_for_empty_goal()
-            return Decision(Decision.MOVE, self.get_direction_to(good_neighbour))
+                if self.game_info.is_goal_field(neighbour.location) and neighbour.type == GoalFieldType.UNKNOWN:
+                    return Decision(Decision.MOVE, self.get_direction_to(neighbour))
+            # no good neighbour found. we have to look for a different field to put our piece:
+            return self.look_for_empty_goal()
+
 
     def look_for_empty_goal(self):
         # we can't place the piece on our field, all our neighbours are no good as well.
         # we need to move somewhere to find a different unknown goal.
 
         # base implementation: random.
-        move_direction = self.get_random_move()
-        return Decision(Decision.MOVE, move_direction)
+        return self.get_random_move()
 
     def have_sufficient_information(self):
         # do we have enough information to make a clever move?
@@ -122,7 +120,6 @@ class BaseStrategy:
         # check if our current field has a piece:
         field = self.game_info.task_fields[self.current_location[0], self.current_location[1]]
         if field.has_piece():
-            self.have_piece = field.piece_id
             return Decision(Decision.PICK_UP)
 
         else:
@@ -130,7 +127,7 @@ class BaseStrategy:
             neighbours = self.game_info.get_neighbours(self.current_location)
             min_distance, min_neighbour = None, None
             for neighbour in neighbours.values():
-                if not neighbour.is_occupied:
+                if not neighbour.is_occupied and not self.game_info.is_goal_field(neighbour.location):
                     distance = neighbour.distance_to_piece
                     if min_distance is None or distance <= min_distance:
                         min_distance, min_neighbour = distance, neighbour
@@ -152,7 +149,7 @@ class BaseStrategy:
                     valid_directions.append(Direction.LEFT.value)
                 if neighbour[0] > self.current_location[0]:
                     valid_directions.append(Direction.RIGHT.value)
-        return random.choice(valid_directions)
+        return Decision(Decision.MOVE, random.choice(valid_directions))
 
     def get_direction_to(self, field):
         # returns a Direction which should be taken in order to get to the specified field.
@@ -162,12 +159,14 @@ class BaseStrategy:
 
         if abs(y_delta) > abs(x_delta) and y_delta > 0:
             return Direction.UP.value
-        if abs(y_delta) > abs(x_delta) and y_delta < 0:
+        elif abs(y_delta) > abs(x_delta) and y_delta < 0:
             return Direction.DOWN.value
-        if abs(y_delta) < abs(x_delta) and x_delta > 0:
+        elif abs(y_delta) < abs(x_delta) and x_delta > 0:
             return Direction.RIGHT.value
-        if abs(y_delta) < abs(x_delta) and x_delta < 0:
+        elif abs(y_delta) < abs(x_delta) and x_delta < 0:
             return Direction.LEFT.value
+        else:
+            return Direction.DOWN.value
 
     def try_go_down(self):
         # check if the field below us is occupied:

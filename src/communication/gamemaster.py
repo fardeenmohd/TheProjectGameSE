@@ -287,28 +287,30 @@ class GameMaster(Client):
 
         sleep(float(self.move_delay) / 1000)
 
-        player_location = player_info.location
-        new_location = player_location
+        new_location = player_info.location
         piece_dict = None
 
         if direction == Direction.UP.value:
-            new_location = player_location[0], player_location[1] + 1
+            new_location = player_info.location[0], player_info.location[1] + 1
 
         if direction == Direction.DOWN.value:
-            new_location = player_location[0], player_location[1] - 1
+            new_location = player_info.location[0], player_info.location[1] - 1
 
         if direction == Direction.LEFT.value:
-            new_location = player_location[0] - 1, player_location[1]
+            new_location = player_info.location[0] - 1, player_info.location[1]
 
         if direction == Direction.RIGHT.value:
-            new_location = player_location[0] + 1, player_location[1]
+            new_location = player_info.location[0] + 1, player_info.location[1]
+
+        old_location = player_info.location
+        player_info.location = new_location
 
         if self.info.is_task_field(new_location):
             new_task_field = self.info.task_fields[new_location]
 
             if new_task_field.is_occupied:
                 # can't move, stay in the same location.
-                new_location = player_info.location
+                player_info.location = old_location
 
             if new_task_field.has_piece():
                 piece_id = new_task_field.piece_id
@@ -326,20 +328,22 @@ class GameMaster(Client):
 
                 # finally, send the message.
             self.send(messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field},
-                                    pieces=piece_dict, player_location=new_location))
+                                    pieces=piece_dict, player_location=player_info.location))
 
         elif self.info.is_goal_field(new_location):
 
             new_goal_field = copy.deepcopy(self.info.goal_fields[new_location])
             if new_goal_field.is_occupied:
-                new_location = player_info.location
+                player_info.location = old_location
 
             # use the type that the player knows.
             new_goal_field.type = self.info.teams[player_info.team][player_info.id].info.goal_fields[new_location].type
 
-            self.send(messages.Data(player_info.id, self.info.finished, {new_location: new_goal_field}, new_location))
+            self.send(messages.Data(player_info.id, self.info.finished, goal_fields={new_location: new_goal_field},
+                                    player_location=player_info.location))
 
         elif self.info.is_out_of_bounds(new_location):
+            player_info.location = old_location
             self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
     def handle_discover_message(self, player_info: PlayerInfo):
@@ -415,7 +419,7 @@ class GameMaster(Client):
 
         piece_id = "-1"
         # check if that player really has a piece by iterating over our collection of pieces:
-        for piece_info in self.info.pieces:
+        for piece_info in self.info.pieces.values():
             if piece_info.player_id == player_info.piece_id:
                 piece_id = piece_info.id
         else:

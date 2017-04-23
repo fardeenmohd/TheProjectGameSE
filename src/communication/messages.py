@@ -63,7 +63,7 @@ def __append_element(root, tag, attrib=None):
     return etree.SubElement(root, NAMESPACE_PREFIX + tag, attrib, NSMAP)
 
 
-def Move(game_id, player_guid, direction):
+def Move(game_id, player_guid, direction: str):
     root = __game_message("Move", game_id, player_guid)
     root.set("direction", direction)
     return __validate_encode(root)

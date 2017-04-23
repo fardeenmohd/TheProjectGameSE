@@ -99,23 +99,6 @@ class Player(Client):
 
         self.game_info.initialize_fields()
 
-
-    def move_message(self, direction):
-        """
-        :param direction: Move direction
-        :return: Move direction message
-        """
-        return messages.Move(self.game_info.id, self.Guid, direction)
-
-    def discover_message(self):
-        return messages.Discover(self.game_info.id, self.Guid)
-
-    def pickup_message(self):
-        return messages.PickUpPiece(self.game_info.id, self.Guid)
-
-    def place_message(self):
-        return messages.PlacePiece(self.game_info.id, self.Guid)
-
     def test_piece_message(self):
         return messages.TestPiece(self.game_info.id, self.Guid)
 
@@ -158,8 +141,8 @@ class Player(Client):
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             if player_location is not None:
-                x = int(task_field.attrib.get('x'))
-                y = int(task_field.attrib.get('y'))
+                x = int(player_location.attrib.get('x'))
+                y = int(player_location.attrib.get('y'))
                 self.location = (x, y)
 
     def receive(self):
@@ -175,7 +158,6 @@ class Player(Client):
                 self.verbose_debug("Failed to re-join game. Shutting down.")
                 self.shutdown()
         return received
-
 
     def try_join(self, game_name):
         self.send(messages.GetGames())
@@ -210,27 +192,19 @@ class Player(Client):
         self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
 
         while self.game_on:
-            decision = self.strategy.get_next_move()
+            decision = self.strategy.get_next_move(self.location)
+            if self.verbose:
+                self.verbose_debug("Next decision is: " + str(decision.choice))
+                if decision.additional_info is not None:
+                    self.verbose_debug("Additional info: " + str(decision.additional_info))
 
-            if decision.choice == Decision.DISCOVER:
-                self.send(self.discover_message())
-
-            elif decision.choice == Decision.MOVE:
-                direction = decision.additional_info
-                self.send(self.move_message(direction))
-
-            elif decision.choice == Decision.PICK_UP:
-                self.send(self.pickup_message())
-
-            elif decision.choice == Decision.PLACE:
-                self.send(self.place_message())
-
-                """ ----------message handling for future --------
-                self.send(self.test_piece_message())
-                test_piece_response = self.receive()
-                if test_piece_response is not None:
-                    self.handle_data(test_piece_response)
-                """
+            self.send(self.choose_message(decision))
+            # """ ----------message handling for future --------
+            # self.send(self.test_piece_message())
+            # test_piece_response = self.receive()
+            # if test_piece_response is not None:
+            #     self.handle_data(test_piece_response)
+            # """
             # ... after sending...
             response = self.receive()
             if response is None:
@@ -240,8 +214,28 @@ class Player(Client):
             else:
                 # normal response!
                 self.handle_data(response)
+                # TODO: after "handling" the data we need to extract some additional knowledge from it.
+                # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded and update self.strategy accordingly
+                # e.g. if pick-up or place was succesful, update self.strategy.have_piece
+
+
 
                 # TODO: add knowledge exchange sending and receiving when needed
+
+    def choose_message(self, decision):
+
+        if decision.choice == Decision.DISCOVER:
+            return messages.Discover(self.game_info.id, self.Guid)
+
+        elif decision.choice == Decision.MOVE:
+            direction = decision.additional_info
+            return messages.Move(self.game_info.id, self.Guid, direction)
+
+        elif decision.choice == Decision.PICK_UP:
+            return messages.PickUpPiece(self.game_info.id, self.Guid)
+
+        elif decision.choice == Decision.PLACE:
+            return messages.PlacePiece(self.game_info.id, self.Guid)
 
 
 if __name__ == '__main__':
