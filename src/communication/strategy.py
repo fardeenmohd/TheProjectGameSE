@@ -76,6 +76,7 @@ class BaseStrategy:
 
         if field.type == GoalFieldType.UNKNOWN.value:
             # we can safely place the piece! and remove it from self.
+            self.game_info.pieces[self.have_piece].player_id = "-1"
             self.have_piece = "-1"
             return Decision(Decision.PLACE)
         else:

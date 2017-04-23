@@ -198,11 +198,6 @@ class Player(Client):
 
         while self.game_on:
             decision = self.strategy.get_next_move(self.location)
-            if self.verbose:
-                self.verbose_debug("Next decision is: " + str(decision.choice))
-                if decision.additional_info is not None:
-                    self.verbose_debug("Additional info: " + str(decision.additional_info))
-
 
             self.send(self.choose_message(decision))
             # """ ----------message handling for future --------
