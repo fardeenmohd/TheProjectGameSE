@@ -5,12 +5,14 @@
     <GameDefinition>
         <Goals team="red" x="0" y="5" type="goal"/>
         <Goals team="blue" x="0" y="0" type="goal"/>
+        <Goals team="red" x="1" y="5" type="goal"/>
+        <Goals team="blue" x="1" y="0" type="goal"/>
         <ShamProbability>0.33</ShamProbability>
         <PlacingNewPiecesFrequency>2500</PlacingNewPiecesFrequency>
         <InitialNumberOfPieces>1</InitialNumberOfPieces>
         <BoardWidth>3</BoardWidth>
         <TaskAreaLength>4</TaskAreaLength>
-        <GoalAreaLength>2</GoalAreaLength>
+        <GoalAreaLength>1</GoalAreaLength>
         <NumberOfPlayersPerTeam>1</NumberOfPlayersPerTeam>
         <GameName>easy clone</GameName>
     </GameDefinition>

@@ -140,9 +140,9 @@ class Player(Client):
                     type = piece.attrib.get('type')
                     player_id = piece.attrib.get('playerId')
                     if player_id is not None:
-                        self.game_info.pieces[id] = PieceInfo(id, timestamp, type, player_id)
+                        self.game_info.pieces[id] = PieceInfo(id, type, player_id, timestamp=timestamp)
                     else:
-                        self.game_info.pieces[id] = PieceInfo(id, timestamp, type)
+                        self.game_info.pieces[id] = PieceInfo(id, type, timestamp=timestamp)
 
         for player_location in root.findall(REGISTERED_GAMES_TAG + "PlayerLocation"):
             if player_location is not None:

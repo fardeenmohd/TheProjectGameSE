@@ -101,7 +101,8 @@ class TaskFieldInfo(FieldInfo):
         self.distance_to_piece = distance_to_piece
         self.piece_id = piece_id
 
-    def has_piece(self):
+    @property
+    def has_piece(self) -> bool:
         return self.piece_id != "-1" and self.piece_id is not None
 
 
@@ -114,11 +115,12 @@ class GoalFieldInfo(FieldInfo):
 
 
 class PieceInfo:
-    def __init__(self, id="-1", timestamp=datetime.now(), type=PieceType.UNKNOWN.value, player_id="-1"):
+    def __init__(self, id="-1", type=PieceType.UNKNOWN.value, player_id="-1", location=None, timestamp=datetime.now()):
         self.id = id
-        self.timestamp = timestamp
         self.type = type
         self.player_id = player_id
+        self.location = location
+        self.timestamp = timestamp
 
 
 class ClientInfo:
@@ -174,7 +176,7 @@ class GameInfo:
 
     def has_piece(self, x, y):
         if (x, y) in self.task_fields.keys():
-            return self.task_fields[x, y].has_piece()
+            return self.task_fields[x, y].has_piece
         else:
             raise KeyError
 
@@ -211,7 +213,7 @@ class GameInfo:
         return neighbours
 
     @staticmethod
-    def manhattan_distance(field_a: FieldInfo, field_b: FieldInfo):
+    def fieldwise_manhattan_distance(field_a: FieldInfo, field_b: FieldInfo):
         return abs(field_a[0] - field_b[0]) + abs(field_a[1] - field_b[1])
 
     @property

@@ -9,8 +9,9 @@ from time import sleep
 
 from src.communication import messages
 from src.communication.client import Client
+from src.communication.helpful_math import Manhattan_Distance as manhattan
 from src.communication.info import GameInfo, Direction, GoalFieldInfo, Allegiance, PieceInfo, PieceType, \
-    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo, TaskFieldInfo
+    GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
 
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
@@ -61,7 +62,8 @@ class GameMaster(Client):
         self.info = GameInfo(goal_fields=self.goals, board_width=board_width, task_height=task_area_length,
                              goals_height=goal_area_length, max_blue_players=self.team_limit,
                              max_red_players=self.team_limit)
-        self.num_of_goal_fields = len(self.goals.keys()) / 2
+
+        self.goal_target = len(self.goals) / 2
 
     def parse_action_costs(self):
         root = parse_game_master_settings()
@@ -76,6 +78,8 @@ class GameMaster(Client):
 
     def __init__(self, verbose=False):
         super().__init__(verbose=verbose)
+
+        self.achieved_goal_counters = {Allegiance.RED.value: 0, Allegiance.BLUE.value: 0}
 
         self.PIECE_DICT_PRELOAD_CAPACITY = 256
         self.RANDOMIZATION_ATTEMPTS = 10
@@ -219,7 +223,6 @@ class GameMaster(Client):
             return False
 
         # randomize until we find a suitable field:
-
         x = randint(0, self.info.board_width - 1)
         y = randint(self.info.goals_height, self.info.task_height - 1)
 
@@ -231,24 +234,25 @@ class GameMaster(Client):
 
         if self.info.has_piece(x, y):
             for task_field in self.info.task_fields.values():
-                if not task_field.has_piece():
+                if not task_field.has_piece:
                     x = task_field.x
                     y = task_field.y
                     break
 
-        new_piece = PieceInfo(piece_id)
+        new_piece = PieceInfo(piece_id, location=(x, y))
 
+        # assign type to new piece
         if random() >= self.sham_probability:
             new_piece.type = PieceType.NORMAL.value
         else:
             new_piece.type = PieceType.SHAM.value
 
-        found_field = self.info.task_fields[x, y]
-        # update distance_to_piece in all fields:
-        self.gm_update_field_distances(found_field)
-
         self.info.task_fields[x, y].piece_id = piece_id
         self.info.pieces[piece_id] = new_piece
+
+        # update distance_to_piece in all fields:
+        self.update_field_distances()
+
         self.piece_indexer += 1
         self.verbose_debug(
             "Added a " + new_piece.type + " piece with id: " + piece_id + " at coordinates " + str(x) + ", " + str(
@@ -299,7 +303,6 @@ class GameMaster(Client):
         sleep(float(self.move_delay) / 1000)
 
         new_location = player_info.location
-        piece_dict = None
 
         if direction == Direction.UP.value:
             new_location = player_info.location[0], player_info.location[1] + 1
@@ -322,36 +325,45 @@ class GameMaster(Client):
             if new_task_field.is_occupied:
                 # can't move, stay in the same location.
                 player_info.location = old_location
+                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
-            elif new_task_field.has_piece():
+            elif new_task_field.has_piece:
                 piece_id = new_task_field.piece_id
 
                 # check if the Player already knows what type this piece is:
                 # if yes, keep his information about it:
-                piece_info = self.info.teams[player_info.team][player_info.id].info.pieces.get(piece_id)
+                piece_info = player_info.info.pieces.get(piece_id)
+
                 if piece_info is None:
                     # if he doesn't yet know about the Piece, set its type to unknown
-                    self.info.teams[player_info.team][player_info.id].info.pieces[piece_id] = PieceInfo(piece_id,
-                                                                                                        type=PieceType.UNKNOWN.value)
-                    piece_info = self.info.teams[player_info.team][player_info.id].info.pieces.get(piece_id)
+                    piece_info = PieceInfo(piece_id, type=PieceType.UNKNOWN.value, location=new_location)
+                    player_info.info.pieces[piece_id] = piece_info
 
                 piece_dict = {piece_id: piece_info}
 
                 # finally, send the message.
-            self.send(messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field},
-                                    pieces=piece_dict, player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field},
+                                        pieces=piece_dict, player_location=new_location))
+            else:
+                # this new field doesn't have a piece.
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field}))
 
         elif self.info.is_goal_field(new_location):
+            # it's a Goal Field, yo.
 
-            new_goal_field = copy.deepcopy(self.info.goal_fields[new_location])
-            if new_goal_field.is_occupied:
+            if self.info.goal_fields[new_location].is_occupied:
+                # can't move.
                 player_info.location = old_location
+                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
-            # use the type that the player knows.
-            new_goal_field.type = self.info.teams[player_info.team][player_info.id].info.goal_fields[new_location].type
+            else:
+                # get a working copy of the new field.
+                new_goal_field = copy.deepcopy(self.info.goal_fields[new_location])
+                # use the type that the player knows.
+                new_goal_field.type = player_info.info.goal_fields[new_location].type
 
-            self.send(messages.Data(player_info.id, self.info.finished, goal_fields={new_location: new_goal_field},
-                                    player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished, goal_fields={new_location: new_goal_field},
+                                        player_location=player_info.location))
 
         elif self.info.is_out_of_bounds(new_location):
             player_info.location = old_location
@@ -375,21 +387,28 @@ class GameMaster(Client):
                 player_info.info.task_fields[x, y].player_id = neighbour.player_id
                 player_info.info.task_fields[x, y].distance_to_piece = neighbour.distance_to_piece
 
-                # if this field has a piece, check if player knows about it
-                if neighbour.has_piece():
+                if neighbour.has_piece:
+                    # if this field has a piece, check if player knows about it
                     if neighbour.piece_id not in player_info.info.pieces.keys():
                         # if he doesn't know, add an unknown piece to his info
-                        player_info.info.pieces[neighbour.piece_id] = PieceInfo(neighbour.piece_id)
-                    pieces = player_info.info.pieces
+                        player_info.info.pieces[neighbour.piece_id] = PieceInfo(neighbour.piece_id,
+                                                                                location=neighbour.location)
                     player_info.info.task_fields[x, y].piece_id = neighbour.piece_id
-                    if len(pieces) < 1:
-                        pieces = None
+
+                    pieces[neighbour.piece_id] = player_info.info.pieces[neighbour.piece_id]
                 task_fields[x, y] = player_info.info.task_fields[x, y]
 
             else:
                 # it is a goal field.
                 player_info.info.goal_fields[x, y].player_id = neighbour.player_id
                 goal_fields[x, y] = player_info.info.goal_fields[x, y]
+
+        if len(pieces) < 1:
+            pieces = None
+        if len(goal_fields) < 1:
+            goal_fields = None
+        if len(task_fields) < 1:
+            task_fields = None
 
         self.send(messages.Data(player_id, self.info.finished, task_fields, goal_fields, pieces))
 
@@ -402,7 +421,6 @@ class GameMaster(Client):
         # check if the field is a task field:
         if self.info.is_task_field(location):
             # then check if there is a piece on this field:
-
             if self.info.has_piece(location[0], location[1]):
                 # update GM's knowledge:
                 piece_id = self.info.task_fields[location].piece_id
@@ -410,22 +428,22 @@ class GameMaster(Client):
                 self.info.task_fields[location].piece_id = "-1"  # setting as empty
 
                 # we update the GM's info of distance to pieces so it sends valid data later to player
-                # do it in the same way as in add_piece
-                self.gm_update_field_distances(self.info.task_fields[location])
+                self.update_field_distances()
 
                 player_info.piece_id = piece_id
 
                 # update player's knowledge:
-                if piece_id in player_info.info.pieces:
-                    player_info.info.pieces[piece_id].player_id = player_info.id
-                    player_info.info.task_fields[location].piece_id = "-1"
+                players_piece_info = player_info.info.pieces.get(piece_id)
+                if players_piece_info is not None:
+                    players_piece_info.player_id = player_info.id
+                    players_piece_info.location = None  # set to None to indicate that it was picked up.
                 else:
-                    player_info.info.pieces[piece_id] = PieceInfo(id=piece_id, type=PieceType.UNKNOWN.value, player_id=player_info.id)
-                    player_info.info.task_fields[location].piece_id = "-1"
+                    players_piece_info = PieceInfo(piece_id, PieceType.UNKNOWN.value, player_info.id)
+                    player_info.info.pieces[piece_id] = players_piece_info
+                players_piece_info.piece_id = "-1"
+
                 # send him piece Data with his info about the piece
-                self.send(
-                    messages.Data(player_info.id, self.info.finished,
-                                  pieces={piece_id: player_info.info.pieces[piece_id]}))
+                self.send(messages.Data(player_info.id, self.info.finished, pieces={piece_id: players_piece_info}))
 
             else:
                 # no piece on this field. respond with an empty Data message
@@ -449,11 +467,13 @@ class GameMaster(Client):
             if self.info.is_task_field(player_info.location):
                 # update GM's info
                 self.info.task_fields[player_info.location].piece_id = piece_id
+                self.info.pieces[piece_id].location = player_info.location
                 self.info.pieces[piece_id].player_id = "-1"  # mark as untaken.
 
                 # update player's info
                 player_info.info.task_fields[player_info.location].piece_id = piece_id
                 player_info.info.pieces[piece_id].player_id = "-1"  # untaken
+                player_info.info.pieces[piece_id].location = player_info.location
 
                 field = player_info.info.task_fields[player_info.location]
 
@@ -463,16 +483,19 @@ class GameMaster(Client):
             else:
                 # the field is a goal field.
 
-                # warning: this piece will never be picked up. as such it should be deleted from the dict of all pieces.
+                # warning: this piece will be consumed and never again picked up.
+                # as such it should probably be deleted from the dict of all pieces.
                 # however, i want to avoid thread synchronization problems that could occur due to changing the size of a dict during runtime
-                # hence i set the owner of a piece to -1 :)
+                # hence i set the owner of a piece to -1 and its location to None :)
 
                 # update GM's info:
                 self.info.pieces[piece_id].player_id = "-1"
+                self.info.pieces[piece_id].location = None
 
                 # update player info.
                 player_info.piece_id = "-1"  # he holds nothing.
                 player_info.info.pieces[piece_id].player_id = "-1"
+                player_info.info.pieces[piece_id].location = None
 
                 # check if the piece is legit:
                 if self.info.pieces[piece_id].type == PieceType.NORMAL.value:
@@ -481,53 +504,52 @@ class GameMaster(Client):
                     field = self.info.goal_fields[player_info.location]
                     player_info.info.goal_fields[player_info.location].type = field.type
 
+                    if field.type == GoalFieldType.GOAL:
+                        self.achieved_goal_counters[player_info.team] += 1
+
+                    # player is placing a piece in a goal field so we check for game over
+                    self.check_for_game_over(player_info)
+
                     # send information about the true nature of this goal field
                     self.send(messages.Data(player_info.id, self.info.finished, goal_fields={field.location: field}))
 
-                    # player is placing a piece in a goal field so we check for game over
-                    victorious_team = self.check_for_game_over(player_info)
-                    if victorious_team is not None:
-                        # for now shutdown gm
-                        self.shutdown()
-                    # TODO send GameFinished message to server when we know what time won,
-                    #  it can be down in check_for_game_over()
                 else:
                     # piece is a sham, send an empty Data message
                     self.send(messages.Data(player_info.id, self.info.finished))
 
-    # Returns the team allegiance that won the game, otherwise returns None
-    def check_for_game_over(self, player_info: PlayerInfo) -> Allegiance:
-        if player_info.team == Allegiance.RED.value:
-            self.num_occupied_red_goals += 1
-            if self.num_occupied_red_goals == self.num_of_goal_fields:
-                self.verbose_debug("RED TEAM HAS WON THE GAME!", True)
-                return Allegiance.RED
+    def check_for_game_over(self, player_info: PlayerInfo):
+        # update self.info.finished and self.game_on if a team has completed all its goals.
 
-        elif player_info.team == Allegiance.BLUE.value:
-            self.num_occupied_blue_goals += 1
-            if self.num_occupied_blue_goals == self.num_of_goal_fields:
-                self.verbose_debug("BLUE TEAM HAS WON THE GAME!", True)
-                return Allegiance.BLUE
-        return None
+        for team in self.info.teams.keys():
+            if self.achieved_goal_counters[team] >= self.goal_target:
+                self.verbose_debug(team.upper() + " TEAM HAS WON THE GAME!\nShutting down the GM.", True)
+                self.info.finished = True
+                self.game_on = False
+                break
 
-    def gm_update_field_distances(self, input_field: TaskFieldInfo):
-        # updates the GM's knowledge of all distances to the given field
+    def update_field_distances(self):
+
         for field in self.info.task_fields.values():
-            distance = self.info.manhattan_distance(field, input_field)
-            if field.distance_to_piece == -1 or field.distance_to_piece > distance:
-                field.distance_to_piece = distance
+            min_piece, min_dist = None, None
+            for piece in [piece for piece in self.info.pieces.values() if piece.location is not None]:
+                if min_dist is None:
+                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
+                if manhattan(field.location, piece.location) <= min_dist:
+                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
+            field.distance_to_piece = min_dist
 
     def play(self):
 
+        # send the initial Game message to all players:
         for team in self.info.teams.values():
             for player in team:
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
 
+        # deploy the Piece-placing thread:
         Thread(target=self.place_pieces, daemon=True).start()
 
         while self.game_on:
-
             try:
                 message = self.receive()
                 if message is None:
@@ -552,8 +574,8 @@ class GameMaster(Client):
                 elif "PickUpPiece" in message:
                     Thread(target=self.handle_pick_up_message, args=[player_info], daemon=True).start()
 
+                    # TODO: other types of messages
 
-                    # TODO: other types of messages:
             except Exception as e:
                 self.verbose_debug("Is this an error I see before me? " + str(e), True)
                 raise e

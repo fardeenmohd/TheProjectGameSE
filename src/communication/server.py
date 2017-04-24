@@ -273,7 +273,10 @@ class CommunicationServer:
                     if finished == "true":
                         del self.games[self.clients[player_id].game_id]
                         pass
-                    self.send(self.clients[player_id], gm_msg)
+                    client = self.clients.get(player_id)
+                    if client is not None:
+                        self.send(client, gm_msg)
+
 
                 else:
                     # DEFAULT MESSAGE HANDLING:
@@ -324,7 +327,9 @@ class CommunicationServer:
         # the message should be a "PlayerMessage", so it definitely needs to have playerId in root attributes.
         msg_root = ET.fromstring(gm_msg)
         player_id = msg_root.attrib["playerId"]
-        self.send(self.clients[player_id], gm_msg)
+        client = self.clients.get(player_id)
+        if client is not None:
+            self.send(client, gm_msg)
 
     def send(self, recipient: ClientInfo, message: str):
         """
