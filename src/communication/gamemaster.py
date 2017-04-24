@@ -317,6 +317,10 @@ class GameMaster(Client):
             new_location = player_info.location[0] + 1, player_info.location[1]
 
         old_location = player_info.location
+        if self.info.is_task_field(old_location):
+            old_field = self.info.task_fields[old_location]
+        else:
+            old_field = self.info.goal_fields[old_location]
         player_info.location = new_location
 
         if self.info.is_task_field(new_location):
@@ -325,31 +329,42 @@ class GameMaster(Client):
             if new_task_field.is_occupied:
                 # can't move, stay in the same location.
                 player_info.location = old_location
+                old_field.player_id = player_info.id
                 self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
-            elif new_task_field.has_piece:
-                piece_id = new_task_field.piece_id
-
-                # check if the Player already knows what type this piece is:
-                # if yes, keep his information about it:
-                piece_info = player_info.info.pieces.get(piece_id)
-
-                if piece_info is None:
-                    # if he doesn't yet know about the Piece, set its type to unknown
-                    piece_info = PieceInfo(piece_id, type=PieceType.UNKNOWN.value, location=new_location)
-                    player_info.info.pieces[piece_id] = piece_info
-
-                piece_dict = {piece_id: piece_info}
-
-                # finally, send the message.
-                self.send(messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field},
-                                        pieces=piece_dict, player_location=new_location))
             else:
-                # this new field doesn't have a piece.
-                self.send(messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field}))
+                # we can move to the new field.
+                new_task_field.player_id = player_info.id
+                old_field.player_id = "-1"  # set old field to not have a player.
+
+                if new_task_field.has_piece:
+                    piece_id = new_task_field.piece_id
+
+                    # check if the Player already knows what type this piece is:
+                    # if yes, keep his information about it:
+                    piece_info = player_info.info.pieces.get(piece_id)
+
+                    if piece_info is None:
+                        # if he doesn't yet know about the Piece, set its type to unknown
+                        piece_info = PieceInfo(piece_id, type=PieceType.UNKNOWN.value, location=new_location)
+                        player_info.info.pieces[piece_id] = piece_info
+
+                    piece_dict = {piece_id: piece_info}
+
+                    # finally, send the message.
+                    self.send(
+                        messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field},
+                                      pieces=piece_dict, player_location=new_location))
+                else:
+                    # this new field doesn't have a piece.
+                    self.send(
+                        messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field}))
 
         elif self.info.is_goal_field(new_location):
             # it's a Goal Field, yo.
+
+            # TODO: check if the player is allowed to enter this goal area
+            # i.e. a Red player shouldn't be allowed to enter a Blue goals area and vice versa.
 
             if self.info.goal_fields[new_location].is_occupied:
                 # can't move.
@@ -362,6 +377,9 @@ class GameMaster(Client):
                 # use the type that the player knows.
                 new_goal_field.type = player_info.info.goal_fields[new_location].type
 
+                self.info.goal_fields[new_location].player_id = player_info.id
+                old_field.player_id = "-1"  # set old field to not have a player.
+
                 self.send(messages.Data(player_info.id, self.info.finished, goal_fields={new_location: new_goal_field},
                                         player_location=player_info.location))
 
@@ -372,8 +390,6 @@ class GameMaster(Client):
     def handle_discover_message(self, player_info: PlayerInfo):
 
         sleep(float(self.discover_delay) / 1000)
-
-        player_id = player_info.id
 
         goal_fields = {}
         task_fields = {}
@@ -400,8 +416,38 @@ class GameMaster(Client):
 
             else:
                 # it is a goal field.
-                player_info.info.goal_fields[x, y].player_id = neighbour.player_id
+                # get a working copy of the new field.
+                new_goal_field = copy.deepcopy(self.info.goal_fields[neighbour.location])
+                # use the type that the player knows.
+                new_goal_field.type = player_info.info.goal_fields[neighbour.location].type
+
+                player_info.info.goal_fields[x, y] = new_goal_field
                 goal_fields[x, y] = player_info.info.goal_fields[x, y]
+
+        # add information about the player's own field:
+        if self.info.is_goal_field(player_info.location):
+            # get a working copy of the new field.
+            new_goal_field = copy.deepcopy(self.info.goal_fields[player_info.location])
+            # use the type that the player knows.
+            new_goal_field.type = player_info.info.goal_fields[player_info.location].type
+
+            player_info.info.goal_fields[player_info.location] = new_goal_field
+            goal_fields[player_info.location] = player_info.info.goal_fields[player_info.location]
+        else:
+            # it's a task field...
+            field = player_info.info.task_fields[player_info.location]
+            field.distance_to_piece = self.info.task_fields[player_info.location].distance_to_piece
+
+            if self.info.task_fields[player_info.location].has_piece:
+                # if this field has a piece, check if player knows about it
+                piece_id = self.info.task_fields[player_info.location].piece_id
+                if piece_id not in player_info.info.pieces.keys():
+                    # if he doesn't know, add an unknown piece to his info
+                    player_info.info.pieces[piece_id] = PieceInfo(piece_id, location=player_info.location)
+                player_info.info.task_fields[player_info.location].piece_id = piece_id
+
+                pieces[piece_id] = player_info.info.pieces[piece_id]
+            task_fields[player_info.location] = player_info.info.task_fields[player_info.location]
 
         if len(pieces) < 1:
             pieces = None
@@ -410,7 +456,7 @@ class GameMaster(Client):
         if len(task_fields) < 1:
             task_fields = None
 
-        self.send(messages.Data(player_id, self.info.finished, task_fields, goal_fields, pieces))
+        self.send(messages.Data(player_info.id, self.info.finished, task_fields, goal_fields, pieces))
 
     def handle_pick_up_message(self, player_info: PlayerInfo):
 
@@ -504,7 +550,7 @@ class GameMaster(Client):
                     field = self.info.goal_fields[player_info.location]
                     player_info.info.goal_fields[player_info.location].type = field.type
 
-                    if field.type == GoalFieldType.GOAL:
+                    if field.type == GoalFieldType.GOAL.value:
                         self.achieved_goal_counters[player_info.team] += 1
 
                     # player is placing a piece in a goal field so we check for game over
@@ -547,7 +593,7 @@ class GameMaster(Client):
                                         self.info.goals_height, team[player].location))
 
         # deploy the Piece-placing thread:
-        Thread(target=self.place_pieces, daemon=True).start()
+        Thread(target=self.place_pieces).start()
 
         while self.game_on:
             try:

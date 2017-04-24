@@ -270,12 +270,11 @@ class CommunicationServer:
                 elif "Data" in gm_msg:
                     player_id = msg_root.attrib["playerId"]
                     finished = msg_root.attrib["gameFinished"]
-                    if finished == "true":
-                        del self.games[self.clients[player_id].game_id]
-                        pass
                     client = self.clients.get(player_id)
-                    if client is not None:
-                        self.send(client, gm_msg)
+                    if finished == "true" and client is not None:
+                        # TODO: properly remove a game from server.
+                        pass
+                    self.send(client, gm_msg)
 
 
                 else:

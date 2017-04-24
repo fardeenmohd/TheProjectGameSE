@@ -88,7 +88,6 @@ class BaseStrategy:
             # no good neighbour found. we have to look for a different field to put our piece:
             return self.look_for_empty_goal()
 
-
     def look_for_empty_goal(self):
         # we can't place the piece on our field, all our neighbours are no good as well.
         # we need to move somewhere to find a different unknown goal.
@@ -109,7 +108,7 @@ class BaseStrategy:
         return Decision(Decision.DISCOVER)
 
     def make_educated_move(self):
-        # we assume we're in Task Field Area, without a piece and that we have sufficient knowledge to make a clever move.
+        # we assume we're in TaskField Area, without a piece and we have sufficient knowledge to make a clever move.
 
         # base implementation: move to the nearest piece.
         return self.move_toward_piece()
@@ -133,18 +132,21 @@ class BaseStrategy:
             for neighbour in neighbours.values():
                 if not neighbour.is_occupied and not self.game_info.is_goal_field(neighbour.location):
                     distance = neighbour.distance_to_piece
+                    if distance == -1:
+                        distance = 1000
                     if min_distance is None or distance <= min_distance:
                         min_distance, min_neighbour = distance, neighbour
 
             return Decision(Decision.MOVE, self.get_direction_to(min_neighbour))
 
-    def get_random_move(self):
+    def get_random_move(self, illegal=None):
         # returns a random valid move based on the current position.
+        # the illegal parameter specifies a list of Directions which will be omitted from randomization.
 
         neighbours = self.game_info.get_neighbours(self.current_location)
         valid_directions = []
         for neighbour in neighbours.values():
-            if not neighbour.is_occupied:
+            if not neighbour.is_occupied and not self.game_info.is_out_of_bounds(neighbour):
                 if neighbour[1] > self.current_location[1]:
                     valid_directions.append(Direction.UP.value)
                 if neighbour[1] < self.current_location[1]:
@@ -153,6 +155,8 @@ class BaseStrategy:
                     valid_directions.append(Direction.LEFT.value)
                 if neighbour[0] > self.current_location[0]:
                     valid_directions.append(Direction.RIGHT.value)
+        if illegal is not None:
+            valid_directions = list(set(valid_directions) - set(illegal))
         return Decision(Decision.MOVE, random.choice(valid_directions))
 
     def get_direction_to(self, field):
@@ -174,37 +178,43 @@ class BaseStrategy:
 
     def try_go_down(self):
         # check if the field below us is occupied:
-        if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] - 1)):
-            if not self.game_info.goal_fields[self.current_location[0], self.current_location[1] - 1].is_occupied:
+        new_location = (self.current_location[0], self.current_location[1] - 1)
+        if self.game_info.is_out_of_bounds(new_location):
+            return self.get_random_move(illegal=Direction.DOWN.value)
+        if self.game_info.is_goal_field(new_location):
+            if not self.game_info.goal_fields[new_location].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.DOWN.value)
             else:
                 # we can't move there. let's move randomly.
-                return self.get_random_move()
+                return self.get_random_move(illegal=Direction.DOWN.value)
         else:
-            if not self.game_info.task_fields[self.current_location[0], self.current_location[1] - 1].is_occupied:
+            if not self.game_info.task_fields[new_location].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.DOWN.value)
             else:
                 # we can't move there. let's move randomly.
-                return self.get_random_move()
+                return self.get_random_move(illegal=Direction.DOWN.value)
 
     def try_go_up(self):
         # check if the field above us is occupied:
-        if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] + 1)):
-            if not self.game_info.goal_fields[self.current_location[0], self.current_location[1] + 1].is_occupied:
+        new_location = self.current_location[0], self.current_location[1] + 1
+        if self.game_info.is_out_of_bounds(new_location):
+            return self.get_random_move(illegal=Direction.UP.value)
+        if self.game_info.is_goal_field(new_location):
+            if not self.game_info.goal_fields[new_location].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.UP.value)
             else:
                 # we can't move there. let's move randomly.
-                return self.get_random_move()
+                return self.get_random_move(illegal=Direction.UP.value)
         else:
-            if not self.game_info.task_fields[self.current_location[0], self.current_location[1] + 1].is_occupied:
+            if not self.game_info.task_fields[new_location].is_occupied:
                 # we can move there
                 return Decision(Decision.MOVE, Direction.UP.value)
             else:
                 # we can't move there. let's move randomly.
-                return self.get_random_move()
+                return self.get_random_move(illegal=Direction.UP.value)
 
 
 class BasicBlueStrategy(BaseStrategy):
@@ -219,6 +229,14 @@ class BasicBlueStrategy(BaseStrategy):
         # vice versa!
         return self.try_go_up()
 
+    def try_go_up(self):
+        # overriding the base method to make sure that a Blue player doesn't get into Red goal fields.
+        if self.game_info.is_task_field(self.current_location):
+            if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] + 1)):
+                # it's red team's goal fields! we can't go there.
+                return self.get_random_move(illegal=[Direction.UP.value])
+        return super(BasicBlueStrategy, self).try_go_up()
+
 
 class BasicRedStrategy(BaseStrategy):
     def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
@@ -230,3 +248,11 @@ class BasicRedStrategy(BaseStrategy):
 
     def go_to_task_fields(self):
         return self.try_go_down()
+
+    def try_go_down(self):
+        # overriding the base method to make sure that a Red player doesn't get into Blue goal fields.
+        if self.game_info.is_task_field(self.current_location):
+            if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] - 1)):
+                # it's red team's goal fields! we can't go there.
+                return self.get_random_move(illegal=[Direction.DOWN.value])
+        return super(BasicRedStrategy, self).try_go_down()

@@ -55,13 +55,16 @@ class Player(Client):
         if "ConfirmJoiningGame" in message:
             root = ET.fromstring(message)
             self.Guid = root.attrib.get('privateGuid')
-            self.game_info.id = int(root.attrib.get('gameId'))
+            self.game_info.id = str(root.attrib.get('gameId'))
             self.game_info.name = self.game_name
             self.id = root.attrib.get('playerId')
 
             for player_definition in root.findall(REGISTERED_GAMES_TAG + "PlayerDefinition"):
                 self.team = player_definition.attrib.get('team')
                 self.type = player_definition.attrib.get('type')
+
+            self.verbose_debug("Got assigned role of " + self.type + " in team " + self.team)
+
             return True
 
         elif "RejectJoiningGame" in message:
@@ -106,7 +109,8 @@ class Player(Client):
     def handle_data(self, response_data):
         root = ET.fromstring(response_data)
 
-        self.game_info.open = not root.attrib.get('gameFinished')
+        if root.attrib.get('gameFinished') == 'true':
+            self.game_on = False
 
         for task_field_list in root.findall(REGISTERED_GAMES_TAG + "TaskFields"):
             if task_field_list is not None:
@@ -116,9 +120,13 @@ class Player(Client):
                     self.game_info.task_fields[x, y].timestamp = task_field.attrib.get('timestamp')
                     self.game_info.task_fields[x, y].distance_to_piece = int(task_field.attrib.get('distanceToPiece'))
                     if task_field.attrib.get('playerId') is not None:
-                        self.game_info.task_fields[x, y].player_id = int(task_field.attrib.get('playerId'))
+                        self.game_info.task_fields[x, y].player_id = str(task_field.attrib.get('playerId'))
+                    else:
+                        self.game_info.task_fields[x, y].player_id = "-1"
                     if task_field.attrib.get('pieceId') is not None:
-                        self.game_info.task_fields[x, y].piece_id = int(task_field.attrib.get('pieceId'))
+                        self.game_info.task_fields[x, y].piece_id = str(task_field.attrib.get('pieceId'))
+                    else:
+                        self.game_info.task_fields[x, y].piece_id = "-1"
 
         for goal_field_list in root.findall(REGISTERED_GAMES_TAG + "GoalFields"):
             if goal_field_list is not None:
@@ -127,10 +135,9 @@ class Player(Client):
                     y = int(goal_field.attrib.get('y'))
                     self.game_info.goal_fields[x, y].timestamp = goal_field.attrib.get('timestamp')
                     if goal_field.attrib.get('playerId') is not None:
-                        self.game_info.goal_fields[x, y].player_id = int(goal_field.attrib.get('playerId'))
+                        self.game_info.goal_fields[x, y].player_id = str(goal_field.attrib.get('playerId'))
                     self.game_info.goal_fields[x, y].allegiance = goal_field.attrib.get('team')
-                    type = goal_field.attrib.get('type')
-                    self.game_info.goal_fields[x, y].type = type
+                    self.game_info.goal_fields[x, y].type = goal_field.attrib.get('type')
 
         for piece_list in root.findall(REGISTERED_GAMES_TAG + "Pieces"):
             if piece_list is not None:
@@ -219,6 +226,8 @@ class Player(Client):
                 # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded
                 # todo: and we need to update self.game_info and self.strategy accordingly
 
+                self.strategy.current_location = self.location
+
                 # check if we have a piece now
                 for piece_info in self.game_info.pieces.values():
                     if piece_info.player_id == self.id:
@@ -228,6 +237,7 @@ class Player(Client):
                     self.strategy.have_piece = "-1"
 
                         # TODO: add knowledge exchange sending and receiving when needed
+        self.shutdown()
 
     def choose_message(self, decision):
 

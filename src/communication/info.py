@@ -51,17 +51,15 @@ class GoalFieldType(Enum):
 
 
 class FieldInfo:
-    def __init__(self, x=0, y=0, timestamp=datetime.now(), player_id=None):
+    def __init__(self, x=0, y=0, timestamp=datetime.now(), player_id="-1"):
         self.x = x
         self.y = y
         self.timestamp = timestamp
-        self.player_id = "-1"
-        if player_id is not None:
-            self.player_id = player_id
+        self.player_id = player_id
 
     @property
     def is_occupied(self):
-        return self.player_id != "-1"
+        return not (self.player_id == "-1" or self.player_id is None)
 
     @property
     def location(self):
