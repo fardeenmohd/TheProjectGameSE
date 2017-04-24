@@ -86,9 +86,9 @@ class BaseStrategy:
                 if self.game_info.is_goal_field(neighbour.location) and neighbour.type == GoalFieldType.UNKNOWN.value:
                     return Decision(Decision.MOVE, self.get_direction_to(neighbour))
             # no good neighbour found. we have to look for a different field to put our piece:
-            return self.look_for_empty_goal()
+            return self.look_for_unknown_goal()
 
-    def look_for_empty_goal(self):
+    def look_for_unknown_goal(self):
         # we can't place the piece on our field, all our neighbours are no good as well.
         # we need to move somewhere to find a different unknown goal.
 
@@ -146,15 +146,15 @@ class BaseStrategy:
         neighbours = self.game_info.get_neighbours(self.current_location)
         valid_directions = []
         for neighbour in neighbours.values():
-            if not neighbour.is_occupied and not self.game_info.is_out_of_bounds(neighbour):
-                if neighbour[1] > self.current_location[1]:
-                    valid_directions.append(Direction.UP.value)
-                if neighbour[1] < self.current_location[1]:
-                    valid_directions.append(Direction.DOWN.value)
-                if neighbour[0] < self.current_location[0]:
-                    valid_directions.append(Direction.LEFT.value)
-                if neighbour[0] > self.current_location[0]:
-                    valid_directions.append(Direction.RIGHT.value)
+            # if not neighbour.is_occupied and not self.game_info.is_out_of_bounds(neighbour):
+            if neighbour[1] > self.current_location[1]:
+                valid_directions.append(Direction.UP.value)
+            if neighbour[1] < self.current_location[1]:
+                valid_directions.append(Direction.DOWN.value)
+            if neighbour[0] < self.current_location[0]:
+                valid_directions.append(Direction.LEFT.value)
+            if neighbour[0] > self.current_location[0]:
+                valid_directions.append(Direction.RIGHT.value)
         if illegal is not None:
             valid_directions = list(set(valid_directions) - set(illegal))
         return Decision(Decision.MOVE, random.choice(valid_directions))

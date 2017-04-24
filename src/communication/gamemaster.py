@@ -34,7 +34,7 @@ class GameMaster(Client):
         self.keep_alive_interval = int(root.attrib.get('KeepAliveInterval'))
         self.retry_register_game_interval = int(root.attrib.get('RetryRegisterGameInterval'))
 
-        self.goals = {}
+        self.goals = []  # list of tuples ;)
 
         board_width = 0
         task_area_length = 0
@@ -46,7 +46,7 @@ class GameMaster(Client):
                 colour = goal.get("team")
                 x = int(goal.get("x"))
                 y = int(goal.get("y"))
-                self.goals[x, y] = GoalFieldInfo(x, y, colour, type=GoalFieldType.GOAL.value)
+                self.goals.append((x, y))
 
             self.sham_probability = float(game_attributes.find(GAME_SETTINGS_TAG + "ShamProbability").text)
             self.placing_pieces_frequency = int(
@@ -59,7 +59,7 @@ class GameMaster(Client):
             self.game_name = game_attributes.find(GAME_SETTINGS_TAG + "GameName").text
             self.team_limit = int(game_attributes.find(GAME_SETTINGS_TAG + "NumberOfPlayersPerTeam").text)
 
-        self.info = GameInfo(goal_fields=self.goals, board_width=board_width, task_height=task_area_length,
+        self.info = GameInfo(board_width=board_width, task_height=task_area_length,
                              goals_height=goal_area_length, max_blue_players=self.team_limit,
                              max_red_players=self.team_limit)
 
@@ -117,8 +117,9 @@ class GameMaster(Client):
 
                         if self.get_num_of_players() == self.team_limit * 2:
                             #  We are ready to start the game
-                            self.send(messages.GameStarted(self.info.id))
                             self.set_up_game()
+                            self.send(messages.GameStarted(self.info.id))
+                            sleep(1)
                             self.game_on = True
                             self.play()
 
@@ -172,7 +173,7 @@ class GameMaster(Client):
 
         # set-up the goal fields:
         for goal_field in self.info.goal_fields.values():
-            if goal_field.location in self.goals.keys():
+            if goal_field.location in self.goals:
                 goal_field.type = GoalFieldType.GOAL.value
             else:
                 goal_field.type = GoalFieldType.NON_GOAL.value
@@ -591,6 +592,7 @@ class GameMaster(Client):
             for player in team:
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
+                sleep(0.1)
 
         # deploy the Piece-placing thread:
         Thread(target=self.place_pieces).start()

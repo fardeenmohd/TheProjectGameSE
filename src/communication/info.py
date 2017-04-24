@@ -185,7 +185,7 @@ class GameInfo:
         return (location[0], location[1]) in self.goal_fields.keys()
 
     def is_out_of_bounds(self, location: tuple):
-        return not (self.is_task_field(location) or self.is_goal_field(location))
+        return not self.is_task_field(location) and not self.is_goal_field(location)
 
     def get_neighbours(self, location: tuple, look_for_extended=False):
         """
