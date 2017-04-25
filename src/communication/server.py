@@ -276,6 +276,7 @@ class CommunicationServer:
                         pass
                     self.send(client, gm_msg)
 
+                # todo: be careful. possibly some other messages might require special handling.
 
                 else:
                     # DEFAULT MESSAGE HANDLING:
@@ -284,7 +285,6 @@ class CommunicationServer:
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
         Read a RegisterGame message, try to add it to our games list if no game with the same name exists.
-        :type gm: ClientInfo
         :param register_game_message: string containing a RegisterGame message
         :returns True, if succeeded, False if it didnt
         """
@@ -333,13 +333,11 @@ class CommunicationServer:
     def send(self, recipient: ClientInfo, message: str):
         """
         a truly vital method. Sends a given message to a recipient.
-        :type recipient: ClientInfo
         :param recipient: socket object of the recipient.
         :param message: message to be passed, any type. will be encoded as string.
         """
         message = str(message)
         recipient.socket.send(message.encode())
-        sleep(0.001)
         self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
 
     def send_to_all_players(self, message: str):
@@ -353,6 +351,8 @@ class CommunicationServer:
         :type client: ClientInfo
         """
 
+        # TODO: upgrade this method to split clumped messages and return the last message from queue.
+
         # check if the client hadn't disconnected before we can read a message:
         if client.id not in self.clients.keys():
             raise ConnectionResetError
@@ -362,7 +362,6 @@ class CommunicationServer:
                 raise ConnectionResetError
 
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
-            sleep(0.01)
             return received_data
 
         except (ConnectionAbortedError, ConnectionResetError) as e:

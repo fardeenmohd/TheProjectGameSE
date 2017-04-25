@@ -10,7 +10,7 @@ from time import sleep
 from src.communication import messages
 from src.communication.client import Client
 from src.communication.helpful_math import Manhattan_Distance as manhattan
-from src.communication.info import GameInfo, Direction, GoalFieldInfo, Allegiance, PieceInfo, PieceType, \
+from src.communication.info import GameInfo, Direction, Allegiance, PieceInfo, PieceType, \
     GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
 
@@ -92,6 +92,10 @@ class GameMaster(Client):
         self.parse_game_definition()
         self.parse_action_costs()
 
+    @property
+    def get_num_of_players(self):
+        return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
+
     def run(self):
         register_game_message = messages.RegisterGame(self.game_name, self.team_limit, self.team_limit)
         self.send(register_game_message)
@@ -115,11 +119,10 @@ class GameMaster(Client):
                     if "JoinGame" in message:
                         self.handle_join(message)
 
-                        if self.get_num_of_players() == self.team_limit * 2:
+                        if self.get_num_of_players == self.team_limit * 2:
                             #  We are ready to start the game
                             self.set_up_game()
                             self.send(messages.GameStarted(self.info.id))
-                            sleep(1)
                             self.game_on = True
                             self.play()
 
@@ -150,7 +153,7 @@ class GameMaster(Client):
             raise UnexpectedServerMessage
 
         # let's see if we can fit the player at all:
-        if self.get_num_of_players() == self.team_limit * 2:
+        if self.get_num_of_players == self.team_limit * 2:
             # he can't fit in, send a rejection message :(
             self.verbose_debug("Player " + in_player_id + " was rejected, because the game is already full.")
             self.send(messages.RejectJoiningGame(in_player_id, self.game_name))
@@ -166,12 +169,13 @@ class GameMaster(Client):
                            + " in team " + team_color + ".")
 
         self.send(messages.ConfirmJoiningGame(in_player_id, str(self.info.id), private_guid, team_color, role))
+        return True
 
     def set_up_game(self):
         # now that the players have connected, we can prepare the game
         self.info.initialize_fields()
 
-        # set-up the goal fields:
+        # set-up the goal fields using info obtained from the configuration file:
         for goal_field in self.info.goal_fields.values():
             if goal_field.location in self.goals:
                 goal_field.type = GoalFieldType.GOAL.value
@@ -179,6 +183,7 @@ class GameMaster(Client):
                 goal_field.type = GoalFieldType.NON_GOAL.value
 
         # place the players:
+        # red team:
         for player_id in self.info.teams[Allegiance.RED.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(self.info.whole_board_length - self.info.goals_height + 1, self.info.whole_board_length)
@@ -191,6 +196,7 @@ class GameMaster(Client):
             self.info.goal_fields[x, y].player_id = player_id
             self.info.teams[Allegiance.RED.value][player_id].location = (x, y)
 
+        # blue team:
         for player_id in self.info.teams[Allegiance.BLUE.value].keys():
             x = randint(0, self.info.board_width - 1)
             y = randint(0, self.info.goals_height - 1)
@@ -212,11 +218,15 @@ class GameMaster(Client):
                 self.info.pieces[str(i)] = PieceInfo()
 
     def place_pieces(self):
+        # this function runs on a thread and keeps adding new pieces to the board. forever.
         while self.game_on:
             sleep(float(self.placing_pieces_frequency) / 1000)
             self.add_piece()
 
     def add_piece(self):
+        """
+        randomly place a piece on the board (if possible)
+        """
         piece_id = str(self.piece_indexer)
 
         # check if we can add the piece at all:
@@ -261,6 +271,7 @@ class GameMaster(Client):
 
     def add_player(self, player_id, pref_role, pref_team, private_guid):
         """
+        adds the player to game while taking into account his preferences
         :returns: a tuple: (team, type)
         """
 
@@ -282,6 +293,7 @@ class GameMaster(Client):
         else:
             role = PlayerType.MEMBER.value
 
+        # add this player to our dict of teams, set up his game info.
         self.info.teams[team][player_id] = PlayerInfo(player_id, team, type=role, guid=private_guid)
         self.info.teams[team][player_id].info.initialize_fields(self.info.goals_height, self.info.task_height,
                                                                 self.info.board_width)
@@ -575,7 +587,9 @@ class GameMaster(Client):
                 break
 
     def update_field_distances(self):
-
+        """
+        re-calculates distance_to_piece field in all TaskFields on the board.
+        """
         for field in self.info.task_fields.values():
             min_piece, min_dist = None, None
             for piece in [piece for piece in self.info.pieces.values() if piece.location is not None]:
@@ -586,13 +600,11 @@ class GameMaster(Client):
             field.distance_to_piece = min_dist
 
     def play(self):
-
         # send the initial Game message to all players:
         for team in self.info.teams.values():
             for player in team:
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
-                sleep(0.1)
 
         # deploy the Piece-placing thread:
         Thread(target=self.place_pieces).start()
@@ -622,14 +634,11 @@ class GameMaster(Client):
                 elif "PickUpPiece" in message:
                     Thread(target=self.handle_pick_up_message, args=[player_info], daemon=True).start()
 
-                    # TODO: other types of messages
+                    # TODO: add handling of other types of messages
 
             except Exception as e:
                 self.verbose_debug("Is this an error I see before me? " + str(e), True)
                 raise e
-
-    def get_num_of_players(self):
-        return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
 
 
 if __name__ == '__main__':

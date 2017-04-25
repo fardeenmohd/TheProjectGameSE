@@ -46,11 +46,9 @@ class Player(Client):
 
         self.strategy = None
 
-    def handle_confirmation(self, message):
+    def handle_confirmation(self, message: str):
         """
-
-        :param message:
-        :return: Parses the confirmation message and extracts game information
+        Parses the confirmation message and extracts game information
         """
         if "ConfirmJoiningGame" in message:
             root = ET.fromstring(message)
@@ -76,11 +74,9 @@ class Player(Client):
             self.verbose_debug("Unexpected message from server!")
             raise UnexpectedServerMessage
 
-    def handle_game(self, game_message):
+    def handle_game(self, game_message: str):
         """
-
-        :param game_message:
-        :return: Parses the game message and extracts game information
+        Parses a Game message, sets up self.game_info
         """
         root = ET.fromstring(game_message)
 
@@ -103,10 +99,10 @@ class Player(Client):
 
         self.game_info.initialize_fields()
 
-    def test_piece_message(self):
-        return messages.TestPiece(self.game_info.id, self.Guid)
-
-    def handle_data(self, response_data):
+    def handle_data(self, response_data: str):
+        """
+        parses a Data messsage, updates self.game_info
+        """
         root = ET.fromstring(response_data)
 
         if root.attrib.get('gameFinished') == 'true':
@@ -164,6 +160,7 @@ class Player(Client):
         received = super(Player, self).receive()
         if "GameMasterDisconnected" in received:
             # clean up our knowledge and try to join to the game again.
+            self.game_on = False
             self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
             if not self.try_join(self.game_name):
                 # if we failed to join, kys
@@ -204,16 +201,11 @@ class Player(Client):
         self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
 
         while self.game_on:
+            # find the next decision, send a message specified by it.
             decision = self.strategy.get_next_move(self.location)
 
             self.send(self.choose_message(decision))
-            # """ ----------message handling for future --------
-            # self.send(self.test_piece_message())
-            # test_piece_response = self.receive()
-            # if test_piece_response is not None:
-            #     self.handle_data(test_piece_response)
-            # """
-            # ... after sending...
+
             response = self.receive()
             if response is None:
                 self.verbose_debug("Something wrong happened to the server! Shutting down.")
@@ -222,10 +214,6 @@ class Player(Client):
             else:
                 # normal response!
                 self.handle_data(response)
-                # TODO: after "handling" the data we need to extract some additional knowledge from it.
-                # todo: i.e. 1) if we tried to pick up or place a piece, we need to know if we suceeded
-                # todo: and we need to update self.game_info and self.strategy accordingly
-
                 self.strategy.current_location = self.location
 
                 # check if we have a piece now
@@ -236,11 +224,12 @@ class Player(Client):
                 else:
                     self.strategy.have_piece = "-1"
 
-                        # TODO: add knowledge exchange sending and receiving when needed
         self.shutdown()
 
-    def choose_message(self, decision):
-
+    def choose_message(self, decision: Decision) -> str:
+        """
+        :returns: an appropriate message string basing on decision.
+        """
         if decision.choice == Decision.DISCOVER:
             return messages.Discover(self.game_info.id, self.Guid)
 
@@ -253,6 +242,8 @@ class Player(Client):
 
         elif decision.choice == Decision.PLACE:
             return messages.PlacePiece(self.game_info.id, self.Guid)
+
+            # TODO: ADD THE OTHER MESSAGE HERE.
 
 
 if __name__ == '__main__':

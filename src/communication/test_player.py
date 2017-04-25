@@ -43,10 +43,7 @@ class TestPlayer(TestCase):
 
     def test_send_message_to_server(self):
         self.mock_player.connect()
-        time.sleep(1)
-        self.mock_player.talk()
-        time.sleep(1)
-        self.mock_player.talk()
+        self.mock_player.send("Hello.")
 
         assert self.mock_player.last_message is not None
 

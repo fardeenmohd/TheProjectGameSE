@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import socket
-from argparse import ArgumentParser
 from datetime import datetime
-from threading import Thread
 from time import sleep
 
 from src.communication.info import ClientTypeTag
@@ -70,32 +68,6 @@ class Client:
                     self.connected = False
                     return False
 
-    def talk(self, messages_count=1):
-        """
-        send and receive messages to/from server
-        :param messages_count: how many messages should be sent from client to server
-        """
-        for i in range(messages_count):
-            try:
-                '''
-                # Send a message:
-                message = "Hello."
-                self.send(message)
-                '''
-
-                # Receive a response:
-                received_data = self.receive()
-                while len(received_data) < 1:
-                    received_data = self.receive()
-                self.verbose_debug("Received from server:")
-                sleep(self.timeBetweenMessages)
-
-            except socket.error as e:
-                self.verbose_debug("Socket error caught: " + str(e) + ". Shutting down the connection.", True)
-                self.socket.close()
-                self.connected = False
-                return
-
     def verbose_debug(self, message, important=False):
         """
         if in verbose mode, print out the given message with client index and timestamp
@@ -113,24 +85,31 @@ class Client:
         self.verbose_debug("Shutting down the client.", True)
         quit()
 
-    def send(self, message):
+    def send(self, message: str):
+        """
+        Send message to server.
+        """
         try:
             self.socket.send(message.encode())
-            sleep(0.01)  # sleep for 1 ms just in case
             self.last_message = message
             self.verbose_debug("Sent to server: \"" + message + "\".")
         except socket.error as e:
             self.verbose_debug("Socket error caught: " + str(e))
             self.shutdown()
 
-    def receive(self):
+    def receive(self) -> str:
+        """
+        Read and decode bytes from server.
+        """
+
+        # TODO: upgrade this method to split clumped messages and return the last message from queue.
+
         try:
             received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
             else:
                 self.verbose_debug("Received from server: \"" + received_data + "\".")
-                sleep(0.01)
                 return received_data
 
         except ConnectionAbortedError:
@@ -140,35 +119,3 @@ class Client:
         except socket.error as e:
             self.verbose_debug("Socket error caught: " + str(e))
             self.shutdown()
-
-
-def simulate(number_of_clients=1, verbose=True, messages_count=1, time_between_deploys=1):
-    """
-    deploy client threads/
-    :param number_of_clients:
-    :param verbose: if the clients should operate in verbose mode.
-    :param messages_count: how many messages should be sent from client to server
-    """
-    thread_list = []
-    for i in range(number_of_clients):
-        new_thread = Thread(target=deploy_client, args=(i + 1, verbose, messages_count))
-        new_thread.start()
-        thread_list.append(new_thread)
-        sleep(time_between_deploys)
-    return thread_list
-
-
-def deploy_client(index, verbose=True, messages_count=1):
-    c = Client(index, verbose)
-    if c.connect():
-        c.talk(messages_count)
-        c.shutdown()
-
-
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('-c', '--clientcount', default=1, help='Number of clients to be deployed.')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
-    parser.add_argument('-m', '--messagecount', default=1, help='Number of messages each client should send.')
-    args = vars(parser.parse_args())
-    simulate(int(args["clientcount"]), args["verbose"], int(args["messagecount"]))
