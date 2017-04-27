@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
-
+from queue import Queue
 from src.communication.info import ClientTypeTag
 
 
@@ -15,6 +15,7 @@ class Client:
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 2048
+    MSG_SEPARATOR = ';'
 
     def __init__(self, index=1, verbose=False):
         """
@@ -32,7 +33,7 @@ class Client:
         self.connected = False  # will be changed if connected
         self.last_message = None
         self.typeTag = ClientTypeTag.CLIENT
-
+        self.msg_queue = Queue()
         # self.socket.settimeout(1)
 
         self.verbose_debug("Client created.")
@@ -115,6 +116,8 @@ class Client:
 
     def send(self, message):
         try:
+            # We append the MSG_SEPARATOR to the end of each msg
+            message += self.MSG_SEPARATOR
             self.socket.send(message.encode())
             sleep(0.01)  # sleep for 1 ms just in case
             self.last_message = message
@@ -123,15 +126,24 @@ class Client:
             self.verbose_debug("Socket error caught: " + str(e))
             self.shutdown()
 
-    def receive(self):
+    def receive(self) -> str:
+        """
+        Receives of msg on the socket with a string with messages separated by MSG_SEPARATOR
+        Then it adds them to the queue and returns the first unread msg and removes it
+        :return: 
+        """
         try:
             received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
             else:
                 self.verbose_debug("Received from server: \"" + received_data + "\".")
+                for msg in received_data.split(self.MSG_SEPARATOR):
+                    if len(msg) > 0:
+                        self.msg_queue.put(msg)
+                        self.verbose_debug("Added msg to queue: " + msg)
                 sleep(0.01)
-                return received_data
+                return self.msg_queue.get()
 
         except ConnectionAbortedError:
             self.verbose_debug("Server has shut down. Shutting down the client as well.", True)

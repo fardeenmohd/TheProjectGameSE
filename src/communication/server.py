@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
-
+from queue import Queue
 from src.communication import messages
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 from src.communication.unexpected import UnexpectedClientMessage
@@ -21,7 +21,7 @@ class CommunicationServer:
     DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
-
+    MSG_SEPARATOR = ';'
     # below list contains messages which are addressed to a different player, NOT GM
     TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
                           "RejectKnowledgeExchange"]
@@ -45,7 +45,7 @@ class CommunicationServer:
         self.games = {}  # game_id => GameInfo object
         self.client_indexer = 0
         self.games_indexer = 0
-
+        self.msg_queue = Queue()
         try:
             self.socket.bind((hostname, port))
 
@@ -337,7 +337,8 @@ class CommunicationServer:
         :param recipient: socket object of the recipient.
         :param message: message to be passed, any type. will be encoded as string.
         """
-        message = str(message)
+        # We append the MSG_SEPARATOR to the end of each msg
+        message = str(message + self.MSG_SEPARATOR)
         recipient.socket.send(message.encode())
         sleep(0.001)
         self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
@@ -348,8 +349,10 @@ class CommunicationServer:
             if client.tag != ClientTypeTag.GAME_MASTER:
                 self.send(client, message)
 
-    def receive(self, client: ClientInfo):
+    def receive(self, client: ClientInfo) -> str:
         """
+        Receives of msg on the socket with a string with messages separated by MSG_SEPARATOR
+        Then it adds them to the queue and returns the first unread msg and removes it
         :type client: ClientInfo
         """
 
@@ -362,8 +365,12 @@ class CommunicationServer:
                 raise ConnectionResetError
 
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
+            for msg in received_data.split(self.MSG_SEPARATOR):
+                if len(msg) > 0:
+                    self.msg_queue.put(msg)
+                    self.verbose_debug("Added msg to queue: " + msg)
             sleep(0.01)
-            return received_data
+            return self.msg_queue.get()
 
         except (ConnectionAbortedError, ConnectionResetError) as e:
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
