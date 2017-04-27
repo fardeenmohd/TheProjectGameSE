@@ -278,6 +278,7 @@ class CommunicationServer:
                         pass
                     self.send(client, gm_msg)
 
+                # todo: be careful. possibly some other messages might require special handling.
 
                 else:
                     # DEFAULT MESSAGE HANDLING:
@@ -286,7 +287,6 @@ class CommunicationServer:
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
         Read a RegisterGame message, try to add it to our games list if no game with the same name exists.
-        :type gm: ClientInfo
         :param register_game_message: string containing a RegisterGame message
         :returns True, if succeeded, False if it didnt
         """
@@ -335,14 +335,12 @@ class CommunicationServer:
     def send(self, recipient: ClientInfo, message: str):
         """
         a truly vital method. Sends a given message to a recipient.
-        :type recipient: ClientInfo
         :param recipient: socket object of the recipient.
         :param message: message to be passed, any type. will be encoded as string.
         """
         # We append the MSG_SEPARATOR to the end of each msg
         message = str(message + self.MSG_SEPARATOR)
         recipient.socket.send(message.encode())
-        sleep(0.001)
         self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
 
     def send_to_all_players(self, message: str):
@@ -367,6 +365,7 @@ class CommunicationServer:
                 raise ConnectionResetError
 
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
+            return received_data
             for msg in received_data.split(self.MSG_SEPARATOR):
                 if len(msg) > 0:
                     self.msg_queue.put(msg)

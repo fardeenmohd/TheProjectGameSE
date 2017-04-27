@@ -132,6 +132,7 @@ class BaseStrategy:
             for neighbour in neighbours.values():
                 if not neighbour.is_occupied and not self.game_info.is_goal_field(neighbour.location):
                     distance = neighbour.distance_to_piece
+                    # if distance is -1, then no piece on that field. we want to avoid it so we set distance to 1000
                     if distance == -1:
                         distance = 1000
                     if min_distance is None or distance <= min_distance:
@@ -156,7 +157,9 @@ class BaseStrategy:
             if neighbour[0] > self.current_location[0]:
                 valid_directions.append(Direction.RIGHT.value)
         if illegal is not None:
+            # remove moves marked as 'illegal' from the list of valid moves.
             valid_directions = list(set(valid_directions) - set(illegal))
+            # TODO: fix the bug that occurs here: valid_directions is sometimes empty causing program to crash.
         return Decision(Decision.MOVE, random.choice(valid_directions))
 
     def get_direction_to(self, field):

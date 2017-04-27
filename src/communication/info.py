@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 
 
-class Location():
+class Location:
     # legacy class, should not be used anymore (use x,y tuples for location instead)
     def __init__(self, x, y):
         self.x = x
@@ -190,13 +190,13 @@ class GameInfo:
     def get_neighbours(self, location: tuple, look_for_extended=False):
         """
         :param look_for_extended: if True, function will look for all 8 neighbours (including diagonal) instead of 4.
-        :return:
+        :return: dict of neighbouring fields (both Goal and Task Fields).
         """
         dist = 1
         if look_for_extended:
             dist = 2
 
-        neighbours = {}
+        neighbours = {}  # (x,y) => FieldInfo
         for (x, y), field in self.task_fields.items():
             if not (abs(location[0] - x) > 1) and not abs(location[1] - y) > 1:
                 if abs(location[0] - x) + abs(location[1] - y) <= dist:
@@ -251,8 +251,7 @@ class GameInfo:
 class PlayerInfo():
     """used by GameMaster only (for now, at least...)"""
 
-    def __init__(self, id="-1", team=None, info: GameInfo = None, type=None, location: tuple = None, guid=None,
-                 piece_id="-1"):
+    def __init__(self, id="-1", team=None, info: GameInfo = None, type=None, location=None, guid=None, piece_id="-1"):
         self.id = id
         self.type = type
         if info is not None:
