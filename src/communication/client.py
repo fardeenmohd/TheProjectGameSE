@@ -15,7 +15,9 @@ class Client:
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 420
     MESSAGE_BUFFER_SIZE = 2048
-    MSG_SEPARATOR = ';'
+    # End of transmission byte is shown as an electric arrow.
+    # See https://en.wikipedia.org/wiki/End-of-Transmission_character
+    MSG_SEPARATOR = '⌁'
 
     def __init__(self, index=1, verbose=False):
         """

@@ -21,7 +21,9 @@ class CommunicationServer:
     DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
-    MSG_SEPARATOR = ';'
+    # End of transmission byte is shown as an electric arrow.
+    # See https://en.wikipedia.org/wiki/End-of-Transmission_character
+    MSG_SEPARATOR = '⌁'
     # below list contains messages which are addressed to a different player, NOT GM
     TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
                           "RejectKnowledgeExchange"]
