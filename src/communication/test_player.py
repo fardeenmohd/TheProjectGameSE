@@ -4,7 +4,7 @@ import threading
 import time
 from unittest import TestCase
 
-from communication import client
+from src.communication import client
 
 
 class TestPlayer(TestCase):

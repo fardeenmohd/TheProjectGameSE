@@ -33,14 +33,3 @@ class TestClass(TestCase):
             print("Sample:\n" + sample_xml)
 
         assert flag
-
-    def test_knowledge_exchange_response(self):
-        # check if generated GetGames xml is the same as the example
-        player_id = 1
-        game_finished = 'false'
-        task_field_info = TaskFieldInfo(1, 2, datetime.now(), -1, 2, 2)
-
-        generated_xml = knowledge_exchange_response(player_id, game_finished, task_field_info)
-        sample_xml = open("../messages/KnowledgeExchangeResponse.xml").read()
-
-        assert True
