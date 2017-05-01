@@ -365,7 +365,7 @@ class CommunicationServer:
                 raise ConnectionResetError
 
             self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
-            return received_data
+
             for msg in received_data.split(self.MSG_SEPARATOR):
                 if len(msg) > 0:
                     self.msg_queue.put(msg)
