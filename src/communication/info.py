@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from queue import Queue
 
 
 class Location:
@@ -131,6 +132,7 @@ class ClientInfo:
         self.game_name = game_name
         self.game_id = game_id
         self.game_master_id = game_master_id
+        self.queue = Queue()
 
     def get_tag(self):
         return self.tag.value + str(self.id)

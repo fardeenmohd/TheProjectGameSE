@@ -47,7 +47,6 @@ class CommunicationServer:
         self.games = {}  # game_id => GameInfo object
         self.client_indexer = 0
         self.games_indexer = 0
-        self.msg_queue = Queue()
         try:
             self.socket.bind((hostname, port))
 
@@ -267,7 +266,7 @@ class CommunicationServer:
                 elif "GameStarted" in gm_msg:
                     game_id = msg_root.attrib["gameId"]
                     self.games[game_id].open = False
-                    self.send_to_all_players(gm_msg)
+                    # self.send_to_all_players(gm_msg)
 
                 elif "Data" in gm_msg:
                     player_id = msg_root.attrib["playerId"]
@@ -368,10 +367,10 @@ class CommunicationServer:
 
             for msg in received_data.split(self.MSG_SEPARATOR):
                 if len(msg) > 0:
-                    self.msg_queue.put(msg)
-                    self.verbose_debug("Added msg to queue: " + msg)
+                    client.queue.put(msg)
+                    self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
             sleep(0.01)
-            return self.msg_queue.get()
+            return client.queue.get()
 
         except (ConnectionAbortedError, ConnectionResetError) as e:
             self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
