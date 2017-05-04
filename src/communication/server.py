@@ -266,7 +266,7 @@ class CommunicationServer:
                 elif "GameStarted" in gm_msg:
                     game_id = msg_root.attrib["gameId"]
                     self.games[game_id].open = False
-                    # self.send_to_all_players(gm_msg)
+                    self.send_to_all_players(gm_msg)
 
                 elif "Data" in gm_msg:
                     player_id = msg_root.attrib["playerId"]

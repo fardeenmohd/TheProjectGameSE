@@ -122,7 +122,7 @@ class GameMaster(Client):
                         if self.get_num_of_players == self.team_limit * 2:
                             #  We are ready to start the game
                             self.set_up_game()
-                            self.send(messages.GameStarted(self.info.id))
+
                             self.game_on = True
                             self.play()
 
@@ -607,6 +607,8 @@ class GameMaster(Client):
             for player in team:
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
+
+        self.send(messages.GameStarted(self.info.id))
 
         # deploy the Piece-placing thread:
         Thread(target=self.place_pieces).start()
