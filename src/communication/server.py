@@ -266,15 +266,12 @@ class CommunicationServer:
                 elif "GameStarted" in gm_msg:
                     game_id = msg_root.attrib["gameId"]
                     self.games[game_id].open = False
-                    self.send_to_all_players(gm_msg)
+                    #self.send_to_all_players(gm_msg)
 
                 elif "Data" in gm_msg:
                     player_id = msg_root.attrib["playerId"]
                     finished = msg_root.attrib["gameFinished"]
                     client = self.clients.get(player_id)
-                    if finished == "true" and client is not None:
-                        # TODO: properly remove a game from server.
-                        pass
                     self.send(client, gm_msg)
 
                 # todo: be careful. possibly some other messages might require special handling.
@@ -367,8 +364,9 @@ class CommunicationServer:
 
             for msg in received_data.split(self.MSG_SEPARATOR):
                 if len(msg) > 0:
-                    client.queue.put(msg)
-                    self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
+                    if "GameStarted" not in msg:
+                        client.queue.put(msg)
+                        self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
             sleep(0.01)
             return client.queue.get()
 
