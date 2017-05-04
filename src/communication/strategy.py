@@ -47,6 +47,7 @@ class BaseStrategy:
                 choice = self.go_to_goal_fields()
 
         elif self.game_info.is_goal_field(self.current_location):
+
             # we do not have a piece. let's go to task fields to collect one.
             choice = self.go_to_task_fields()
 
