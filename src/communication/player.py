@@ -247,8 +247,7 @@ class Player(Client):
 
 
 if __name__ == '__main__':
-    def simulate(player_count, verbose):
-        game_name = 'easy clone'
+    def simulate(player_count, verbose, game_name):
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
@@ -260,5 +259,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-c', '--playercount', default=1, help='Number of players to be deployed.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
+    parser.add_argument('-n', '--gamename', default="easy clone", help="Name of the game",type=str)
     args = vars(parser.parse_args())
-    simulate(int(args["playercount"]), args["verbose"])
+    simulate(int(args["playercount"]), args["verbose"], args["gamename"])

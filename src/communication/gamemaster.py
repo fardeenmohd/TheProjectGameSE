@@ -375,8 +375,10 @@ class GameMaster(Client):
 
         elif self.info.is_goal_field(new_location):
             # it's a Goal Field, yo.
+            if self.info.goal_fields[new_location].allegiance != player_info.team:
+                player_info.location = old_location
+                self.send(messages.Data(player_info.id, self.info.finished,player_location=player_info.location ))
 
-            # TODO: check if the player is allowed to enter this goal area
             # i.e. a Red player shouldn't be allowed to enter a Blue goals area and vice versa.
 
             if self.info.goal_fields[new_location].is_occupied:
