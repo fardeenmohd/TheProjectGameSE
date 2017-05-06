@@ -3,7 +3,7 @@ from threading import Thread
 from time import sleep
 from unittest import TestCase
 
-from communication import server, client
+from src.communication import server, client
 
 
 class TestIntegration(TestCase):
