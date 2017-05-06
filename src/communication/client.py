@@ -88,7 +88,7 @@ class Client:
         self.connected = False
         self.socket.close()
         self.verbose_debug("Shutting down the client.", True)
-        quit()
+        #quit()
 
     def send(self, message: str):
         """

@@ -4,12 +4,12 @@ import threading
 import time
 from unittest import TestCase
 
-from src.communication import client
+from src.communication import client, player
 
 
 class TestPlayer(TestCase):
     def setUp(self):
-        self.mock_player = client.Client(1, verbose=True)
+        self.mock_player = player.Player(1, True)
         self.mock_server = socket.socket()
 
         self.server_thread = threading.Thread(target=self.run_mock_server, daemon=True)
@@ -21,15 +21,14 @@ class TestPlayer(TestCase):
         sock, addr = self.mock_server.accept()
         sock.send('1'.encode())
 
+    def test_connect_to_the_server(self):
+        self.mock_player.connect()
+
+        assert self.mock_player.connected is True
+
     def tearDown(self):
         self.mock_player.shutdown()
         self.mock_server.close()
-
-    def test_connect_to_the_server(self):
-        self.mock_player.connect()
-        time.sleep(1)
-
-        assert self.mock_player.connected is True
 
     def test_disconnect_to_the_server(self):
         self.mock_player.connect()
@@ -39,7 +38,6 @@ class TestPlayer(TestCase):
 
     def test_received(self):
         self.mock_player.connect()
-        time.sleep(1)
 
     def test_send_message_to_server(self):
         self.mock_player.connect()
