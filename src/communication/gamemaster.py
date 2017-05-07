@@ -595,6 +595,9 @@ class GameMaster(Client):
         for field in self.info.task_fields.values():
             min_piece, min_dist = None, None
             for piece in [piece for piece in self.info.pieces.values() if piece.location is not None]:
+                if piece.location == field.location:
+                    min_dist = 0
+                    break
                 if min_dist is None:
                     min_piece, min_dist = piece, manhattan(field.location, piece.location)
                 if manhattan(field.location, piece.location) <= min_dist:

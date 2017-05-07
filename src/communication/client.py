@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 import socket
-from argparse import ArgumentParser
 from datetime import datetime
-from threading import Thread
-from time import sleep
 from queue import Queue
+from time import sleep
+
 from src.communication.info import ClientTypeTag
 
 
@@ -115,13 +114,13 @@ class Client:
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
             else:
-                self.verbose_debug("Received from server: \"" + received_data + "\".")
                 for msg in received_data.split(self.MSG_SEPARATOR):
                     if len(msg) > 0:
                         self.msg_queue.put(msg)
-                        self.verbose_debug("Added msg to queue: " + msg)
-                sleep(0.01)
-                return self.msg_queue.get()
+                        # self.verbose_debug("Added msg to queue: " + msg)
+                message = self.msg_queue.get()
+                self.verbose_debug("Received from server: \"" + message + "\".")
+                return message
 
         except ConnectionAbortedError:
             self.verbose_debug("Server has shut down. Shutting down the client as well.", True)
