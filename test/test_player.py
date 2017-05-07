@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 import socket
 import threading
-import time
 from unittest import TestCase
-import uuid
-from src.communication import client, player, messages
+
+from src.communication import client, player
 
 
 class TestPlayer(TestCase):

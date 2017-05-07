@@ -34,7 +34,6 @@ class BaseStrategy:
         self.last_move = Decision(Decision.NULLDECISION)
         self.have_piece = "-1"  # by default, the player doesn't have a piece.
         # if self.have_piece is different from -1, then it is the id of the currently held piece
-        self.same_direction = 0
 
     def get_next_move(self, new_location: tuple):
         # THE MAIN STRATEGY METHOD

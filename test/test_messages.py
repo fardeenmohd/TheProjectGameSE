@@ -1,12 +1,10 @@
+import uuid
 from unittest import TestCase
 
 from lxml.etree import DocumentInvalid
 
-from src.communication import messages
 from src.communication.info import *
 from src.communication.messages import *
-import pytest
-import uuid
 
 
 class TestClass(TestCase):

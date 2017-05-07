@@ -4,7 +4,7 @@ from threading import Thread
 from time import sleep
 from unittest import TestCase
 
-from src.communication import server, messages
+from src.communication import server
 
 
 # from unittest.self.mock import Magicself.mock,patch,self.mock TODO maybe use this library for testing

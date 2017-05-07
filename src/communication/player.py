@@ -157,16 +157,19 @@ class Player(Client):
         """
         overriding the parent method to implement re-joining when GM disconnects
         """
-        received = super(Player, self).receive()
-        if "GameMasterDisconnected" in received:
-            # clean up our knowledge and try to join to the game again.
-            self.game_on = False
-            self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
-            if not self.try_join(self.game_name):
-                # if we failed to join, kys
-                self.verbose_debug("Failed to re-join game. Shutting down.")
-                self.shutdown()
-        return received
+        try:
+            received = super(Player, self).receive()
+            if "GameMasterDisconnected" in received:
+                # clean up our knowledge and try to join to the game again.
+                self.game_on = False
+                self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
+                if not self.try_join(self.game_name):
+                    # if we failed to join, kys
+                    self.verbose_debug("Failed to re-join game. Shutting down.")
+                    self.shutdown()
+            return received
+        except Exception:
+            self.verbose_debug("Why look, a bug in my rug!")
 
     def try_join(self, game_name):
         self.send(messages.GetGames())
@@ -214,6 +217,16 @@ class Player(Client):
             else:
                 # normal response!
                 self.handle_data(response)
+                # if we just succesfully moved, we need to update our info
+                # specifically, update player_id on the field we just left (make it empty again)
+                # for this I'm using strategy.current_location which hasn't been updated yet and so is the prev. loc.
+                old_location = self.strategy.current_location
+                if self.strategy.last_move.choice == Decision.MOVE and self.location != old_location:
+                    if self.game_info.is_task_field(old_location):
+                        self.game_info.task_fields[old_location].player_id = "-1"
+                    else:
+                        self.game_info.goal_fields[old_location].player_id = "-1"
+
                 self.strategy.current_location = self.location
 
                 # check if we have a piece now

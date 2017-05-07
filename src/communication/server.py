@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
-from queue import Queue
+
 from src.communication import messages
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 from src.communication.unexpected import UnexpectedClientMessage
@@ -367,7 +367,6 @@ class CommunicationServer:
                     if "GameStarted" not in msg:
                         client.queue.put(msg)
                         self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
-            sleep(0.01)
             return client.queue.get()
 
         except (ConnectionAbortedError, ConnectionResetError) as e:
