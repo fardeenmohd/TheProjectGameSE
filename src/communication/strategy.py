@@ -34,6 +34,7 @@ class BaseStrategy:
         self.last_move = Decision(Decision.NULLDECISION)
         self.have_piece = "-1"  # by default, the player doesn't have a piece.
         # if self.have_piece is different from -1, then it is the id of the currently held piece
+        self.same_direction = 0
 
     def get_next_move(self, new_location: tuple):
         # THE MAIN STRATEGY METHOD
@@ -165,18 +166,18 @@ class BaseStrategy:
 
     def get_direction_to(self, field):
         # returns a Direction which should be taken in order to get to the specified field.
+        if field is not None:
+            y_delta = field[1] - self.current_location[1]
+            x_delta = field[0] - self.current_location[0]
 
-        y_delta = field[1] - self.current_location[1]
-        x_delta = field[0] - self.current_location[0]
-
-        if abs(y_delta) > abs(x_delta) and y_delta > 0:
-            return Direction.UP.value
-        elif abs(y_delta) > abs(x_delta) and y_delta < 0:
-            return Direction.DOWN.value
-        elif abs(y_delta) < abs(x_delta) and x_delta > 0:
-            return Direction.RIGHT.value
-        elif abs(y_delta) < abs(x_delta) and x_delta < 0:
-            return Direction.LEFT.value
+            if abs(y_delta) > abs(x_delta) and y_delta > 0:
+                return Direction.UP.value
+            elif abs(y_delta) > abs(x_delta) and y_delta < 0:
+                return Direction.DOWN.value
+            elif abs(y_delta) < abs(x_delta) and x_delta > 0:
+                return Direction.RIGHT.value
+            elif abs(y_delta) < abs(x_delta) and x_delta < 0:
+                return Direction.LEFT.value
         else:
             return Direction.DOWN.value
 

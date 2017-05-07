@@ -3,8 +3,8 @@ import socket
 import threading
 import time
 from unittest import TestCase
-
-from src.communication import client, player
+import uuid
+from src.communication import client, player, messages
 
 
 class TestPlayer(TestCase):
