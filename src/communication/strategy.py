@@ -180,7 +180,12 @@ class BaseStrategy:
             elif abs(y_delta) < abs(x_delta) and x_delta < 0:
                 return Direction.LEFT.value
         else:
-            return Direction.DOWN.value
+            if self.last_move.additional_info == Direction.UP.value:
+                return Direction.LEFT.value
+            if self.last_move.additional_info == Direction.DOWN.value:
+                return Direction.RIGHT.value
+            else:
+                return Direction.DOWN.value
 
     def try_go_down(self):
         # check if the field below us is occupied:

@@ -342,7 +342,7 @@ class GameMaster(Client):
                 # can't move, stay in the same location.
                 player_info.location = old_location
                 old_field.player_id = player_info.id
-                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished,player_location=player_info.location,task_fields={new_location :new_task_field}))
 
             else:
                 # we can move to the new field.
@@ -383,7 +383,7 @@ class GameMaster(Client):
             if self.info.goal_fields[new_location].is_occupied:
                 # can't move.
                 player_info.location = old_location
-                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished,goal_fields={new_location : self.info.goal_fields[new_location]}, player_location=player_info.location))
 
             else:
                 # get a working copy of the new field.

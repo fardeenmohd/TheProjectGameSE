@@ -12,8 +12,8 @@
         <InitialNumberOfPieces>1</InitialNumberOfPieces>
         <BoardWidth>5</BoardWidth>
         <TaskAreaLength>4</TaskAreaLength>
-        <GoalAreaLength>1</GoalAreaLength>
-        <NumberOfPlayersPerTeam>1</NumberOfPlayersPerTeam>
+        <GoalAreaLength>2</GoalAreaLength>
+        <NumberOfPlayersPerTeam>2</NumberOfPlayersPerTeam>
         <GameName>easy clone</GameName>
     </GameDefinition>
     <ActionCosts>
