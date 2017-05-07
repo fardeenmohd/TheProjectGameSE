@@ -227,15 +227,18 @@ class Player(Client):
                     else:
                         self.game_info.goal_fields[old_location].player_id = "-1"
 
-                self.strategy.current_location = self.location
+                    if self.strategy.last_move.choice == Decision.PICK_UP:
+                        # check if we have a piece now
+                        for piece_info in self.game_info.pieces.values():
+                            if piece_info.player_id == self.id:
+                                self.strategy.have_piece = piece_info.id
+                                self.game_info.task_fields[old_location].piece_id = "-1"
+                                break
+                                # todo : update distance to pieces
+                        else:
+                            self.strategy.have_piece = "-1"
 
-                # check if we have a piece now
-                for piece_info in self.game_info.pieces.values():
-                    if piece_info.player_id == self.id:
-                        self.strategy.have_piece = piece_info.id
-                        break
-                else:
-                    self.strategy.have_piece = "-1"
+                self.strategy.current_location = self.location
 
         self.shutdown()
 
