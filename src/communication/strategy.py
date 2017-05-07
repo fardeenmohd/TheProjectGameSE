@@ -133,10 +133,12 @@ class BaseStrategy:
             for neighbour in neighbours.values():
                 if not neighbour.is_occupied and not self.game_info.is_goal_field(neighbour.location):
                     distance = neighbour.distance_to_piece
-                    # if distance is -1, then no piece on that field. we want to avoid it so we set distance to 1000
-                    if distance == -1:
+                    # if distance is -1 or None, then there is no piece on the board at all?! better set it to 1000 just in case.
+                    if distance == -1 or distance is None:
                         distance = 1000
-                    if min_distance is None or distance <= min_distance:
+                    if min_distance is None:
+                        min_distance, min_neighbour = distance, neighbour
+                    elif distance <= min_distance:
                         min_distance, min_neighbour = distance, neighbour
 
             return Decision(Decision.MOVE, self.get_direction_to(min_neighbour))

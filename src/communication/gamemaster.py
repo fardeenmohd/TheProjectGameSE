@@ -9,7 +9,6 @@ from time import sleep
 
 from src.communication import messages
 from src.communication.client import Client
-from src.communication.helpful_math import Manhattan_Distance as manhattan
 from src.communication.info import GameInfo, Direction, Allegiance, PieceInfo, PieceType, \
     GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
@@ -262,7 +261,7 @@ class GameMaster(Client):
         self.info.pieces[piece_id] = new_piece
 
         # update distance_to_piece in all fields:
-        self.update_field_distances()
+        self.info.update_field_distances()
 
         self.piece_indexer += 1
         self.verbose_debug(
@@ -489,7 +488,7 @@ class GameMaster(Client):
                 self.info.task_fields[location].piece_id = "-1"  # setting as empty
 
                 # we update the GM's info of distance to pieces so it sends valid data later to player
-                self.update_field_distances()
+                self.info.update_field_distances()
 
                 player_info.piece_id = piece_id
 
@@ -539,7 +538,7 @@ class GameMaster(Client):
                 field = player_info.info.task_fields[player_info.location]
 
                 # send him a response
-                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.id: field}))
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.location: field}))
 
             else:
                 # the field is a goal field.
@@ -587,22 +586,6 @@ class GameMaster(Client):
                 self.info.finished = True
                 self.game_on = False
                 break
-
-    def update_field_distances(self):
-        """
-        re-calculates distance_to_piece field in all TaskFields on the board.
-        """
-        for field in self.info.task_fields.values():
-            min_piece, min_dist = None, None
-            for piece in [piece for piece in self.info.pieces.values() if piece.location is not None]:
-                if piece.location == field.location:
-                    min_dist = 0
-                    break
-                if min_dist is None:
-                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
-                if manhattan(field.location, piece.location) <= min_dist:
-                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
-            field.distance_to_piece = min_dist
 
     def play(self):
         # send the initial Game message to all players:

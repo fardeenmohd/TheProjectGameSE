@@ -2,6 +2,8 @@ from datetime import datetime
 from enum import Enum
 from queue import Queue
 
+from src.communication.helpful_math import Manhattan_Distance as manhattan
+
 
 class Location:
     # legacy class, should not be used anymore (use x,y tuples for location instead)
@@ -211,6 +213,22 @@ class GameInfo:
         # neighbours will include the original field itself, so we remove it:
         del neighbours[location[0], location[1]]
         return neighbours
+
+    def update_field_distances(self):
+        """
+        re-calculates distance_to_piece field in all TaskFields on the board.
+        """
+        for field in self.task_fields.values():
+            min_piece, min_dist = None, None
+            for piece in [piece for piece in self.pieces.values() if piece.location is not None]:
+                if piece.location == field.location:
+                    min_dist = 0
+                    break
+                if min_dist is None:
+                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
+                if manhattan(field.location, piece.location) <= min_dist:
+                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
+            field.distance_to_piece = min_dist
 
     @staticmethod
     def fieldwise_manhattan_distance(field_a: FieldInfo, field_b: FieldInfo):
