@@ -47,6 +47,7 @@ class TestServer(TestCase):
         mock_client = socket.socket()
         mock_client.connect((self.mock_server.host, self.mock_server.port))
 
+        self.mock_server.send()
 
         received = mock_client.recv(1024).decode()
         assert received == "hello"
