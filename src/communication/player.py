@@ -255,8 +255,6 @@ class Player(Client):
         elif decision.choice == Decision.PLACE:
             return messages.PlacePiece(self.game_info.id, self.Guid)
 
-            # TODO: ADD THE OTHER MESSAGE HERE.
-
 
 if __name__ == '__main__':
     def simulate(player_count, verbose, game_name):
