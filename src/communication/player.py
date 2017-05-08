@@ -157,19 +157,16 @@ class Player(Client):
         """
         overriding the parent method to implement re-joining when GM disconnects
         """
-        try:
-            received = super(Player, self).receive()
-            if "GameMasterDisconnected" in received:
-                # clean up our knowledge and try to join to the game again.
-                self.game_on = False
-                self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
-                if not self.try_join(self.game_name):
-                    # if we failed to join, kys
-                    self.verbose_debug("Failed to re-join game. Shutting down.")
-                    self.shutdown()
-            return received
-        except Exception:
-            self.verbose_debug("Why look, a bug in my rug!")
+        received = super(Player, self).receive()
+        if "GameMasterDisconnected" in received:
+            # clean up our knowledge and try to join to the game again.
+            self.game_on = False
+            self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
+            if not self.try_join(self.game_name):
+                # if we failed to join, kys
+                self.verbose_debug("Failed to re-join game. Shutting down.")
+                self.shutdown()
+        return received
 
     def try_join(self, game_name):
         self.send(messages.GetGames())
@@ -179,7 +176,6 @@ class Player(Client):
             self.open_games = parse_games(games)
 
             if len(self.open_games) > 0:
-                # TODO : remove temp fields after new messages in action
                 temp_game_name = self.open_games[0][0]
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value

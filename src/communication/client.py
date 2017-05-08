@@ -87,7 +87,7 @@ class Client:
         self.connected = False
         self.socket.close()
         self.verbose_debug("Shutting down the client.", True)
-        #quit()
+        quit()
 
     def send(self, message: str):
         """
@@ -117,7 +117,6 @@ class Client:
                 for msg in received_data.split(self.MSG_SEPARATOR):
                     if len(msg) > 0:
                         self.msg_queue.put(msg)
-                        self.verbose_debug("Added msg to queue: " + msg)
                 message = self.msg_queue.get()
                 self.verbose_debug("Received from server: \"" + message + "\".")
                 return message

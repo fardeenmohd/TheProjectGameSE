@@ -3,9 +3,9 @@
                     KeepAliveInterval="500"
                     RetryRegisterGameInterval="60000">
     <GameDefinition>
-        <Goals team="red" x="0" y="5" type="goal"/>
-        <Goals team="blue" x="0" y="0" type="goal"/>
-        <Goals team="red" x="3" y="5" type="goal"/>
+        <Goals team="red" x="0" y="7" type="goal"/>
+        <Goals team="blue" x="0" y="1" type="goal"/>
+        <Goals team="red" x="3" y="6" type="goal"/>
         <Goals team="blue" x="3" y="0" type="goal"/>
         <ShamProbability>0</ShamProbability>
         <PlacingNewPiecesFrequency>2500</PlacingNewPiecesFrequency>

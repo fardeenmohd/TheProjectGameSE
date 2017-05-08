@@ -82,14 +82,14 @@ class GameMaster(Client):
 
         self.PIECE_DICT_PRELOAD_CAPACITY = 256
         self.RANDOMIZATION_ATTEMPTS = 10
-        self.piece_indexer = 0
         self.typeTag = ClientTypeTag.GAME_MASTER
         self.game_on = False
-        self.player_indexer = 0
+        self.piece_indexer = 0
         self.num_occupied_red_goals = 0
         self.num_occupied_blue_goals = 0
         self.parse_game_definition()
         self.parse_action_costs()
+        self.piece_placer = Thread()
 
     @property
     def get_num_of_players(self):
@@ -369,8 +369,8 @@ class GameMaster(Client):
                                       pieces=piece_dict, player_location=new_location))
                 else:
                     # this new field doesn't have a piece.
-                    self.send(
-                        messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field}))
+                    self.send(messages.Data(player_info.id, self.info.finished,
+                                            task_fields={new_location: new_task_field}, player_location=new_location))
 
         elif self.info.is_goal_field(new_location):
             # it's a Goal Field, yo.
@@ -582,8 +582,19 @@ class GameMaster(Client):
 
         for team in self.info.teams.keys():
             if self.achieved_goal_counters[team] >= self.goal_target:
-                self.verbose_debug(team.upper() + " TEAM HAS WON THE GAME!\nShutting down the GM.", True)
+                self.verbose_debug(team.upper() + " TEAM HAS WON THE GAME!\nWe shall be restarting the game in:.", True)
+                self.piece_placer.join()
                 self.info.finished = True
+                print("5")
+                sleep(1)
+                print("4")
+                sleep(1)
+                print("3")
+                sleep(1)
+                print("2")
+                sleep(1)
+                print("1")
+                sleep(1)
                 self.game_on = False
                 break
 
@@ -597,7 +608,8 @@ class GameMaster(Client):
         self.send(messages.GameStarted(self.info.id))
 
         # deploy the Piece-placing thread:
-        Thread(target=self.place_pieces).start()
+        self.piece_placer =  Thread(target=self.place_pieces)
+        self.piece_placer.start()
 
         while self.game_on:
             try:
@@ -629,6 +641,28 @@ class GameMaster(Client):
             except Exception as e:
                 self.verbose_debug("Is this an error I see before me? " + str(e), True)
                 raise e
+
+        if self.info.finished:
+            self.clean_up()
+            self.run()
+
+    def clean_up(self):
+        # clean up the info and prepare to start a new game
+        self.achieved_goal_counters = {Allegiance.RED.value: 0, Allegiance.BLUE.value: 0}
+
+        self.PIECE_DICT_PRELOAD_CAPACITY = 256
+        self.RANDOMIZATION_ATTEMPTS = 10
+        self.piece_indexer = 0
+        self.game_on = False
+        self.num_occupied_red_goals = 0
+        self.num_occupied_blue_goals = 0
+        self.parse_game_definition()
+        self.parse_action_costs()
+        self.piece_placer = Thread()
+
+    def shutdown(self):
+        super(GameMaster, self).shutdown()
+        self.piece_placer.join()
 
 
 if __name__ == '__main__':
