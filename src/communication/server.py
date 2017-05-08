@@ -71,7 +71,7 @@ class CommunicationServer:
         time between each printing of debug messages is specified by the constant NTER_PRINT_STATE_TIME
         """
         while self.running:
-            self.verbose_debug("Currently there are " + str(len(self.clients)) + " clients connected.")
+            self.verbose_debug("Currently there are " + str(len({key:val for key,val in self.clients.items() if val is not None})) + " clients connected.")
             sleep(CommunicationServer.INTER_PRINT_STATE_TIME)
 
     def listen(self):
