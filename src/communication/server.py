@@ -145,8 +145,9 @@ class CommunicationServer:
         :type new_client: ClientInfo
         :param new_client: ClientInfo object about the new client
         """
-        try:
-            if self.running:
+
+        if self.running:
+            try:
                 if new_client is None:
                     raise ConnectionAbortedError
                 # read the first message:
@@ -169,15 +170,15 @@ class CommunicationServer:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
-        except (ConnectionAbortedError, ConnectionResetError):
-            self.disconnect_client(new_client.id)
+            except ConnectionAbortedError:
+                self.disconnect_client(new_client.id)
+                pass
 
-
-        except Exception as e:
-            self.verbose_debug(
-                "Disconnecting " + new_client.get_tag() + " due to an unexpected exception: " + str(e) + ".", True)
-            self.disconnect_client(new_client.id)
-            raise e
+            except Exception as e:
+                self.verbose_debug(
+                    "Disconnecting " + new_client.get_tag() + " due to an unexpected exception: " + str(e) + ".", True)
+                self.disconnect_client(new_client.id)
+                pass
 
     def handle_player(self, player: ClientInfo):
         # first_message was a GetGames xml, so let's get all the open games:
@@ -215,8 +216,9 @@ class CommunicationServer:
                         self.send(self.clients[player.game_master_id], player_message)
                     else:
                         self.verbose_debug("Not sending anything, because the player hath already disconnected.")
+                        raise ConnectionAbortedError
 
-            except (ConnectionAbortedError, ConnectionResetError):
+            except ConnectionAbortedError:
                 self.disconnect_client(player.id)
                 break
 
@@ -394,17 +396,13 @@ class CommunicationServer:
 
             message = client.queue.get()
             self.verbose_debug("Processing message: " + message)
-
             return message
 
-        except (ConnectionAbortedError, ConnectionResetError) as e:
+        except ConnectionResetError as e:
             if self.clients[client.id] is not None:
                 self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
                 self.disconnect_client(client.id)
-            else:
-                temp = dict(self.clients)
-                del temp[client.id]
-                self.clients = temp
+                pass
 
     def disconnect_client(self, client_id: int):
 
