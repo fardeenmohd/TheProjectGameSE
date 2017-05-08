@@ -218,12 +218,13 @@ class CommunicationServer:
 
             except (ConnectionAbortedError, ConnectionResetError):
                 self.disconnect_client(player.id)
+                break
 
             except Exception as e:
                 self.verbose_debug(
                     "Disconnecting " + player.get_tag() + " due to an unexpected exception: " + str(e) + ".", True)
                 self.disconnect_client(player.id)
-                raise e
+                break
 
     def handle_join(self, player, player_message):
         message_root = ET.fromstring(player_message)
