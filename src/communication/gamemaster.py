@@ -222,6 +222,7 @@ class GameMaster(Client):
             sleep(float(self.placing_pieces_frequency) / 1000)
             self.add_piece()
 
+
     def add_piece(self):
         """
         randomly place a piece on the board (if possible)
