@@ -211,7 +211,7 @@ class GameInfo:
                     neighbours[x, y] = field
 
         # neighbours will include the original field itself, so we remove it:
-        del neighbours[location[0], location[1]]
+        #del neighbours[location[0], location[1]]
         return neighbours
 
     def update_field_distances(self):

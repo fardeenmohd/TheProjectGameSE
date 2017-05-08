@@ -5,7 +5,6 @@ from argparse import ArgumentParser
 from datetime import datetime
 from threading import Thread
 from time import sleep
-from queue import Queue
 from src.communication import messages
 from src.communication.info import ClientInfo, GameInfo, ClientTypeTag
 from src.communication.unexpected import UnexpectedClientMessage
@@ -17,7 +16,7 @@ ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
-    DEFAULT_BUFFER_SIZE = 2048
+    DEFAULT_BUFFER_SIZE = 8192
     DEFAULT_PORT = 4000
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
@@ -146,7 +145,6 @@ class CommunicationServer:
         :type new_client: ClientInfo
         :param new_client: ClientInfo object about the new client
         """
-
         try:
             if self.running:
                 # read the first message:
@@ -249,7 +247,9 @@ class CommunicationServer:
                         "GameMaster tried to register a game again, while he should have switched off!")
         else:
             # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
+
             while self.running and gm.id in self.clients.keys():
+                print(self.clients)
                 gm_msg = self.receive(gm)
 
                 if gm_msg is None:
@@ -273,8 +273,8 @@ class CommunicationServer:
                     finished = msg_root.attrib["gameFinished"]
                     client = self.clients.get(player_id)
                     self.send(client, gm_msg)
-
-                # todo: be careful. possibly some other messages might require special handling.
+                    if finished == "true":
+                        self.verbose_debug("Somebody won! Ask GM who.")
 
                 else:
                     # DEFAULT MESSAGE HANDLING:
@@ -327,6 +327,8 @@ class CommunicationServer:
         client = self.clients.get(player_id)
         if client is not None:
             self.send(client, gm_msg)
+        else:
+            self.verbose_debug("Not sending anything, because the player hath already disconnected.")
 
     def send(self, recipient: ClientInfo, message: str):
         """
@@ -335,9 +337,17 @@ class CommunicationServer:
         :param message: message to be passed, any type. will be encoded as string.
         """
         # We append the MSG_SEPARATOR to the end of each msg
-        message = str(message + self.MSG_SEPARATOR)
-        recipient.socket.send(message.encode())
-        self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
+        try:
+            # if recipient is None, then it means he has already disconnected, so lets not send him anything lol
+            if recipient is None:
+                return
+            message = str(message + self.MSG_SEPARATOR)
+            recipient.socket.send(message.encode())
+            self.verbose_debug("Message sent to " + recipient.get_tag() + ": \"" + message + "\".")
+        except Exception as e:
+            self.verbose_debug("Is this an error I see before me? "+str(e))
+            print(self.clients)
+
 
     def send_to_all_players(self, message: str):
         # sends message to everyone except GM
@@ -368,16 +378,19 @@ class CommunicationServer:
                         client.queue.put(msg)
                         self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
             sleep(0.01)
-            return client.queue.get()
+            message = client.queue.get()
+            self.verbose_debug("Processing message: "+message)
+            return message
 
         except (ConnectionAbortedError, ConnectionResetError) as e:
-            self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
-            self.disconnect_client(client.id)
+            if self.clients[client.id] is not None:
+                self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
+                self.disconnect_client(client.id)
             raise e
 
     def disconnect_client(self, client_id: int):
 
-        if client_id not in self.clients.keys():
+        if self.clients.get(client_id) == None:
             return
         client = self.clients[client_id]
 
@@ -400,9 +413,7 @@ class CommunicationServer:
         # close the socket
         try:
             client.socket.close()
-            temp = dict(self.clients)
-            del temp[client_id]
-            self.clients = temp
+            self.clients[client_id] = None
 
         except socket.error as e:
             self.verbose_debug("Couldn't close socket?! " + str(e), True)
