@@ -71,7 +71,8 @@ class CommunicationServer:
         time between each printing of debug messages is specified by the constant NTER_PRINT_STATE_TIME
         """
         while self.running:
-            self.verbose_debug("Currently there are " + str(len({key:val for key,val in self.clients.items() if val is not None})) + " clients connected.")
+            self.verbose_debug("Currently there are " + str(
+                len({key: val for key, val in self.clients.items() if val is not None})) + " clients connected.")
             sleep(CommunicationServer.INTER_PRINT_STATE_TIME)
 
     def listen(self):
@@ -368,7 +369,7 @@ class CommunicationServer:
     def send_to_all_players(self, message: str):
         # sends message to everyone except GM
         for client in self.clients.values():
-            if client.tag != ClientTypeTag.GAME_MASTER:
+            if client.tag != ClientTypeTag.GAME_MASTER.value:
                 self.send(client, message)
 
     def receive(self, client: ClientInfo) -> str:
@@ -395,7 +396,7 @@ class CommunicationServer:
                         self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
 
             message = client.queue.get()
-            self.verbose_debug("Processing message: " + message)
+            self.verbose_debug("Processing from " + client.get_tag() + ": \"" + message + "\".")
             return message
 
         except ConnectionResetError as e:
@@ -411,7 +412,7 @@ class CommunicationServer:
         client = self.clients[client_id]
 
         # if the client was a GM, remove his game from server:
-        if client.tag == ClientTypeTag.GAME_MASTER:
+        if client.tag == ClientTypeTag.GAME_MASTER.value:
             for game_info in self.games.values():
                 if game_info.name == client.game_name and game_info.game_master_id == client_id:
                     # find all players who were connected to this game and send them a GameMasterdisconneted message
