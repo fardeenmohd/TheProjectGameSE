@@ -171,15 +171,14 @@ class CommunicationServer:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
                     self.handle_gm(new_client, received_data)
 
-            except ConnectionAbortedError:
+            except (ConnectionAbortedError, ConnectionResetError):
                 self.disconnect_client(new_client.id)
-                pass
 
             except Exception as e:
                 self.verbose_debug(
                     "Disconnecting " + new_client.get_tag() + " due to an unexpected exception: " + str(e) + ".", True)
                 self.disconnect_client(new_client.id)
-                pass
+
 
     def handle_player(self, player: ClientInfo):
         # first_message was a GetGames xml, so let's get all the open games:
@@ -217,7 +216,7 @@ class CommunicationServer:
                         self.send(self.clients[player.game_master_id], player_message)
                     else:
                         self.verbose_debug("Not sending anything, because the player hath already disconnected.")
-                        raise ConnectionAbortedError
+                        #raise ConnectionAbortedError
 
             except ConnectionAbortedError:
                 self.disconnect_client(player.id)
@@ -270,6 +269,7 @@ class CommunicationServer:
             # Now we handle the GM's rejection or confirmation, as well as other messsages in a while loop
 
             while self.running and gm.id in self.clients.keys():
+
                 gm_msg = self.receive(gm)
 
                 if gm_msg is None:
@@ -288,16 +288,15 @@ class CommunicationServer:
                     self.games[game_id].open = False
 
                 elif "Data" in gm_msg:
-                    player_id = msg_root.attrib["playerId"]
                     finished = msg_root.attrib["gameFinished"]
-                    client = self.clients.get(player_id)
-                    self.send(client, gm_msg)
+                    self.relay_msg_to_player(gm_msg)
                     if finished == "true":
                         self.verbose_debug("Somebody won! Ask GM who.")
 
                 else:
                     # DEFAULT MESSAGE HANDLING:
                     self.relay_msg_to_player(gm_msg)
+            print("EXITTING WHILE LOOP")
 
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
@@ -372,6 +371,13 @@ class CommunicationServer:
             if client.tag != ClientTypeTag.GAME_MASTER.value:
                 self.send(client, message)
 
+    def split_that_message(self, received_data, client):
+        for msg in received_data.split(self.MSG_SEPARATOR):
+            if len(msg) > 0:
+                if "GameStarted" not in msg:
+                    client.queue.put(msg)
+                    self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
+
     def receive(self, client: ClientInfo) -> str:
         """
         Receives of msg on the socket with a string with messages separated by MSG_SEPARATOR
@@ -383,27 +389,34 @@ class CommunicationServer:
         if client.id not in self.clients.keys() or client is None:
             raise ConnectionResetError
         try:
-            received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
-            if len(received_data) < 1 or received_data is None:
-                raise ConnectionResetError
+            if client.queue.empty():
+                received_data = client.socket.recv(CommunicationServer.DEFAULT_BUFFER_SIZE).decode()
+                if len(received_data) < 1 or received_data is None:
+                    raise ConnectionResetError
 
-            self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
-
-            for msg in received_data.split(self.MSG_SEPARATOR):
-                if len(msg) > 0:
-                    if "GameStarted" not in msg:
-                        client.queue.put(msg)
-                        self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
+                self.verbose_debug("Message received from " + client.get_tag() + ": \"" + received_data + "\".")
+                self.split_that_message(received_data, client)
 
             message = client.queue.get()
             self.verbose_debug("Processing from " + client.get_tag() + ": \"" + message + "\".")
+            if message is None:
+                raise ConnectionError
             return message
 
         except ConnectionResetError as e:
             if self.clients[client.id] is not None:
                 self.verbose_debug(client.get_tag() + " disconnected. Closing connection.", True)
                 self.disconnect_client(client.id)
-                pass
+
+        except ConnectionError:
+            self.verbose_debug("Message was None, shame on you.")
+            if client is None:
+                raise ConnectionError
+            else:
+                if not client.queue.empty():
+                    return client.queue.get()
+                else:
+                    return self.receive(client)
 
     def disconnect_client(self, client_id: int):
 
@@ -412,7 +425,7 @@ class CommunicationServer:
         client = self.clients[client_id]
 
         # if the client was a GM, remove his game from server:
-        if client.tag == ClientTypeTag.GAME_MASTER.value:
+        if client.tag == ClientTypeTag.GAME_MASTER:
             for game_info in self.games.values():
                 if game_info.name == client.game_name and game_info.game_master_id == client_id:
                     # find all players who were connected to this game and send them a GameMasterdisconneted message
