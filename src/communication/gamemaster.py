@@ -663,7 +663,7 @@ class GameMaster(Client):
 
     def shutdown(self):
         super(GameMaster, self).shutdown()
-        self.piece_placer.join()
+        #self.piece_placer.join()
 
 
 if __name__ == '__main__':
