@@ -3,6 +3,7 @@ import socket
 import threading
 import time
 from unittest import TestCase
+import pytest
 
 from src.communication import client
 
