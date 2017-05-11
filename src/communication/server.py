@@ -46,6 +46,10 @@ class CommunicationServer:
         self.games = {}  # game_id => GameInfo object
         self.client_indexer = 0
         self.games_indexer = 0
+
+        self.printing_state_thread = Thread()
+        self.accepting_thread = Thread()
+
         try:
             self.socket.bind((hostname, port))
 
@@ -82,8 +86,10 @@ class CommunicationServer:
         self.socket.listen()
         self.verbose_debug("Started listening")
 
-        Thread(target=self.print_state, daemon=True).start()
-        Thread(target=self.accept_clients, daemon=True).start()
+        self.printing_state_thread = Thread(target=self.print_state, daemon=True)
+        self.accepting_thread = Thread(target=self.accept_clients, daemon=True)
+        self.printing_state_thread.start()
+        self.accepting_thread.start()
 
         # wait for and respond to user commands:
         try:
@@ -296,7 +302,7 @@ class CommunicationServer:
                 else:
                     # DEFAULT MESSAGE HANDLING:
                     self.relay_msg_to_player(gm_msg)
-            print("EXITTING WHILE LOOP")
+
 
     def try_register_game(self, gm: ClientInfo, register_game_message: str):
         """
@@ -450,6 +456,8 @@ class CommunicationServer:
 
     def shutdown(self):
         self.running = False
+        # self.accepting_thread.join()
+        # self.printing_state_thread.join()
         self.socket.close()
         self.verbose_debug("Shutting down the server.", True)
 

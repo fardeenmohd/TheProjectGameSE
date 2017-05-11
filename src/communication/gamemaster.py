@@ -95,6 +95,17 @@ class GameMaster(Client):
     def get_num_of_players(self):
         return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
 
+
+    def handle_confirm_registration(self, message):
+        confirmation_root = ET.fromstring(message)
+        self.info.id = confirmation_root.attrib.get("gameId")
+
+
+
+    def handle_reject_registration(self, register_game_message):
+        sleep(self.retry_register_game_interval)
+        self.send(register_game_message)
+
     def run(self):
         register_game_message = messages.RegisterGame(self.game_name, self.team_limit, self.team_limit)
         self.send(register_game_message)
@@ -103,13 +114,11 @@ class GameMaster(Client):
 
         try:
             if "RejectGameRegistration" in message:
-                sleep(self.retry_register_game_interval)
-                self.send(register_game_message)
+                self.handle_reject_registration(register_game_message)
 
             elif "ConfirmGameRegistration" in message:
                 # read game id from message
-                confirmation_root = ET.fromstring(message)
-                self.info.id = confirmation_root.attrib.get("gameId")
+                self.handle_confirm_registration(message)
 
                 while True:
                     # now, we will be receiving messages about players who are trying to join:
@@ -221,7 +230,6 @@ class GameMaster(Client):
         while self.game_on:
             sleep(float(self.placing_pieces_frequency) / 1000)
             self.add_piece()
-
 
     def add_piece(self):
         """
@@ -343,7 +351,8 @@ class GameMaster(Client):
                 # can't move, stay in the same location.
                 player_info.location = old_location
                 old_field.player_id = player_info.id
-                self.send(messages.Data(player_info.id, self.info.finished,player_location=player_info.location,task_fields={new_location :new_task_field}))
+                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location,
+                                        task_fields={new_location: new_task_field}))
 
             else:
                 # we can move to the new field.
@@ -377,14 +386,16 @@ class GameMaster(Client):
             # it's a Goal Field, yo.
             if self.info.goal_fields[new_location].allegiance != player_info.team:
                 player_info.location = old_location
-                self.send(messages.Data(player_info.id, self.info.finished,player_location=player_info.location ))
+                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
             # i.e. a Red player shouldn't be allowed to enter a Blue goals area and vice versa.
 
             if self.info.goal_fields[new_location].is_occupied:
                 # can't move.
                 player_info.location = old_location
-                self.send(messages.Data(player_info.id, self.info.finished,goal_fields={new_location : self.info.goal_fields[new_location]}, player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished,
+                                        goal_fields={new_location: self.info.goal_fields[new_location]},
+                                        player_location=player_info.location))
 
             else:
                 # get a working copy of the new field.
@@ -609,7 +620,7 @@ class GameMaster(Client):
         self.send(messages.GameStarted(self.info.id))
 
         # deploy the Piece-placing thread:
-        self.piece_placer =  Thread(target=self.place_pieces)
+        self.piece_placer = Thread(target=self.place_pieces)
         self.piece_placer.start()
 
         while self.game_on:
@@ -663,7 +674,7 @@ class GameMaster(Client):
 
     def shutdown(self):
         super(GameMaster, self).shutdown()
-        #self.piece_placer.join()
+        # self.piece_placer.join()
 
 
 if __name__ == '__main__':
