@@ -25,7 +25,7 @@ def parse_games(games):
 
 
 class Player(Client):
-    def __init__(self, index=1, verbose=False, game_name='easy clone'):
+    def __init__(self, index=0, verbose=False, game_name='easy clone'):
         """
 
         :param index: Player index for the server

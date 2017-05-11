@@ -86,8 +86,8 @@ class CommunicationServer:
         self.socket.listen()
         self.verbose_debug("Started listening")
 
-        self.printing_state_thread = Thread(target=self.print_state, daemon=True)
-        self.accepting_thread = Thread(target=self.accept_clients, daemon=True)
+        self.printing_state_thread = Thread(target=self.print_state, daemon=False)
+        self.accepting_thread = Thread(target=self.accept_clients, daemon=False)
         self.printing_state_thread.start()
         self.accepting_thread.start()
 
@@ -131,11 +131,14 @@ class CommunicationServer:
         """
         method running endlessly on a separate thread, accepts new clients and deploys threads to handle them
         """
-        while self.running:
-            # block and wait until a client connects:
-            client_socket, address = self.socket.accept()
-            self.register_connection(client_socket, str(self.client_indexer))
-            self.client_indexer += 1
+        try:
+            while self.running:
+                # block and wait until a client connects:
+                client_socket, address = self.socket.accept()
+                self.register_connection(client_socket, str(self.client_indexer))
+                self.client_indexer += 1
+        except Exception:
+            self.verbose_debug("Shutting down the accept_clients thread.")
 
     def register_connection(self, client_socket: socket, client_id: str):
         new_client = ClientInfo(client_id, socket=client_socket)
@@ -457,7 +460,7 @@ class CommunicationServer:
     def shutdown(self):
         self.running = False
         # self.accepting_thread.join()
-        # self.printing_state_thread.join()
+        self.printing_state_thread.join()
         self.socket.close()
         self.verbose_debug("Shutting down the server.", True)
 

@@ -133,6 +133,7 @@ class GameMaster(Client):
 
                             self.game_on = True
                             self.play()
+                            break
 
                     else:
                         raise UnexpectedServerMessage

@@ -18,7 +18,7 @@ class Client:
     # See https://en.wikipedia.org/wiki/End-of-Transmission_character
     MSG_SEPARATOR = '⌁'
 
-    def __init__(self, index=1, verbose=False):
+    def __init__(self, index=0, verbose=False):
         """
         constructor.
         :param index: local index used to differentiate between different clients running in threads
