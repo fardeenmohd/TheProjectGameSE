@@ -381,11 +381,14 @@ class CommunicationServer:
                 self.send(client, message)
 
     def split_that_message(self, received_data, client):
+        count = 0
         for msg in received_data.split(self.MSG_SEPARATOR):
             if len(msg) > 0:
                 if "GameStarted" not in msg:
                     client.queue.put(msg)
+                    count += 1
                     self.verbose_debug("Added msg to queue: " + msg + " Of Client Id:" + client.id)
+        return count
 
     def receive(self, client: ClientInfo) -> str:
         """
