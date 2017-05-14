@@ -19,7 +19,7 @@ for y in range(FULL_HEIGHT):
         symbol = '  R'
     if y >= FULL_HEIGHT - GOALS_HEIGHT:
         symbol = '  B'
-    print(str(y) + 2 * symbol, sep=' ', end='\n', flush=True)
+    print(str(FULL_HEIGHT - y - 1) + 2 * symbol, sep=' ', end='\n', flush=True)
 
 
 class TestStrategy(TestCase):
@@ -28,7 +28,6 @@ class TestStrategy(TestCase):
         self.game_info = GameInfo(board_width=BOARD_WIDTH, task_height=TASK_HEIGHT, goals_height=GOALS_HEIGHT)
         self.game_info.initialize_fields()
         self.red_strategy = strategy.StrategyFactory(Allegiance.RED.value, game_info=self.game_info)
-        self.blue_strategy = strategy.StrategyFactory(Allegiance.BLUE.value, game_info=self.game_info)
         print()
 
     def test_first_decision(self):
@@ -75,18 +74,17 @@ class TestStrategy(TestCase):
         assert decision.additional_info != Direction.DOWN.value
 
     def test_try_collision(self):
-        self.blue_strategy.current_location = (0, 1)
-        self.red_strategy.current_location = (0, 2)
-        red_decision = self.red_strategy.try_go_down()
+
+        starting_location = (0, 2)
+        self.game_info.goal_fields[0, 3].player_id = "1"
+        self.game_info.task_fields[0, 1].player_id = "2"
+        self.red_strategy.current_location = starting_location
+        self.red_strategy.last_move = Decision(Decision.DISCOVER)
+        red_decision = self.red_strategy.get_next_move(starting_location)
         print("Testing the red player to not move on same task field as any other player ")
         print("Got this decision: " + str(red_decision.choice) + ", additional info: " + str(
             red_decision.additional_info))
-        blue_decision = self.blue_strategy.try_go_up()
-        print("Testing the blue player to not move on same task field as any other player ")
-        print("Got this decision: " + str(blue_decision.choice) + ", additional info: " + str(
-            blue_decision.additional_info))
-
-        assert red_decision != blue_decision
+        assert red_decision.additional_info == Direction.RIGHT.value
 
     def test_valid_place(self):
         self.game_info.pieces["1"] = PieceInfo("1", PieceType.NORMAL)
