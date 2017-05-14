@@ -5,7 +5,7 @@ from src.communication.unexpected import StrategicError
 
 
 class Decision:
-    def __init__(self, choice: int, additional_info=None):
+    def __init__(self, choice: int=0, additional_info=None):
         self.choice = choice
         self.additional_info = additional_info
 
