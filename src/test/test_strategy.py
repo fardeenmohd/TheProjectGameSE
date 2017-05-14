@@ -15,14 +15,15 @@ class TestStrategy(TestCase):
         self.game_info = GameInfo(board_width=2, task_height=2, goals_height=1)
         self.game_info.initialize_fields()
 
-        self.mock_strategy = strategy.StrategyFactory(Allegiance.RED.value, game_info=self.game_info)
+        self.red_strategy = strategy.StrategyFactory(Allegiance.RED.value, game_info=self.game_info)
+        self.blue_strategy = strategy.StrategyFactory(Allegiance.BLUE.value, game_info=self.game_info)
         print()
 
     def test_first_decision(self):
         # player is in his goal field, the returned move should be DOWN.
         starting_location = (0, 3)  # this is a Red goal field.
         print("Testing first decision. Excpecting player to move down.")
-        decision = self.mock_strategy.get_next_move(starting_location)
+        decision = self.red_strategy.get_next_move(starting_location)
         print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
         assert decision.choice == Decision.MOVE and decision.additional_info == Direction.DOWN.value
 
@@ -30,7 +31,7 @@ class TestStrategy(TestCase):
         # player is in a task field, move should be to gather information
         starting_location = (0, 2)  # this is a task field.
         print("Testing gather information. Excpecting player to Discover.")
-        decision = self.mock_strategy.get_next_move(starting_location)
+        decision = self.red_strategy.get_next_move(starting_location)
         print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
         assert decision.choice == Decision.DISCOVER
 
@@ -38,31 +39,40 @@ class TestStrategy(TestCase):
         # player is in a task field with current information, choice should be to move
         self.game_info.add_piece("1", 1, 1)
         starting_location = (0, 2)  # this is a task field.
-        self.mock_strategy.last_move = Decision(Decision.DISCOVER)
+        self.red_strategy.last_move = Decision(Decision.DISCOVER)
         print("Testing moving to piece. Expecting player to Move (to a piece).")
-        decision = self.mock_strategy.get_next_move(starting_location)
+        decision = self.red_strategy.get_next_move(starting_location)
         print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
         assert decision.choice == Decision.MOVE
 
     def test_valid_pickup(self):
         self.game_info.add_piece("1", 0, 2)  # adding a piece
         starting_location = (0, 2)  # this is a task field
-        self.mock_strategy.last_move = Decision(Decision.DISCOVER)
+        self.red_strategy.last_move = Decision(Decision.DISCOVER)
         print("Testing picking a piece. Expecting player to Pick(a piece).")
-        decision = self.mock_strategy.get_next_move(starting_location)
+        decision = self.red_strategy.get_next_move(starting_location)
         print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
         assert decision.choice == Decision.PICK_UP
 
+    def test_try_to_go_to_other_team_area(self):
+        self.red_strategy.current_location = (0, 1)
+        self.red_strategy.last_move = Decision(Decision.DISCOVER)
+        decision = self.red_strategy.try_go_down()
+        print("Testing player to not move in enemy goal area")
+        print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
+        assert decision.additional_info != Direction.DOWN.value
+
     def test_valid_place(self):
         self.game_info.pieces["1"] = PieceInfo("1", PieceType.NORMAL, "1")
-        starting_location = (0, 0)
-        self.mock_strategy.have_piece = "1"
-        self.game_info.goal_fields[0, 0].type = GoalFieldType.GOAL.value
-        self.mock_strategy.last_move = Decision(Decision.DISCOVER)
+        starting_location = (0, 3)
+        self.red_strategy.have_piece = "1"
+        self.game_info.goal_fields[0, 3].type = GoalFieldType.GOAL
+        self.red_strategy.last_move = Decision(Decision.DISCOVER)
         print("Testing placing a piece. Expecting player to Place(a piece).")
-        decision = self.mock_strategy.get_next_move(starting_location)
+        decision = self.red_strategy.get_next_move(starting_location)
         print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
         assert decision.choice == Decision.PLACE
+
 
 
 
