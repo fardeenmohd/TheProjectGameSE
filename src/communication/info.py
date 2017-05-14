@@ -3,6 +3,7 @@ from enum import Enum
 from queue import Queue
 
 from src.communication.helpful_math import Manhattan_Distance as manhattan
+from src.communication.unexpected import BoardError, LocationOutOfBoundsError
 
 
 class Location:
@@ -211,7 +212,7 @@ class GameInfo:
                     neighbours[x, y] = field
 
         # neighbours will include the original field itself, so we remove it:
-        #del neighbours[location[0], location[1]]
+        # del neighbours[location[0], location[1]]
         return neighbours
 
     def update_field_distances(self):
@@ -266,6 +267,20 @@ class GameInfo:
                 if (x, y) not in self.goal_fields.keys():
                     self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE.value)
             y -= 1
+
+    def add_piece(self, id: str, x: int, y: int, type: str = PieceType.NORMAL):
+
+        if self.is_out_of_bounds((x, y)):
+            raise LocationOutOfBoundsError(message="Can't place a piece.", location=(x, y))
+        elif self.is_goal_field((x, y)):
+            raise BoardError("Can't place a piece on location " + str((x, y)) + ". It's a goal field!")
+        elif self.has_piece(x, y):
+            raise BoardError("Can't place a piece on location " + str((x, y)) + ". Field already has a piece!")
+        new_piece = PieceInfo(id, type=type, location=(x, y))
+        self.task_fields[x, y].piece_id = id
+        self.pieces[id] = new_piece
+        # update distance_to_piece in all fields:
+        self.update_field_distances()
 
 
 class PlayerInfo():

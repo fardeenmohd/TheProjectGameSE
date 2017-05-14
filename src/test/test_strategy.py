@@ -1,78 +1,45 @@
-import uuid
 from unittest import TestCase
-import random
 
-from lxml.etree import DocumentInvalid
-from src.communication.info import *
-from src.communication.messages import *
 from src.communication import strategy
-from src.communication.info import GameInfo, Allegiance, Direction, GoalFieldType
+from src.communication.info import GameInfo, Allegiance, Direction
+from src.communication.strategy import Decision
 
-location = (1, 1)
-location2 = (1, 2)
-location3 = (0, 2)
-task_fields = {(1, 1): TaskFieldInfo(1, 1)}
-goal_fields = {(2, 2): TaskFieldInfo(2, 2)}
-pieces = {"1": PieceInfo("1", location=(2, 3))}
-game_info = GameInfo("1", "easy peasy", task_fields, goal_fields, pieces, 4, 4, 4, 1, 1, True, False, "1",
-                     datetime.now())
+print("Lookup: NULLDECISION = 0, MOVE = 1, DISCOVER = 5, KNOWLEDGE_EXCHANGE = 6, PICK_UP = 7, PLACE = 8")
+
 
 class TestStrategy(TestCase):
-    def test_decision(self):
-        flag = True
-        try:
-            self.decision = strategy.Decision(5)
-        except DocumentInvalid:
-            flag = False
-        assert flag
-
-    def test_no_decision(self):
-        flag = True
-        try:
-            self.decision = strategy.Decision(5)
-        except DocumentInvalid:
-            flag = False
-        assert flag
-
-
-class TestBaseStrategy(TestCase):
     def setUp(self):
-        self.mock_strategy = strategy.BaseStrategy(Allegiance.RED.value, PlayerType.MEMBER.value, location, game_info)
+        # carefully set up a 2x4 board
+        # please make sure that whatever you're doing is very correct if you want to change anything here
 
-    def test_base_decision(self):
-        flag = True
-        try:
-            self.mock_strategy = strategy.BaseStrategy(Allegiance.RED.value, PlayerType.MEMBER.value, location, game_info)
-        except DocumentInvalid:
-            flag = False
-        assert flag
+        self.game_info = GameInfo(board_width=2, task_height=2, goals_height=1)
+        self.game_info.initialize_fields()
+        self.game_info.add_piece("1", 1, 1)
+
+        self.mock_strategy = strategy.StrategyFactory(Allegiance.RED.value, game_info=self.game_info)
+        print()
+
+    def test_first_decision(self):
+        # player is in his goal field, the returned move should be DOWN.
+        starting_location = (0, 3)  # this is a Red goal field.
+        print("Testing first decision. Excpecting player to move down.")
+        decision = self.mock_strategy.get_next_move(starting_location)
+        print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
+        assert decision.choice == Decision.MOVE and decision.additional_info == Direction.DOWN.value
 
     def test_gather_information(self):
-        flag = True
-        try:
-            self.mock_strategy.get_next_move(location2)
-        except DocumentInvalid:
-            flag = False
-        assert flag
+        # player is in a task field, move should be to gather information
+        starting_location = (0, 2)  # this is a task field.
+        print("Testing gather information. Excpecting player to Discover.")
+        decision = self.mock_strategy.get_next_move(starting_location)
+        print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
+        assert decision.choice == Decision.DISCOVER
 
     def test_move_toward_piece(self):
-        self.decision = strategy.Decision(5)
-        flag = True
-        try:
-            self.mock_strategy.move_toward_piece()
-        except DocumentInvalid:
-            flag = False
-        assert flag
-
-    def test_move_toward_piece_not_in_task_field(self):
-        self.decision = strategy.Decision(5)
-        self.mock_strategy = strategy.BaseStrategy(Allegiance.RED.value, PlayerType.MEMBER.value, location3, game_info)
-
-        flag = False
-        try:
-            self.mock_strategy.move_toward_piece()
-        except DocumentInvalid:
-            flag = True
-        assert flag
-
-
+        # player is in a task field with current information, choice should be to move
+        starting_location = (0, 2)  # this is a task field.
+        self.mock_strategy.last_move = Decision(Decision.DISCOVER)
+        print("Testing moving to piece. Expecting player to Move (to a piece).")
+        decision = self.mock_strategy.get_next_move(starting_location)
+        print("Got this decision: " + str(decision.choice) + ", additional info: " + str(decision.additional_info))
+        assert decision.choice == Decision.MOVE

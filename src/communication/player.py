@@ -197,7 +197,7 @@ class Player(Client):
 
     def play(self):
         self.game_on = True
-        self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
+        self.strategy = StrategyFactory(self.team, self.location, self.game_info)
 
         while self.game_on:
             # find the next decision, send a message specified by it.

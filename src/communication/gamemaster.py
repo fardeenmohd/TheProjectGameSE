@@ -95,12 +95,9 @@ class GameMaster(Client):
     def get_num_of_players(self):
         return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
 
-
     def handle_confirm_registration(self, message):
         confirmation_root = ET.fromstring(message)
         self.info.id = confirmation_root.attrib.get("gameId")
-
-
 
     def handle_reject_registration(self, register_game_message):
         sleep(self.retry_register_game_interval)
@@ -236,7 +233,7 @@ class GameMaster(Client):
         """
         randomly place a piece on the board (if possible)
         """
-        piece_id = str(self.piece_indexer)
+        newpiece_id = str(self.piece_indexer)
 
         # check if we can add the piece at all:
         if not self.info.check_for_empty_task_fields():
@@ -259,24 +256,17 @@ class GameMaster(Client):
                     y = task_field.y
                     break
 
-        new_piece = PieceInfo(piece_id, location=(x, y))
-
         # assign type to new piece
         if random() >= self.sham_probability:
-            new_piece.type = PieceType.NORMAL.value
+            newpiece_type = PieceType.NORMAL.value
         else:
-            new_piece.type = PieceType.SHAM.value
+            newpiece_type = PieceType.SHAM.value
 
-        self.info.task_fields[x, y].piece_id = piece_id
-        self.info.pieces[piece_id] = new_piece
-
-        # update distance_to_piece in all fields:
-        self.info.update_field_distances()
+        self.info.add_piece(newpiece_id, x, y, newpiece_type)
 
         self.piece_indexer += 1
-        self.verbose_debug(
-            "Added a " + new_piece.type + " piece with id: " + piece_id + " at coordinates " + str(x) + ", " + str(
-                y) + ".")
+        self.verbose_debug("Added a " + newpiece_type + " piece with id: " + newpiece_id +
+                           " at coordinates " + str(x) + ", " + str(y) + ".")
 
     def add_player(self, player_id, pref_role, pref_team, private_guid):
         """

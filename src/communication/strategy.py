@@ -1,7 +1,7 @@
 import random
 
-from src.communication.info import GameInfo, Allegiance, Direction, GoalFieldType
-from src.communication.unexpected import StrategicError
+from src.communication.info import GameInfo, Allegiance, Direction, GoalFieldType, PlayerType
+from src.communication.unexpected import StrategicError, LocationOutOfBoundsError
 
 
 class Decision:
@@ -17,15 +17,15 @@ class Decision:
     PLACE = 8
 
 
-def StrategyFactory(team: str, player_type: str, location: tuple, game_info: GameInfo):
+def StrategyFactory(team: str, location: tuple = None, game_info: GameInfo = None):
     if team == Allegiance.RED.value:
-        return BasicRedStrategy(team, player_type, location, game_info)
+        return BasicRedStrategy(team, PlayerType.MEMBER.value, location, game_info)
     else:
-        return BasicBlueStrategy(team, player_type, location, game_info)
+        return BasicBlueStrategy(team, PlayerType.MEMBER.value, location, game_info)
 
 
 class BaseStrategy:
-    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple = None, game_info: GameInfo = None):
 
         self.team = team
         self.player_type = player_type
@@ -37,6 +37,8 @@ class BaseStrategy:
 
     def get_next_move(self, new_location: tuple):
         # THE MAIN STRATEGY METHOD
+        if self.game_info.is_out_of_bounds(new_location):
+            raise LocationOutOfBoundsError("Strategy cannot accept this new location", new_location)
         self.current_location = new_location
 
         if self.last_move.choice == Decision.PICK_UP and self.have_piece == "-1":
@@ -234,7 +236,7 @@ class BaseStrategy:
 
 
 class BasicBlueStrategy(BaseStrategy):
-    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple = None, game_info: GameInfo = None):
         super(BasicBlueStrategy, self).__init__(team, player_type, location, game_info)
 
     def go_to_goal_fields(self):
@@ -255,7 +257,7 @@ class BasicBlueStrategy(BaseStrategy):
 
 
 class BasicRedStrategy(BaseStrategy):
-    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple = None, game_info: GameInfo = None):
         super(BasicRedStrategy, self).__init__(team, player_type, location, game_info)
 
     def go_to_goal_fields(self):
