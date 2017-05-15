@@ -180,7 +180,7 @@ class CommunicationServer:
 
                 elif new_client.tag == ClientTypeTag.PLAYER:
                     self.verbose_debug("Identified C" + str(new_client.id) + " as a player")
-                    self.handle_player(new_client)
+                    self.handle_player(new_client, received_data)
 
                 elif new_client.tag == ClientTypeTag.GAME_MASTER:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
@@ -195,15 +195,23 @@ class CommunicationServer:
                 self.disconnect_client(new_client.id)
                 raise e
 
-    def handle_player(self, player: ClientInfo):
-        # first_message was a GetGames xml, so let's get all the open games:
-        open_games = {}
-        for game in self.games.values():
-            if game.open:
-                open_games[game.id] = game
+    def handle_player(self, player: ClientInfo, first_message: str):
 
-        # and send them to this player
-        self.send(player, messages.RegisteredGames(open_games))
+        # parse the first message: it will be either GetGames or JoinGame
+        if "GetGames" in first_message:
+            open_games = {}
+            for game in self.games.values():
+                if game.open:
+                    open_games[game.id] = game
+
+            # and send them to this player
+            self.send(player, messages.RegisteredGames(open_games))
+
+        elif "JoinGame" in first_message:
+            self.handle_join(player, first_message)
+
+        else:
+            raise UnexpectedClientMessage(first_message)
 
         while self.running:
             try:
