@@ -6,7 +6,7 @@
         <Goals team="red" x="0" y="4" type="goal"/>
         <Goals team="blue" x="0" y="0" type="goal"/>
         <ShamProbability>0.5</ShamProbability>
-        <PlacingNewPiecesFrequency>2500</PlacingNewPiecesFrequency>
+        <PlacingNewPiecesFrequency>100</PlacingNewPiecesFrequency>
         <InitialNumberOfPieces>1</InitialNumberOfPieces>
         <BoardWidth>5</BoardWidth>
         <TaskAreaLength>3</TaskAreaLength>
@@ -15,11 +15,11 @@
         <GameName>easy clone</GameName>
     </GameDefinition>
     <ActionCosts>
-        <MoveDelay>100</MoveDelay>
-        <DiscoverDelay>450</DiscoverDelay>
-        <TestDelay>500</TestDelay>
-        <PickUpDelay>100</PickUpDelay>
-        <PlacingDelay>100</PlacingDelay>
-        <KnowledgeExchangeDelay>1500</KnowledgeExchangeDelay>
+        <MoveDelay>10</MoveDelay>
+        <DiscoverDelay>0</DiscoverDelay>
+        <TestDelay>0</TestDelay>
+        <PickUpDelay>0</PickUpDelay>
+        <PlacingDelay>0</PlacingDelay>
+        <KnowledgeExchangeDelay>0</KnowledgeExchangeDelay>
     </ActionCosts>
 </GameMasterSettings>

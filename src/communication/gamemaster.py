@@ -90,6 +90,7 @@ class GameMaster(Client):
         self.parse_game_definition()
         self.parse_action_costs()
         self.piece_placer = Thread()
+        self.last_guid = None
 
     @property
     def get_num_of_players(self):
@@ -117,23 +118,7 @@ class GameMaster(Client):
                 # read game id from message
                 self.handle_confirm_registration(message)
 
-                while True:
-                    # now, we will be receiving messages about players who are trying to join:
-                    message = self.receive()  # this will block
-
-                    if "JoinGame" in message:
-                        self.handle_join(message)
-
-                        if self.get_num_of_players == self.team_limit * 2:
-                            #  We are ready to start the game
-                            self.set_up_game()
-
-                            self.game_on = True
-                            self.play()
-                            break
-
-                    else:
-                        raise UnexpectedServerMessage
+                self.wait_for_players()
 
         except UnexpectedServerMessage:
             self.verbose_debug("Shutting down due to unexpected message: " + message)
@@ -142,6 +127,25 @@ class GameMaster(Client):
         except (ConnectionAbortedError, ConnectionResetError) as e:
             self.verbose_debug("Server shut down or other type of connection error: " + str(e))
             self.shutdown()
+
+    def wait_for_players(self):
+        while True:
+            # now, we will be receiving messages about players who are trying to join:
+            message = self.receive()  # this will block
+
+            if "JoinGame" in message:
+                self.handle_join(message)
+
+                if self.get_num_of_players == self.team_limit * 2:
+                    #  We are ready to start the game
+                    self.set_up_game()
+
+                    self.game_on = True
+                    self.play()
+                    break
+
+            else:
+                raise UnexpectedServerMessage(message)
 
     def handle_join(self, message):
         # a player is trying to join! let's parse his message
@@ -155,8 +159,7 @@ class GameMaster(Client):
         # in theory, received game name has to be the same as our game, it should be impossible otherwise
         self.verbose_debug("A player is trying to join, with id: " + in_player_id + ".")
         if in_game_name != self.game_name:
-            self.verbose_debug("The server somehow sent us a message with the wrong game name.")
-            raise UnexpectedServerMessage
+            raise UnexpectedServerMessage("The server somehow sent us a message with the wrong game name.")
 
         # let's see if we can fit the player at all:
         if self.get_num_of_players == self.team_limit * 2:
@@ -585,8 +588,8 @@ class GameMaster(Client):
 
         for team in self.info.teams.keys():
             if self.achieved_goal_counters[team] >= self.goal_target:
+                self.game_on = False
                 self.verbose_debug(team.upper() + " TEAM HAS WON THE GAME!\nWe shall be restarting the game in:.", True)
-                self.piece_placer.join()
                 self.info.finished = True
                 print("5")
                 sleep(1)
@@ -598,7 +601,7 @@ class GameMaster(Client):
                 sleep(1)
                 print("1")
                 sleep(1)
-                self.game_on = False
+                self.shutdown()
                 break
 
     def play(self):
@@ -608,7 +611,7 @@ class GameMaster(Client):
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
 
-        self.send(messages.GameStarted(self.info.id))
+        # self.send(messages.GameStarted(self.info.id))
 
         # deploy the Piece-placing thread:
         self.piece_placer = Thread(target=self.place_pieces)
@@ -617,8 +620,6 @@ class GameMaster(Client):
         while self.game_on:
             try:
                 message = self.receive()
-                if message is None:
-                    raise ConnectionAbortedError
 
                 # handling depends on type of message:
                 root = ET.fromstring(message)
@@ -647,12 +648,13 @@ class GameMaster(Client):
 
         if self.info.finished:
             self.clean_up()
-            self.run()
+            # self.run()
 
     def clean_up(self):
         # clean up the info and prepare to start a new game
         self.achieved_goal_counters = {Allegiance.RED.value: 0, Allegiance.BLUE.value: 0}
 
+        self.info = GameInfo()
         self.PIECE_DICT_PRELOAD_CAPACITY = 256
         self.RANDOMIZATION_ATTEMPTS = 10
         self.piece_indexer = 0
@@ -664,8 +666,9 @@ class GameMaster(Client):
         self.piece_placer = Thread()
 
     def shutdown(self):
+        self.game_on = False
+        self.clean_up()
         super(GameMaster, self).shutdown()
-        # self.piece_placer.join()
 
 
 if __name__ == '__main__':

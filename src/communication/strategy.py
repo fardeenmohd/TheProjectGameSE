@@ -41,10 +41,12 @@ class BaseStrategy:
             raise LocationOutOfBoundsError("Strategy cannot accept this new location", new_location)
         self.current_location = new_location
 
+        # <DUCT TAPE>
         if self.last_move.choice == Decision.PICK_UP and self.have_piece == "-1":
             choice = self.get_random_move()
             self.last_move = choice
             return choice
+        # </DUCT TAPE>
 
         # if we have a piece, we should try to place it if we're in our goal fields.
         if self.have_piece != "-1":
@@ -168,10 +170,14 @@ class BaseStrategy:
                 valid_directions.append(Direction.RIGHT.value)
         if illegal is not None:
             # remove moves marked as 'illegal' from the list of valid moves.
-            if illegal in valid_directions:
-                valid_directions.remove(illegal)
+            for bad in illegal:
+                if bad in valid_directions:
+                    valid_directions.remove(bad)
             # TODO: fix the bug that occurs here: valid_directions is sometimes empty causing program to crash.
-        return Decision(Decision.MOVE, random.choice(valid_directions))
+        choice = random.choice(valid_directions)
+        if choice is None:
+            print("WHAT THE FUCKKKK")
+        return Decision(Decision.MOVE, choice)
 
     def get_direction_to(self, field):
         # returns a Direction which should be taken in order to get to the specified field.

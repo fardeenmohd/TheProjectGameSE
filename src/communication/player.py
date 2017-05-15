@@ -71,8 +71,7 @@ class Player(Client):
             return False
 
         else:
-            self.verbose_debug("Unexpected message from server!")
-            raise UnexpectedServerMessage
+            raise UnexpectedServerMessage("Unexpected message from server!")
 
     def handle_game(self, game_message: str):
         """
@@ -162,13 +161,13 @@ class Player(Client):
             # clean up our knowledge and try to join to the game again.
             self.game_on = False
             self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
-            if not self.try_join(self.game_name):
+            if not self.try_join():
                 # if we failed to join, kys
                 self.verbose_debug("Failed to re-join game. Shutting down.")
                 self.shutdown()
         return received
 
-    def try_join(self, game_name):
+    def try_join(self):
         self.send(messages.GetGames())
         games = self.receive()
 
@@ -176,7 +175,7 @@ class Player(Client):
             self.open_games = parse_games(games)
 
             if len(self.open_games) > 0:
-                temp_game_name = self.open_games[0][0]
+                temp_game_name = self.game_name
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
                 self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role))
@@ -185,14 +184,14 @@ class Player(Client):
                 if confirmation is not None:
                     self.handle_confirmation(confirmation)
                 else:
-                    raise UnexpectedServerMessage
+                    raise UnexpectedServerMessage("Game registering confirmation was None!")
 
                 game_message = self.receive()
                 if game_message is not None:
                     self.handle_game(game_message)
                     return True
                 else:
-                    raise UnexpectedServerMessage
+                    raise UnexpectedServerMessage("Game message was None!")
         return False
 
     def play(self):
@@ -261,7 +260,7 @@ if __name__ == '__main__':
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
-                if p.try_join(game_name):
+                if p.try_join():
                     p.play()
                     p.shutdown()
 

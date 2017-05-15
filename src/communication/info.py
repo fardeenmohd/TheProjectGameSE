@@ -3,7 +3,7 @@ from enum import Enum
 from queue import Queue
 
 from src.communication.helpful_math import Manhattan_Distance as manhattan
-from src.communication.unexpected import BoardError, LocationOutOfBoundsError
+from src.communication.unexpected import CustomBaseExceptionWithMessage, LocationOutOfBoundsError
 
 
 class Location:
@@ -273,9 +273,11 @@ class GameInfo:
         if self.is_out_of_bounds((x, y)):
             raise LocationOutOfBoundsError(message="Can't place a piece.", location=(x, y))
         elif self.is_goal_field((x, y)):
-            raise BoardError("Can't place a piece on location " + str((x, y)) + ". It's a goal field!")
+            raise CustomBaseExceptionWithMessage(
+                "Can't place a piece on location " + str((x, y)) + ". It's a goal field!")
         elif self.has_piece(x, y):
-            raise BoardError("Can't place a piece on location " + str((x, y)) + ". Field already has a piece!")
+            raise CustomBaseExceptionWithMessage(
+                "Can't place a piece on location " + str((x, y)) + ". Field already has a piece!")
         new_piece = PieceInfo(id, type=type, location=(x, y))
         self.task_fields[x, y].piece_id = id
         self.pieces[id] = new_piece

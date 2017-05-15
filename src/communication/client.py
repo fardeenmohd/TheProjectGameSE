@@ -13,7 +13,7 @@ class Client:
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
     DEFAULT_PORT = 4000
-    MESSAGE_BUFFER_SIZE = 2048
+    MESSAGE_BUFFER_SIZE = 8192
     # End of transmission byte is shown as an electric arrow.
     # See https://en.wikipedia.org/wiki/End-of-Transmission_character
     MSG_SEPARATOR = '⌁'
@@ -42,7 +42,7 @@ class Client:
     def connect(self, hostname=DEFAULT_HOSTNAME, port=DEFAULT_PORT):
         """
         try to connect to server and receive UID
-        :param hostname: host name to connect to
+        :param hostname: hostname name to connect to
         :param port: port to connect to
         """
         failed_connections = 0
@@ -118,9 +118,9 @@ class Client:
                 for msg in received_data.split(self.MSG_SEPARATOR):
                     if len(msg) > 0:
                         self.msg_queue.put(msg)
-                message = self.msg_queue.get()
-                self.verbose_debug("Received from server: \"" + message + "\".")
-                return message
+            message = self.msg_queue.get()
+            self.verbose_debug("Received from server: \"" + message + "\".")
+            return message
 
         except ConnectionAbortedError:
             self.verbose_debug("Server has shut down. Shutting down the client as well.", True)
