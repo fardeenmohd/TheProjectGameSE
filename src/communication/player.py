@@ -246,8 +246,8 @@ class Player(Client):
 
         elif decision.choice == Decision.MOVE:
             direction = decision.additional_info
-            if direction is None:
-                return messages.Discover(self.game_info.id, self.Guid)
+            # if direction is None:
+            #     return messages.Discover(self.game_info.id, self.Guid)
             return messages.Move(self.game_info.id, self.Guid, direction)
 
         elif decision.choice == Decision.PICK_UP:
