@@ -29,6 +29,7 @@ class Direction(Enum):
     DOWN = 'down'
     LEFT = 'left'
     RIGHT = 'right'
+    STAY = 'stay'
 
 
 class Allegiance(Enum):
