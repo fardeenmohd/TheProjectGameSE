@@ -79,13 +79,13 @@ class TestServer(TestCase):
         self.mock_server.relay_msg_to_player(message)
         received = mock_client.recv(1024).decode()
         assert received == message + "⌁"
-
-    def test_receive(self):
-        print("Test the receive function.")
-        self.listening_thread.start()
-        mock_client = self.connect_client_to_server()
-
-        mock_client.send("hello.".encode())
-        received = self.mock_server.receive(self.mock_server.clients["0"])
-
-        assert received == "hello."
+    #
+    # def test_receive(self):
+    #     print("Test the receive function.")
+    #     self.listening_thread.start()
+    #     mock_client = self.connect_client_to_server()
+    #
+    #     mock_client.send("hello.".encode())
+    #     received = self.mock_server.receive(self.mock_server.clients["0"])
+    #
+    #     assert received == "hello."

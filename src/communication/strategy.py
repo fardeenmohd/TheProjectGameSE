@@ -5,7 +5,7 @@ from src.communication.unexpected import StrategicError, LocationOutOfBoundsErro
 
 
 class Decision:
-    def __init__(self, choice: int=0, additional_info=None):
+    def __init__(self, choice: int = 0, additional_info=None):
         self.choice = choice
         self.additional_info = additional_info
 
@@ -84,7 +84,7 @@ class BaseStrategy:
         # first find if our would-be goal field is not already discovered:
         field = self.game_info.goal_fields[self.current_location[0], self.current_location[1]]
 
-        if field.type == GoalFieldType.UNKNOWN.value:
+        if field.type == (GoalFieldType.UNKNOWN.value or GoalFieldType.GOAL)  :
             # we can safely place the piece! and remove it from self.
             self.game_info.pieces[self.have_piece].player_id = "-1"
             self.have_piece = "-1"
@@ -152,7 +152,7 @@ class BaseStrategy:
 
             return Decision(Decision.MOVE, self.get_direction_to(min_neighbour))
 
-    def get_random_move(self, illegal= None):
+    def get_random_move(self, illegal=None):
         # returns a random valid move based on the current position.
         # the illegal parameter specifies a list of Directions which will be omitted from randomization.
 
@@ -169,15 +169,15 @@ class BaseStrategy:
             if neighbour[0] > self.current_location[0]:
                 valid_directions.append(Direction.RIGHT.value)
         if illegal is not None:
-            # remove moves marked as 'illegal' from the list of valid moves.
             for bad in illegal:
                 if bad in valid_directions:
                     valid_directions.remove(bad)
-            # TODO: fix the bug that occurs here: valid_directions is sometimes empty causing program to crash.
-        choice = random.choice(valid_directions)
-        if choice is None:
-            print("WHAT THE FUCKKKK")
-        return Decision(Decision.MOVE, choice)
+                    # TODO: fix the bug that occurs here: valid_directions is sometimes empty causing program to crash.
+        direction = random.choice(valid_directions)
+        if direction is not None:
+            return Decision(Decision.MOVE, direction)
+        if Direction is None:
+            return Decision.DISCOVER
 
     def get_direction_to(self, field):
         # returns a Direction which should be taken in order to get to the specified field.
@@ -194,11 +194,6 @@ class BaseStrategy:
             elif abs(y_delta) < abs(x_delta) and x_delta < 0:
                 return Direction.LEFT.value
         else:
-            if self.last_move.additional_info == Direction.UP.value:
-                return Direction.LEFT.value
-            if self.last_move.additional_info == Direction.DOWN.value:
-                return Direction.RIGHT.value
-            else:
                 return Direction.DOWN.value
 
     def try_go_down(self):
