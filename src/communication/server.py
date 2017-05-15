@@ -18,12 +18,12 @@ class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
     DEFAULT_BUFFER_SIZE = 8192
-    DEFAULT_PORT = 4000
+    DEFAULT_PORT = 4242
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
     # End of transmission byte is shown as an electric arrow.
     # See https://en.wikipedia.org/wiki/End-of-Transmission_character
-    MSG_SEPARATOR = '\23'
+    MSG_SEPARATOR = chr(23)
     # below list contains messages which are addressed to a different player, NOT GM
     TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
                           "RejectKnowledgeExchange"]
@@ -171,7 +171,7 @@ class CommunicationServer:
 
                 elif "RegisterGame" in received_data:
                     new_client.tag = ClientTypeTag.GAME_MASTER
-                elif "GetGames" in received_data:
+                elif "GetGames" in received_data or "JoinGame" in received_data:
                     new_client.tag = ClientTypeTag.PLAYER
 
                 if new_client.tag == ClientTypeTag.CLIENT:
