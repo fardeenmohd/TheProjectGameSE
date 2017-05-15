@@ -25,7 +25,7 @@ def parse_games(games):
 
 
 class Player(Client):
-    def __init__(self, index=1, verbose=False, game_name='easy clone'):
+    def __init__(self, index=0, verbose=False, game_name='easy clone'):
         """
 
         :param index: Player index for the server
@@ -71,8 +71,7 @@ class Player(Client):
             return False
 
         else:
-            self.verbose_debug("Unexpected message from server!")
-            raise UnexpectedServerMessage
+            raise UnexpectedServerMessage("Unexpected message from server!")
 
     def handle_game(self, game_message: str):
         """
@@ -162,13 +161,13 @@ class Player(Client):
             # clean up our knowledge and try to join to the game again.
             self.game_on = False
             self.verbose_debug("GameMaster has disconnected! Trying to join game again...")
-            if not self.try_join(self.game_name):
+            if not self.try_join():
                 # if we failed to join, kys
                 self.verbose_debug("Failed to re-join game. Shutting down.")
                 self.shutdown()
         return received
 
-    def try_join(self, game_name):
+    def try_join(self):
         self.send(messages.GetGames())
         games = self.receive()
 
@@ -176,8 +175,7 @@ class Player(Client):
             self.open_games = parse_games(games)
 
             if len(self.open_games) > 0:
-                # TODO : remove temp fields after new messages in action
-                temp_game_name = self.open_games[0][0]
+                temp_game_name = self.game_name
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
                 self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role))
@@ -186,19 +184,19 @@ class Player(Client):
                 if confirmation is not None:
                     self.handle_confirmation(confirmation)
                 else:
-                    raise UnexpectedServerMessage
+                    raise UnexpectedServerMessage("Game registering confirmation was None!")
 
                 game_message = self.receive()
                 if game_message is not None:
                     self.handle_game(game_message)
                     return True
                 else:
-                    raise UnexpectedServerMessage
+                    raise UnexpectedServerMessage("Game message was None!")
         return False
 
     def play(self):
         self.game_on = True
-        self.strategy = StrategyFactory(self.team, self.type, self.location, self.game_info)
+        self.strategy = StrategyFactory(self.team, self.location, self.game_info)
 
         while self.game_on:
             # find the next decision, send a message specified by it.
@@ -214,15 +212,28 @@ class Player(Client):
             else:
                 # normal response!
                 self.handle_data(response)
-                self.strategy.current_location = self.location
+                # if we just succesfully moved, we need to update our info
+                # specifically, update player_id on the field we just left (make it empty again)
+                # for this I'm using strategy.current_location which hasn't been updated yet and so is the prev. loc.
+                old_location = self.strategy.current_location
+                if self.strategy.last_move.choice == Decision.MOVE and self.location != old_location:
+                    if self.game_info.is_task_field(old_location):
+                        self.game_info.task_fields[old_location].player_id = "-1"
+                    else:
+                        self.game_info.goal_fields[old_location].player_id = "-1"
 
-                # check if we have a piece now
-                for piece_info in self.game_info.pieces.values():
-                    if piece_info.player_id == self.id:
-                        self.strategy.have_piece = piece_info.id
-                        break
-                else:
-                    self.strategy.have_piece = "-1"
+                if self.strategy.last_move.choice == Decision.PICK_UP:
+                    # check if we have a piece now
+                    for piece_info in self.game_info.pieces.values():
+                        if piece_info.player_id == self.id:
+                            self.strategy.have_piece = piece_info.id
+                            self.game_info.task_fields[old_location].piece_id = "-1"
+                            self.game_info.update_field_distances()
+                            break
+                    else:
+                        self.strategy.have_piece = "-1"
+
+                self.strategy.current_location = self.location
 
         self.shutdown()
 
@@ -243,16 +254,13 @@ class Player(Client):
         elif decision.choice == Decision.PLACE:
             return messages.PlacePiece(self.game_info.id, self.Guid)
 
-            # TODO: ADD THE OTHER MESSAGE HERE.
-
 
 if __name__ == '__main__':
-    def simulate(player_count, verbose):
-        game_name = 'easy clone'
+    def simulate(player_count, verbose, game_name):
         for i in range(player_count):
             p = Player(index=i, verbose=verbose, game_name=game_name)
             if p.connect():
-                if p.try_join(game_name):
+                if p.try_join():
                     p.play()
                     p.shutdown()
 
@@ -260,5 +268,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-c', '--playercount', default=1, help='Number of players to be deployed.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
+    parser.add_argument('-n', '--gamename', default="easy clone", help="Name of the game", type=str)
     args = vars(parser.parse_args())
-    simulate(int(args["playercount"]), args["verbose"])
+    simulate(int(args["playercount"]), args["verbose"], str(args["gamename"]))

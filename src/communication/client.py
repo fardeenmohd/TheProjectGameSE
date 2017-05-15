@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import socket
 from datetime import datetime
+from queue import Queue
 from time import sleep
 
 from src.communication.info import ClientTypeTag
@@ -11,10 +12,13 @@ class Client:
     INTER_CONNECTION_TIME = 3  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
     DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
-    DEFAULT_PORT = 420
-    MESSAGE_BUFFER_SIZE = 2048
+    DEFAULT_PORT = 4000
+    MESSAGE_BUFFER_SIZE = 8192
+    # End of transmission byte is shown as an electric arrow.
+    # See https://en.wikipedia.org/wiki/End-of-Transmission_character
+    MSG_SEPARATOR = '⌁'
 
-    def __init__(self, index=1, verbose=False):
+    def __init__(self, index=0, verbose=False):
         """
         constructor.
         :param index: local index used to differentiate between different clients running in threads
@@ -30,7 +34,7 @@ class Client:
         self.connected = False  # will be changed if connected
         self.last_message = None
         self.typeTag = ClientTypeTag.CLIENT
-
+        self.msg_queue = Queue()
         # self.socket.settimeout(1)
 
         self.verbose_debug("Client created.")
@@ -38,7 +42,7 @@ class Client:
     def connect(self, hostname=DEFAULT_HOSTNAME, port=DEFAULT_PORT):
         """
         try to connect to server and receive UID
-        :param hostname: host name to connect to
+        :param hostname: hostname name to connect to
         :param port: port to connect to
         """
         failed_connections = 0
@@ -80,16 +84,19 @@ class Client:
             print(header, message)
 
     def shutdown(self):
+
         self.connected = False
         self.socket.close()
         self.verbose_debug("Shutting down the client.", True)
-        quit()
+        #quit()
 
     def send(self, message: str):
         """
         Send message to server.
         """
         try:
+            # We append the MSG_SEPARATOR to the end of each msg
+            message += self.MSG_SEPARATOR
             self.socket.send(message.encode())
             self.last_message = message
             self.verbose_debug("Sent to server: \"" + message + "\".")
@@ -99,18 +106,21 @@ class Client:
 
     def receive(self) -> str:
         """
-        Read and decode bytes from server.
+        Receives of msg on the socket with a string with messages separated by MSG_SEPARATOR
+        Then it adds them to the queue and returns the first unread msg and removes it
+        :return: 
         """
-
-        # TODO: upgrade this method to split clumped messages and return the last message from queue.
-
         try:
             received_data = (self.socket.recv(Client.MESSAGE_BUFFER_SIZE)).decode()
             if len(received_data) < 1 or received_data is None:
                 raise ConnectionAbortedError
             else:
-                self.verbose_debug("Received from server: \"" + received_data + "\".")
-                return received_data
+                for msg in received_data.split(self.MSG_SEPARATOR):
+                    if len(msg) > 0:
+                        self.msg_queue.put(msg)
+            message = self.msg_queue.get()
+            self.verbose_debug("Received from server: \"" + message + "\".")
+            return message
 
         except ConnectionAbortedError:
             self.verbose_debug("Server has shut down. Shutting down the client as well.", True)

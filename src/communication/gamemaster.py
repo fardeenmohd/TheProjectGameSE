@@ -9,7 +9,6 @@ from time import sleep
 
 from src.communication import messages
 from src.communication.client import Client
-from src.communication.helpful_math import Manhattan_Distance as manhattan
 from src.communication.info import GameInfo, Direction, Allegiance, PieceInfo, PieceType, \
     GoalFieldType, ClientTypeTag, PlayerType, PlayerInfo
 from src.communication.unexpected import UnexpectedServerMessage
@@ -83,18 +82,27 @@ class GameMaster(Client):
 
         self.PIECE_DICT_PRELOAD_CAPACITY = 256
         self.RANDOMIZATION_ATTEMPTS = 10
-        self.piece_indexer = 0
         self.typeTag = ClientTypeTag.GAME_MASTER
         self.game_on = False
-        self.player_indexer = 0
+        self.piece_indexer = 0
         self.num_occupied_red_goals = 0
         self.num_occupied_blue_goals = 0
         self.parse_game_definition()
         self.parse_action_costs()
+        self.piece_placer = Thread()
+        self.last_guid = None
 
     @property
     def get_num_of_players(self):
         return len(self.info.teams[Allegiance.BLUE.value]) + len(self.info.teams[Allegiance.RED.value])
+
+    def handle_confirm_registration(self, message):
+        confirmation_root = ET.fromstring(message)
+        self.info.id = confirmation_root.attrib.get("gameId")
+
+    def handle_reject_registration(self, register_game_message):
+        sleep(self.retry_register_game_interval)
+        self.send(register_game_message)
 
     def run(self):
         register_game_message = messages.RegisterGame(self.game_name, self.team_limit, self.team_limit)
@@ -104,30 +112,13 @@ class GameMaster(Client):
 
         try:
             if "RejectGameRegistration" in message:
-                sleep(self.retry_register_game_interval)
-                self.send(register_game_message)
+                self.handle_reject_registration(register_game_message)
 
             elif "ConfirmGameRegistration" in message:
                 # read game id from message
-                confirmation_root = ET.fromstring(message)
-                self.info.id = confirmation_root.attrib.get("gameId")
+                self.handle_confirm_registration(message)
 
-                while True:
-                    # now, we will be receiving messages about players who are trying to join:
-                    message = self.receive()  # this will block
-
-                    if "JoinGame" in message:
-                        self.handle_join(message)
-
-                        if self.get_num_of_players == self.team_limit * 2:
-                            #  We are ready to start the game
-                            self.set_up_game()
-                            self.send(messages.GameStarted(self.info.id))
-                            self.game_on = True
-                            self.play()
-
-                    else:
-                        raise UnexpectedServerMessage
+                self.wait_for_players()
 
         except UnexpectedServerMessage:
             self.verbose_debug("Shutting down due to unexpected message: " + message)
@@ -136,6 +127,25 @@ class GameMaster(Client):
         except (ConnectionAbortedError, ConnectionResetError) as e:
             self.verbose_debug("Server shut down or other type of connection error: " + str(e))
             self.shutdown()
+
+    def wait_for_players(self):
+        while True:
+            # now, we will be receiving messages about players who are trying to join:
+            message = self.receive()  # this will block
+
+            if "JoinGame" in message:
+                self.handle_join(message)
+
+                if self.get_num_of_players == self.team_limit * 2:
+                    #  We are ready to start the game
+                    self.set_up_game()
+
+                    self.game_on = True
+                    self.play()
+                    break
+
+            else:
+                raise UnexpectedServerMessage(message)
 
     def handle_join(self, message):
         # a player is trying to join! let's parse his message
@@ -149,8 +159,7 @@ class GameMaster(Client):
         # in theory, received game name has to be the same as our game, it should be impossible otherwise
         self.verbose_debug("A player is trying to join, with id: " + in_player_id + ".")
         if in_game_name != self.game_name:
-            self.verbose_debug("The server somehow sent us a message with the wrong game name.")
-            raise UnexpectedServerMessage
+            raise UnexpectedServerMessage("The server somehow sent us a message with the wrong game name.")
 
         # let's see if we can fit the player at all:
         if self.get_num_of_players == self.team_limit * 2:
@@ -227,7 +236,7 @@ class GameMaster(Client):
         """
         randomly place a piece on the board (if possible)
         """
-        piece_id = str(self.piece_indexer)
+        newpiece_id = str(self.piece_indexer)
 
         # check if we can add the piece at all:
         if not self.info.check_for_empty_task_fields():
@@ -250,24 +259,17 @@ class GameMaster(Client):
                     y = task_field.y
                     break
 
-        new_piece = PieceInfo(piece_id, location=(x, y))
-
         # assign type to new piece
         if random() >= self.sham_probability:
-            new_piece.type = PieceType.NORMAL.value
+            newpiece_type = PieceType.NORMAL.value
         else:
-            new_piece.type = PieceType.SHAM.value
+            newpiece_type = PieceType.SHAM.value
 
-        self.info.task_fields[x, y].piece_id = piece_id
-        self.info.pieces[piece_id] = new_piece
-
-        # update distance_to_piece in all fields:
-        self.update_field_distances()
+        self.info.add_piece(newpiece_id, x, y, newpiece_type)
 
         self.piece_indexer += 1
-        self.verbose_debug(
-            "Added a " + new_piece.type + " piece with id: " + piece_id + " at coordinates " + str(x) + ", " + str(
-                y) + ".")
+        self.verbose_debug("Added a " + newpiece_type + " piece with id: " + newpiece_id +
+                           " at coordinates " + str(x) + ", " + str(y) + ".")
 
     def add_player(self, player_id, pref_role, pref_team, private_guid):
         """
@@ -343,7 +345,8 @@ class GameMaster(Client):
                 # can't move, stay in the same location.
                 player_info.location = old_location
                 old_field.player_id = player_info.id
-                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location,
+                                        task_fields={new_location: new_task_field}))
 
             else:
                 # we can move to the new field.
@@ -370,19 +373,23 @@ class GameMaster(Client):
                                       pieces=piece_dict, player_location=new_location))
                 else:
                     # this new field doesn't have a piece.
-                    self.send(
-                        messages.Data(player_info.id, self.info.finished, task_fields={new_location: new_task_field}))
+                    self.send(messages.Data(player_info.id, self.info.finished,
+                                            task_fields={new_location: new_task_field}, player_location=new_location))
 
         elif self.info.is_goal_field(new_location):
             # it's a Goal Field, yo.
+            if self.info.goal_fields[new_location].allegiance != player_info.team:
+                player_info.location = old_location
+                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
 
-            # TODO: check if the player is allowed to enter this goal area
             # i.e. a Red player shouldn't be allowed to enter a Blue goals area and vice versa.
 
             if self.info.goal_fields[new_location].is_occupied:
                 # can't move.
                 player_info.location = old_location
-                self.send(messages.Data(player_info.id, self.info.finished, player_location=player_info.location))
+                self.send(messages.Data(player_info.id, self.info.finished,
+                                        goal_fields={new_location: self.info.goal_fields[new_location]},
+                                        player_location=player_info.location))
 
             else:
                 # get a working copy of the new field.
@@ -487,7 +494,7 @@ class GameMaster(Client):
                 self.info.task_fields[location].piece_id = "-1"  # setting as empty
 
                 # we update the GM's info of distance to pieces so it sends valid data later to player
-                self.update_field_distances()
+                self.info.update_field_distances()
 
                 player_info.piece_id = piece_id
 
@@ -537,7 +544,7 @@ class GameMaster(Client):
                 field = player_info.info.task_fields[player_info.location]
 
                 # send him a response
-                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.id: field}))
+                self.send(messages.Data(player_info.id, self.info.finished, task_fields={field.location: field}))
 
             else:
                 # the field is a goal field.
@@ -581,23 +588,21 @@ class GameMaster(Client):
 
         for team in self.info.teams.keys():
             if self.achieved_goal_counters[team] >= self.goal_target:
-                self.verbose_debug(team.upper() + " TEAM HAS WON THE GAME!\nShutting down the GM.", True)
-                self.info.finished = True
                 self.game_on = False
+                self.verbose_debug(team.upper() + " TEAM HAS WON THE GAME!\nWe shall be restarting the game in:.", True)
+                self.info.finished = True
+                print("5")
+                sleep(1)
+                print("4")
+                sleep(1)
+                print("3")
+                sleep(1)
+                print("2")
+                sleep(1)
+                print("1")
+                sleep(1)
+                self.shutdown()
                 break
-
-    def update_field_distances(self):
-        """
-        re-calculates distance_to_piece field in all TaskFields on the board.
-        """
-        for field in self.info.task_fields.values():
-            min_piece, min_dist = None, None
-            for piece in [piece for piece in self.info.pieces.values() if piece.location is not None]:
-                if min_dist is None:
-                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
-                if manhattan(field.location, piece.location) <= min_dist:
-                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
-            field.distance_to_piece = min_dist
 
     def play(self):
         # send the initial Game message to all players:
@@ -606,14 +611,15 @@ class GameMaster(Client):
                 self.send(messages.Game(player, self.info.teams, self.info.board_width, self.info.task_height,
                                         self.info.goals_height, team[player].location))
 
+        # self.send(messages.GameStarted(self.info.id))
+
         # deploy the Piece-placing thread:
-        Thread(target=self.place_pieces).start()
+        self.piece_placer = Thread(target=self.place_pieces)
+        self.piece_placer.start()
 
         while self.game_on:
             try:
                 message = self.receive()
-                if message is None:
-                    raise ConnectionAbortedError
 
                 # handling depends on type of message:
                 root = ET.fromstring(message)
@@ -639,6 +645,30 @@ class GameMaster(Client):
             except Exception as e:
                 self.verbose_debug("Is this an error I see before me? " + str(e), True)
                 raise e
+
+        if self.info.finished:
+            self.clean_up()
+            # self.run()
+
+    def clean_up(self):
+        # clean up the info and prepare to start a new game
+        self.achieved_goal_counters = {Allegiance.RED.value: 0, Allegiance.BLUE.value: 0}
+
+        self.info = GameInfo()
+        self.PIECE_DICT_PRELOAD_CAPACITY = 256
+        self.RANDOMIZATION_ATTEMPTS = 10
+        self.piece_indexer = 0
+        self.game_on = False
+        self.num_occupied_red_goals = 0
+        self.num_occupied_blue_goals = 0
+        self.parse_game_definition()
+        self.parse_action_costs()
+        self.piece_placer = Thread()
+
+    def shutdown(self):
+        self.game_on = False
+        self.clean_up()
+        super(GameMaster, self).shutdown()
 
 
 if __name__ == '__main__':

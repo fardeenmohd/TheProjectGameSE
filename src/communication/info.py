@@ -1,5 +1,9 @@
 from datetime import datetime
 from enum import Enum
+from queue import Queue
+
+from src.communication.helpful_math import Manhattan_Distance as manhattan
+from src.communication.unexpected import CustomBaseExceptionWithMessage, LocationOutOfBoundsError
 
 
 class Location:
@@ -131,6 +135,7 @@ class ClientInfo:
         self.game_name = game_name
         self.game_id = game_id
         self.game_master_id = game_master_id
+        self.queue = Queue()
 
     def get_tag(self):
         return self.tag.value + str(self.id)
@@ -207,8 +212,24 @@ class GameInfo:
                     neighbours[x, y] = field
 
         # neighbours will include the original field itself, so we remove it:
-        del neighbours[location[0], location[1]]
+        # del neighbours[location[0], location[1]]
         return neighbours
+
+    def update_field_distances(self):
+        """
+        re-calculates distance_to_piece field in all TaskFields on the board.
+        """
+        for field in self.task_fields.values():
+            min_piece, min_dist = None, None
+            for piece in [piece for piece in self.pieces.values() if piece.location is not None]:
+                if piece.location == field.location:
+                    min_dist = 0
+                    break
+                if min_dist is None:
+                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
+                if manhattan(field.location, piece.location) <= min_dist:
+                    min_piece, min_dist = piece, manhattan(field.location, piece.location)
+            field.distance_to_piece = min_dist
 
     @staticmethod
     def fieldwise_manhattan_distance(field_a: FieldInfo, field_b: FieldInfo):
@@ -246,6 +267,22 @@ class GameInfo:
                 if (x, y) not in self.goal_fields.keys():
                     self.goal_fields[x, y] = GoalFieldInfo(x, y, Allegiance.BLUE.value)
             y -= 1
+
+    def add_piece(self, id: str, x: int, y: int, type: str = PieceType.NORMAL):
+
+        if self.is_out_of_bounds((x, y)):
+            raise LocationOutOfBoundsError(message="Can't place a piece.", location=(x, y))
+        elif self.is_goal_field((x, y)):
+            raise CustomBaseExceptionWithMessage(
+                "Can't place a piece on location " + str((x, y)) + ". It's a goal field!")
+        elif self.has_piece(x, y):
+            raise CustomBaseExceptionWithMessage(
+                "Can't place a piece on location " + str((x, y)) + ". Field already has a piece!")
+        new_piece = PieceInfo(id, type=type, location=(x, y))
+        self.task_fields[x, y].piece_id = id
+        self.pieces[id] = new_piece
+        # update distance_to_piece in all fields:
+        self.update_field_distances()
 
 
 class PlayerInfo():

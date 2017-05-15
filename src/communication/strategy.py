@@ -1,11 +1,11 @@
 import random
 
-from src.communication.info import GameInfo, Allegiance, Direction, GoalFieldType
-from src.communication.unexpected import StrategicError
+from src.communication.info import GameInfo, Allegiance, Direction, GoalFieldType, PlayerType
+from src.communication.unexpected import StrategicError, LocationOutOfBoundsError
 
 
 class Decision:
-    def __init__(self, choice: int, additional_info=None):
+    def __init__(self, choice: int=0, additional_info=None):
         self.choice = choice
         self.additional_info = additional_info
 
@@ -17,15 +17,15 @@ class Decision:
     PLACE = 8
 
 
-def StrategyFactory(team: str, player_type: str, location: tuple, game_info: GameInfo):
+def StrategyFactory(team: str, location: tuple = None, game_info: GameInfo = None):
     if team == Allegiance.RED.value:
-        return BasicRedStrategy(team, player_type, location, game_info)
+        return BasicRedStrategy(team, PlayerType.MEMBER.value, location, game_info)
     else:
-        return BasicBlueStrategy(team, player_type, location, game_info)
+        return BasicBlueStrategy(team, PlayerType.MEMBER.value, location, game_info)
 
 
 class BaseStrategy:
-    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple = None, game_info: GameInfo = None):
 
         self.team = team
         self.player_type = player_type
@@ -37,7 +37,16 @@ class BaseStrategy:
 
     def get_next_move(self, new_location: tuple):
         # THE MAIN STRATEGY METHOD
+        if self.game_info.is_out_of_bounds(new_location):
+            raise LocationOutOfBoundsError("Strategy cannot accept this new location", new_location)
         self.current_location = new_location
+
+        # <DUCT TAPE>
+        if self.last_move.choice == Decision.PICK_UP and self.have_piece == "-1":
+            choice = self.get_random_move()
+            self.last_move = choice
+            return choice
+        # </DUCT TAPE>
 
         # if we have a piece, we should try to place it if we're in our goal fields.
         if self.have_piece != "-1":
@@ -47,6 +56,7 @@ class BaseStrategy:
                 choice = self.go_to_goal_fields()
 
         elif self.game_info.is_goal_field(self.current_location):
+
             # we do not have a piece. let's go to task fields to collect one.
             choice = self.go_to_task_fields()
 
@@ -132,15 +142,17 @@ class BaseStrategy:
             for neighbour in neighbours.values():
                 if not neighbour.is_occupied and not self.game_info.is_goal_field(neighbour.location):
                     distance = neighbour.distance_to_piece
-                    # if distance is -1, then no piece on that field. we want to avoid it so we set distance to 1000
-                    if distance == -1:
+                    # if distance is -1 or None, then there is no piece on the board at all?! better set it to 1000 just in case.
+                    if distance == -1 or distance is None:
                         distance = 1000
-                    if min_distance is None or distance <= min_distance:
+                    if min_distance is None:
+                        min_distance, min_neighbour = distance, neighbour
+                    elif distance <= min_distance:
                         min_distance, min_neighbour = distance, neighbour
 
             return Decision(Decision.MOVE, self.get_direction_to(min_neighbour))
 
-    def get_random_move(self, illegal=None):
+    def get_random_move(self, illegal= None):
         # returns a random valid move based on the current position.
         # the illegal parameter specifies a list of Directions which will be omitted from randomization.
 
@@ -158,26 +170,36 @@ class BaseStrategy:
                 valid_directions.append(Direction.RIGHT.value)
         if illegal is not None:
             # remove moves marked as 'illegal' from the list of valid moves.
-            valid_directions = list(set(valid_directions) - set(illegal))
+            for bad in illegal:
+                if bad in valid_directions:
+                    valid_directions.remove(bad)
             # TODO: fix the bug that occurs here: valid_directions is sometimes empty causing program to crash.
-        return Decision(Decision.MOVE, random.choice(valid_directions))
+        choice = random.choice(valid_directions)
+        if choice is None:
+            print("WHAT THE FUCKKKK")
+        return Decision(Decision.MOVE, choice)
 
     def get_direction_to(self, field):
         # returns a Direction which should be taken in order to get to the specified field.
+        if field is not None:
+            y_delta = field[1] - self.current_location[1]
+            x_delta = field[0] - self.current_location[0]
 
-        y_delta = field[1] - self.current_location[1]
-        x_delta = field[0] - self.current_location[0]
-
-        if abs(y_delta) > abs(x_delta) and y_delta > 0:
-            return Direction.UP.value
-        elif abs(y_delta) > abs(x_delta) and y_delta < 0:
-            return Direction.DOWN.value
-        elif abs(y_delta) < abs(x_delta) and x_delta > 0:
-            return Direction.RIGHT.value
-        elif abs(y_delta) < abs(x_delta) and x_delta < 0:
-            return Direction.LEFT.value
+            if abs(y_delta) > abs(x_delta) and y_delta > 0:
+                return Direction.UP.value
+            elif abs(y_delta) > abs(x_delta) and y_delta < 0:
+                return Direction.DOWN.value
+            elif abs(y_delta) < abs(x_delta) and x_delta > 0:
+                return Direction.RIGHT.value
+            elif abs(y_delta) < abs(x_delta) and x_delta < 0:
+                return Direction.LEFT.value
         else:
-            return Direction.DOWN.value
+            if self.last_move.additional_info == Direction.UP.value:
+                return Direction.LEFT.value
+            if self.last_move.additional_info == Direction.DOWN.value:
+                return Direction.RIGHT.value
+            else:
+                return Direction.DOWN.value
 
     def try_go_down(self):
         # check if the field below us is occupied:
@@ -221,7 +243,7 @@ class BaseStrategy:
 
 
 class BasicBlueStrategy(BaseStrategy):
-    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple = None, game_info: GameInfo = None):
         super(BasicBlueStrategy, self).__init__(team, player_type, location, game_info)
 
     def go_to_goal_fields(self):
@@ -237,12 +259,12 @@ class BasicBlueStrategy(BaseStrategy):
         if self.game_info.is_task_field(self.current_location):
             if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] + 1)):
                 # it's red team's goal fields! we can't go there.
-                return self.get_random_move(illegal=[Direction.UP.value])
+                return self.get_random_move(illegal=Direction.UP.value)
         return super(BasicBlueStrategy, self).try_go_up()
 
 
 class BasicRedStrategy(BaseStrategy):
-    def __init__(self, team: str, player_type: str, location: tuple, game_info: GameInfo):
+    def __init__(self, team: str, player_type: str, location: tuple = None, game_info: GameInfo = None):
         super(BasicRedStrategy, self).__init__(team, player_type, location, game_info)
 
     def go_to_goal_fields(self):
@@ -257,5 +279,5 @@ class BasicRedStrategy(BaseStrategy):
         if self.game_info.is_task_field(self.current_location):
             if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] - 1)):
                 # it's red team's goal fields! we can't go there.
-                return self.get_random_move(illegal=[Direction.DOWN.value])
+                return self.get_random_move(illegal=Direction.DOWN.value)
         return super(BasicRedStrategy, self).try_go_down()
