@@ -13,7 +13,7 @@
         <BoardWidth>5</BoardWidth>
         <TaskAreaLength>4</TaskAreaLength>
         <GoalAreaLength>3</GoalAreaLength>
-        <NumberOfPlayersPerTeam>3</NumberOfPlayersPerTeam>
+        <NumberOfPlayersPerTeam>2</NumberOfPlayersPerTeam>
         <GameName>easy clone</GameName>
     </GameDefinition>
     <ActionCosts>

@@ -315,7 +315,7 @@ class GameMaster(Client):
 
     def handle_move_message(self, direction, player_info: PlayerInfo):
 
-        sleep(float(self.move_delay) / 1000)
+        sleep(float(self.move_delay) / 100)
 
         new_location = player_info.location
 
@@ -409,7 +409,7 @@ class GameMaster(Client):
 
     def handle_discover_message(self, player_info: PlayerInfo):
 
-        sleep(float(self.discover_delay) / 1000)
+        sleep(float(self.discover_delay) / 100)
 
         goal_fields = {}
         task_fields = {}
@@ -480,7 +480,7 @@ class GameMaster(Client):
 
     def handle_pick_up_message(self, player_info: PlayerInfo):
 
-        sleep(float(self.pickup_delay) / 1000)
+        sleep(float(self.pickup_delay) / 100)
 
         location = player_info.location
 
@@ -520,7 +520,7 @@ class GameMaster(Client):
 
     def handle_place_message(self, player_info: PlayerInfo):
 
-        sleep(float(self.placing_delay) / 1000)
+        sleep(float(self.placing_delay) / 100)
 
         # check if that player really has a piece:
         piece_id = player_info.piece_id
@@ -584,7 +584,7 @@ class GameMaster(Client):
                     self.send(messages.Data(player_info.id, self.info.finished))
 
     def handle_test_message(self, player_info: PlayerInfo):
-        sleep(float(self.test_delay) / 1000)
+        sleep(float(self.test_delay) / 100)
 
         self.send(messages.Data(player_info.id, self.info.finished,
                                 pieces={player_info.piece_id: self.info.pieces[player_info.piece_id]}))
