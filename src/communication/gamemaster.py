@@ -583,6 +583,12 @@ class GameMaster(Client):
                     # piece is a sham, send an empty Data message
                     self.send(messages.Data(player_info.id, self.info.finished))
 
+    def handle_test_message(self, player_info: PlayerInfo):
+        sleep(float(self.test_delay) / 1000)
+
+        self.send(messages.Data(player_info.id, self.info.finished,
+                                pieces={player_info.piece_id: self.info.pieces[player_info.piece_id]}))
+
     def check_for_game_over(self, player_info: PlayerInfo):
         # update self.info.finished and self.game_on if a team has completed all its goals.
 
@@ -639,6 +645,9 @@ class GameMaster(Client):
 
                 elif "PickUpPiece" in message:
                     Thread(target=self.handle_pick_up_message, args=[player_info], daemon=True).start()
+
+                elif "TestPiece" in message:
+                    Thread(target=self.handle_test_message, args=[player_info], daemon=True).start()
 
                     # TODO: add handling of other types of messages
 
