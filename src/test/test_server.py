@@ -43,18 +43,19 @@ class TestServer(TestCase):
 
         assert len(self.mock_server.clients) == num_of_clients
 
-    def connect_client_to_server(self):
+    def connect_client_to_server(self, client=None):
         """
         Mock client connects to the server
         """
-        sock = socket.socket()
-        if sock.connect_ex((self.mock_server.hostname, self.mock_server.port)) == 0:
+        if client is None:
+            client = socket.socket()
+        if client.connect_ex((self.mock_server.hostname, self.mock_server.port)) == 0:
             pass
         else:
             raise GameConnectionError("Failed to connect to server.")
         # sleep for a second so that the client remains connected for some time
         sleep(1)
-        return sock
+        return client
 
     def test_send(self):
         print("Test the send function.")
@@ -79,13 +80,16 @@ class TestServer(TestCase):
         self.mock_server.relay_msg_to_player(message)
         received = mock_client.recv(1024).decode()
         assert received == message + "⌁"
-    #
-    # def test_receive(self):
-    #     print("Test the receive function.")
-    #     self.listening_thread.start()
-    #     mock_client = self.connect_client_to_server()
-    #
-    #     mock_client.send("hello.".encode())
-    #     received = self.mock_server.receive(self.mock_server.clients["0"])
-    #
-    #     assert received == "hello."
+
+    def test_receive(self):
+        print("Test the receive function.")
+        self.listening_thread.start()
+
+        mock_client = socket.socket()
+
+        Thread(target=self.connect_client_to_server, args=[mock_client], daemon=True)
+
+        mock_client.send("hello.".encode())
+        received = self.mock_server.receive(self.mock_server.clients["0"])
+        mock_client.close()
+        assert received == "hello."
