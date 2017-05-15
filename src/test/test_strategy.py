@@ -74,7 +74,6 @@ class TestStrategy(TestCase):
         assert decision.additional_info != Direction.DOWN.value
 
     def test_try_collision(self):
-
         starting_location = (0, 2)
         self.red_strategy.game_info.goal_fields[0, 3].player_id = "1"
         self.red_strategy.game_info.task_fields[0, 1].player_id = "2"
@@ -82,14 +81,13 @@ class TestStrategy(TestCase):
         self.red_strategy.last_move = Decision(Decision.DISCOVER)
         red_decision = self.red_strategy.try_go_down()
 
-        while red_decision.additional_info == Direction.DOWN.value:
-            red_decision =self.red_strategy.get_next_move(starting_location)
+        # while red_decision.additional_info == Direction.DOWN.value:
+        #     red_decision = self.red_strategy.get_next_move(starting_location)
 
         print("Testing the red player to not move on same task field as any other player ")
         print("Got this decision: " + str(red_decision.choice) + ", additional info: " + str(
             red_decision.additional_info))
         assert red_decision.additional_info != Direction.DOWN.value
-
 
     def test_valid_place(self):
         self.game_info.pieces["1"] = PieceInfo("1", PieceType.NORMAL)

@@ -150,7 +150,7 @@ class BaseStrategy:
 
             return Decision(Decision.MOVE, self.get_direction_to(min_neighbour))
 
-    def get_random_move(self, illegal=None):
+    def get_random_move(self, illegal= None):
         # returns a random valid move based on the current position.
         # the illegal parameter specifies a list of Directions which will be omitted from randomization.
 
@@ -168,7 +168,8 @@ class BaseStrategy:
                 valid_directions.append(Direction.RIGHT.value)
         if illegal is not None:
             # remove moves marked as 'illegal' from the list of valid moves.
-            valid_directions = list(set(valid_directions) - set(illegal))
+            if illegal in valid_directions:
+                valid_directions.remove(illegal)
             # TODO: fix the bug that occurs here: valid_directions is sometimes empty causing program to crash.
         return Decision(Decision.MOVE, random.choice(valid_directions))
 
@@ -252,7 +253,7 @@ class BasicBlueStrategy(BaseStrategy):
         if self.game_info.is_task_field(self.current_location):
             if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] + 1)):
                 # it's red team's goal fields! we can't go there.
-                return self.get_random_move(illegal=[Direction.UP.value])
+                return self.get_random_move(illegal=Direction.UP.value)
         return super(BasicBlueStrategy, self).try_go_up()
 
 
@@ -272,5 +273,5 @@ class BasicRedStrategy(BaseStrategy):
         if self.game_info.is_task_field(self.current_location):
             if self.game_info.is_goal_field((self.current_location[0], self.current_location[1] - 1)):
                 # it's red team's goal fields! we can't go there.
-                return self.get_random_move(illegal=[Direction.DOWN.value])
+                return self.get_random_move(illegal=Direction.DOWN.value)
         return super(BasicRedStrategy, self).try_go_down()
