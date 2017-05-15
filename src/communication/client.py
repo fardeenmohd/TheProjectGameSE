@@ -11,12 +11,12 @@ class Client:
     TIME_BETWEEN_MESSAGES = 5  # time in s between each message sent by client
     INTER_CONNECTION_TIME = 3  # time in s between attemps to connect to server
     CONNECTION_ATTEMPTS = 3  # how many times the clients will retry the attempt to connect
-    DEFAULT_HOSTNAME = socket.gethostname()  # keep this as socket.gethostname() if you're debugging on your own pc
-    DEFAULT_PORT = 4000
+    DEFAULT_HOSTNAME = "P21714"  # keep this as socket.gethostname() if you're debugging on your own pc
+    DEFAULT_PORT = 4242
     MESSAGE_BUFFER_SIZE = 8192
     # End of transmission byte is shown as an electric arrow.
     # See https://en.wikipedia.org/wiki/End-of-Transmission_character
-    MSG_SEPARATOR = '⌁'
+    MSG_SEPARATOR = chr(23)
 
     def __init__(self, index=0, verbose=False):
         """

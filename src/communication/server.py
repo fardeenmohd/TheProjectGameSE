@@ -23,7 +23,7 @@ class CommunicationServer:
     DEFAULT_HOSTNAME = socket.gethostname()
     # End of transmission byte is shown as an electric arrow.
     # See https://en.wikipedia.org/wiki/End-of-Transmission_character
-    MSG_SEPARATOR = '⌁'
+    MSG_SEPARATOR = '\23'
     # below list contains messages which are addressed to a different player, NOT GM
     TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
                           "RejectKnowledgeExchange"]
