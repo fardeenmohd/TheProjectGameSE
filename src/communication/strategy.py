@@ -41,12 +41,12 @@ class BaseStrategy:
             raise LocationOutOfBoundsError("Strategy cannot accept this new location", new_location)
         self.current_location = new_location
 
-        # # <DUCT TAPE>
-        # if self.last_move.choice == Decision.PICK_UP and self.have_piece == "-1":
-        #     choice = self.get_random_move()
-        #     self.last_move = choice
-        #     return choice
-        # # </DUCT TAPE>
+        # <DUCT TAPE>
+        if self.last_move.choice == Decision.PICK_UP and self.have_piece == "-1":
+            choice = self.get_random_move()
+            self.last_move = choice
+            return choice
+        # </DUCT TAPE>
 
         # if we have a piece, we should try to place it if we're in our goal fields.
         if self.have_piece != "-1":
