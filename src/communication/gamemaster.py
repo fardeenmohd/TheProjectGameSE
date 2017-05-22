@@ -16,7 +16,7 @@ from src.communication.unexpected import UnexpectedServerMessage
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
-DELAY_MODIFIER = 100
+DELAY_MODIFIER = 500
 
 def parse_game_master_settings():
     full_file = os.getcwd() + "\GameMasterSettings.xml"
