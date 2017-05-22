@@ -11,21 +11,11 @@ from src.communication.unexpected import UnexpectedServerMessage
 REGISTERED_GAMES_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 
 
-def parse_games(games):
-    open_games = []
-    root = ET.fromstring(games)
 
-    for registered_games in root.findall(REGISTERED_GAMES_TAG + "GameInfo"):
-        game_name = registered_games.get("gameName")
-        blue_team_players = int(registered_games.get("blueTeamPlayers"))
-        red_team_players = int(registered_games.get("redTeamPlayers"))
-        open_games.append((game_name, blue_team_players, red_team_players))
-
-    return open_games
 
 
 class Player(Client):
-    def __init__(self, index=0, verbose=False, game_name='easy clone'):
+    def __init__(self, index=0, verbose=False, game_name='xxx'):
         """
 
         :param index: Player index for the server
@@ -45,6 +35,18 @@ class Player(Client):
         self.game_on = False
 
         self.strategy = None
+
+    def parse_games(self, games):
+        open_games = []
+        root = ET.fromstring(games)
+
+        for registered_games in root.findall(REGISTERED_GAMES_TAG + "GameInfo"):
+            game_name = registered_games.get("gameName")
+            blue_team_players = int(registered_games.get("blueTeamPlayers"))
+            red_team_players = int(registered_games.get("redTeamPlayers"))
+            open_games.append((game_name, blue_team_players, red_team_players))
+
+        return open_games
 
     def handle_confirmation(self, message: str):
         """
@@ -157,6 +159,8 @@ class Player(Client):
         overriding the parent method to implement re-joining when GM disconnects
         """
         received = super(Player, self).receive()
+        if received is None:
+            raise ConnectionAbortedError
         if "GameMasterDisconnected" in received:
             # clean up our knowledge and try to join to the game again.
             self.game_on = False
@@ -172,10 +176,10 @@ class Player(Client):
         games = self.receive()
 
         if 'RegisteredGames' in games:
-            self.open_games = parse_games(games)
+            self.open_games = self.parse_games(games)
 
             if len(self.open_games) > 0:
-                temp_game_name = self.game_name
+                temp_game_name = self.open_games[0][0]
                 temp_preferred_role = PlayerType.LEADER.value
                 temp_preferred_team = Allegiance.RED.value
                 self.send(messages.JoinGame(temp_game_name, temp_preferred_team, temp_preferred_role))
@@ -184,7 +188,7 @@ class Player(Client):
                 if confirmation is not None:
                     self.handle_confirmation(confirmation)
                 else:
-                    raise UnexpectedServerMessage("Game registering confirmation was None!")
+                    raise UnexpectedServerMessage("List of games was None!")
 
                 game_message = self.receive()
                 if game_message is not None:
@@ -271,6 +275,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-c', '--playercount', default=1, help='Number of players to be deployed.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Use verbose debugging mode.')
-    parser.add_argument('-n', '--gamename', default="easy clone", help="Name of the game", type=str)
+    parser.add_argument('-n', '--gamename', default="xxx", help="Name of the game", type=str)
     args = vars(parser.parse_args())
     simulate(int(args["playercount"]), args["verbose"], str(args["gamename"]))

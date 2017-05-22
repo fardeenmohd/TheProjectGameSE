@@ -62,10 +62,10 @@ class BaseStrategy:
 
         else:
             # we're in Task Field area. do we have enough information to make a clever move?
-            if not self.have_sufficient_information():
-                choice = self.gather_information()
-            else:
+            if self.have_sufficient_information():
                 choice = self.make_educated_move()
+            else:
+                choice = self.gather_information()
 
         self.last_move = choice
         return choice
@@ -109,7 +109,10 @@ class BaseStrategy:
         # do we have enough information to make a clever move?
 
         # base implementation: return False every other move.
-        return self.last_move.choice == Decision.DISCOVER
+
+        # DUCT TAPE:
+        # return self.last_move.choice == Decision.DISCOVER
+        return True
 
     def gather_information(self):
         # collect information, be it through Discover, or through KnowledgeExchange

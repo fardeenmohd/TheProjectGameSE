@@ -156,6 +156,9 @@ class GameMaster(Client):
         in_pref_team = joingame_root.attrib.get("preferredTeam")
         in_pref_role = joingame_root.attrib.get("preferredRole")
 
+        if in_player_id is None:
+            self.verbose_debug("The server didn't send us a playerId. :(")
+
         # in theory, received game name has to be the same as our game, it should be impossible otherwise
         self.verbose_debug("A player is trying to join, with id: " + in_player_id + ".")
         if in_game_name != self.game_name:
@@ -629,6 +632,10 @@ class GameMaster(Client):
 
                 # handling depends on type of message:
                 root = ET.fromstring(message)
+
+                if message is None:
+                    self.verbose_debug("Message received from server was None, probably because the server is down.")
+                    return
 
                 player_guid = root.attrib.get("playerGuid")
                 player_info = self.find_player_by_guid(player_guid)
