@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 from datetime import datetime
 
 from lxml import etree
@@ -7,6 +8,8 @@ XSD_PATH = "../messages/TheProjectGameCommunication.xsd"
 XML_NAMESPACE = "https://se2.mini.pw.edu.pl/17-results/"
 NAMESPACE_PREFIX = "{%s}" % XML_NAMESPACE
 NSMAP = {None: XML_NAMESPACE}
+
+print(os.getcwd())
 
 # pre-load the XML schema:
 SCHEMA = etree.XMLSchema(etree.parse(XSD_PATH))

@@ -3,17 +3,17 @@
                     KeepAliveInterval="500"
                     RetryRegisterGameInterval="60000">
     <GameDefinition>
-        <Goals team="red" x="0" y="8" type="goal"/>
-        <Goals team="red" x="3" y="9" type="goal"/>
+        <Goals team="red" x="0" y="6" type="goal"/>
+        <Goals team="red" x="3" y="7" type="goal"/>
         <Goals team="blue" x="0" y="1" type="goal"/>
         <Goals team="blue" x="3" y="0" type="goal"/>
-        <ShamProbability>0.2</ShamProbability>
-        <PlacingNewPiecesFrequency>2500</PlacingNewPiecesFrequency>
+        <ShamProbability>0</ShamProbability>
+        <PlacingNewPiecesFrequency>200</PlacingNewPiecesFrequency>
         <InitialNumberOfPieces>4</InitialNumberOfPieces>
         <BoardWidth>5</BoardWidth>
         <TaskAreaLength>4</TaskAreaLength>
-        <GoalAreaLength>3</GoalAreaLength>
-        <NumberOfPlayersPerTeam>3</NumberOfPlayersPerTeam>
+        <GoalAreaLength>2</GoalAreaLength>
+        <NumberOfPlayersPerTeam>2</NumberOfPlayersPerTeam>
         <GameName>easy clone</GameName>
     </GameDefinition>
     <ActionCosts>

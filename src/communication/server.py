@@ -17,8 +17,8 @@ ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
 class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
-    DEFAULT_BUFFER_SIZE = 8192
-    DEFAULT_PORT = 420
+    DEFAULT_BUFFER_SIZE = 16384
+    DEFAULT_PORT = 4242
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
     # End of transmission byte is shown as an electric arrow.
@@ -105,9 +105,11 @@ class CommunicationServer:
 
                 elif command == "clients":
                     self.verbose_debug("Currently connected clients:", True)
+
                     if len(self.clients) > 0:
-                        for client in self.clients:
-                            print(" " + client.get_tag() + ": " + str(client.socket.getsockname()))
+                        for client in self.clients.values():
+                            if client is not None:
+                                print(" " + client.get_tag() + ": " + str(client.socket.getsockname()))
                     else:
                         print(" There are no currently connected clients.")
 
@@ -230,7 +232,7 @@ class CommunicationServer:
 
                 elif "GetGames" in player_message:
                     # he's trying to re-join so let's handle him again!
-                    self.handle_player(player)
+                    self.handle_player(player, player_message)
 
                 else:
                     # DEFAULT HANDLING: relay the message to GM
@@ -305,6 +307,8 @@ class CommunicationServer:
                     player_id = msg_root.attrib["playerId"]
                     self.clients[player_id].game_master_id = gm.id
                     self.send(self.clients[player_id], gm_msg)
+                    # DUCT TAPE:
+                    # sleep(100)
 
                 elif "GameStarted" in gm_msg:
                     game_id = msg_root.attrib["gameId"]

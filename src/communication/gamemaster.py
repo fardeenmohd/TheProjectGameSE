@@ -119,6 +119,8 @@ class GameMaster(Client):
                 self.handle_confirm_registration(message)
 
                 self.wait_for_players()
+                if self.game_on:
+                    self.play()
 
         except UnexpectedServerMessage:
             self.verbose_debug("Shutting down due to unexpected message: " + message)
@@ -141,7 +143,6 @@ class GameMaster(Client):
                     self.set_up_game()
 
                     self.game_on = True
-                    self.play()
                     break
 
             else:
@@ -610,7 +611,7 @@ class GameMaster(Client):
                 sleep(1)
                 print("1")
                 sleep(1)
-                self.shutdown()
+                # self.shutdown()
                 break
 
     def play(self):
