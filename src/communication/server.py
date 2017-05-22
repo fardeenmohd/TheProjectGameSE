@@ -18,12 +18,12 @@ class CommunicationServer:
     # some constants:
     INTER_PRINT_STATE_TIME = 5
     DEFAULT_BUFFER_SIZE = 8192
-    DEFAULT_PORT = 4000
+    DEFAULT_PORT = 420
     DEFAULT_TIMEOUT = 10
     DEFAULT_HOSTNAME = socket.gethostname()
     # End of transmission byte is shown as an electric arrow.
     # See https://en.wikipedia.org/wiki/End-of-Transmission_character
-    MSG_SEPARATOR = '\23'
+    MSG_SEPARATOR = chr(23)
     # below list contains messages which are addressed to a different player, NOT GM
     TO_PLAYER_MESSAGES = ["Data", "KnowledgeExchangeRequest", "AcceptExchangeRequest",
                           "RejectKnowledgeExchange"]
@@ -171,7 +171,7 @@ class CommunicationServer:
 
                 elif "RegisterGame" in received_data:
                     new_client.tag = ClientTypeTag.GAME_MASTER
-                elif "GetGames" in received_data:
+                elif "GetGames" in received_data or "JoinGame" in received_data:
                     new_client.tag = ClientTypeTag.PLAYER
 
                 if new_client.tag == ClientTypeTag.CLIENT:
@@ -180,7 +180,7 @@ class CommunicationServer:
 
                 elif new_client.tag == ClientTypeTag.PLAYER:
                     self.verbose_debug("Identified C" + str(new_client.id) + " as a player")
-                    self.handle_player(new_client)
+                    self.handle_player(new_client, received_data)
 
                 elif new_client.tag == ClientTypeTag.GAME_MASTER:
                     self.verbose_debug("Identified " + new_client.get_tag() + " as a Game Master")
@@ -195,15 +195,23 @@ class CommunicationServer:
                 self.disconnect_client(new_client.id)
                 raise e
 
-    def handle_player(self, player: ClientInfo):
-        # first_message was a GetGames xml, so let's get all the open games:
-        open_games = {}
-        for game in self.games.values():
-            if game.open:
-                open_games[game.id] = game
+    def handle_player(self, player: ClientInfo, first_message: str):
 
-        # and send them to this player
-        self.send(player, messages.RegisteredGames(open_games))
+        # parse the first message: it will be either GetGames or JoinGame
+        if "GetGames" in first_message:
+            open_games = {}
+            for game in self.games.values():
+                if game.open:
+                    open_games[game.id] = game
+
+            # and send them to this player
+            self.send(player, messages.RegisteredGames(open_games))
+
+        elif "JoinGame" in first_message:
+            self.handle_join(player, first_message)
+
+        else:
+            raise UnexpectedClientMessage(first_message)
 
         while self.running:
             try:

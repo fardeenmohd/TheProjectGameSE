@@ -16,7 +16,7 @@ from src.communication.unexpected import UnexpectedServerMessage
 GAME_SETTINGS_TAG = "{https://se2.mini.pw.edu.pl/17-pl-19/17-pl-19/}"
 XML_MESSAGE_TAG = "{https://se2.mini.pw.edu.pl/17-results/}"
 ET.register_namespace('', "https://se2.mini.pw.edu.pl/17-results/")
-
+DELAY_MODIFIER = 500
 
 def parse_game_master_settings():
     full_file = os.getcwd() + "\GameMasterSettings.xml"
@@ -229,7 +229,7 @@ class GameMaster(Client):
     def place_pieces(self):
         # this function runs on a thread and keeps adding new pieces to the board. forever.
         while self.game_on:
-            sleep(float(self.placing_pieces_frequency) / 1000)
+            sleep(float(self.placing_pieces_frequency) / (DELAY_MODIFIER/2))
             self.add_piece()
 
     def add_piece(self):
@@ -315,7 +315,7 @@ class GameMaster(Client):
 
     def handle_move_message(self, direction, player_info: PlayerInfo):
 
-        sleep(float(self.move_delay) / 1000)
+        sleep(float(self.move_delay) / DELAY_MODIFIER)
 
         new_location = player_info.location
 
@@ -409,7 +409,7 @@ class GameMaster(Client):
 
     def handle_discover_message(self, player_info: PlayerInfo):
 
-        sleep(float(self.discover_delay) / 1000)
+        sleep(float(self.discover_delay) / DELAY_MODIFIER)
 
         goal_fields = {}
         task_fields = {}
@@ -480,7 +480,7 @@ class GameMaster(Client):
 
     def handle_pick_up_message(self, player_info: PlayerInfo):
 
-        sleep(float(self.pickup_delay) / 1000)
+        sleep(float(self.pickup_delay) / DELAY_MODIFIER)
 
         location = player_info.location
 
@@ -520,7 +520,7 @@ class GameMaster(Client):
 
     def handle_place_message(self, player_info: PlayerInfo):
 
-        sleep(float(self.placing_delay) / 1000)
+        sleep(float(self.placing_delay) / DELAY_MODIFIER)
 
         # check if that player really has a piece:
         piece_id = player_info.piece_id
@@ -583,6 +583,12 @@ class GameMaster(Client):
                     # piece is a sham, send an empty Data message
                     self.send(messages.Data(player_info.id, self.info.finished))
 
+    def handle_test_message(self, player_info: PlayerInfo):
+        sleep(float(self.test_delay) / DELAY_MODIFIER)
+
+        self.send(messages.Data(player_info.id, self.info.finished,
+                                pieces={player_info.piece_id: self.info.pieces[player_info.piece_id]}))
+
     def check_for_game_over(self, player_info: PlayerInfo):
         # update self.info.finished and self.game_on if a team has completed all its goals.
 
@@ -639,6 +645,9 @@ class GameMaster(Client):
 
                 elif "PickUpPiece" in message:
                     Thread(target=self.handle_pick_up_message, args=[player_info], daemon=True).start()
+
+                elif "TestPiece" in message:
+                    Thread(target=self.handle_test_message, args=[player_info], daemon=True).start()
 
                     # TODO: add handling of other types of messages
 

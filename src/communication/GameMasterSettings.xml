@@ -9,7 +9,7 @@
         <Goals team="blue" x="3" y="0" type="goal"/>
         <ShamProbability>0.2</ShamProbability>
         <PlacingNewPiecesFrequency>2500</PlacingNewPiecesFrequency>
-        <InitialNumberOfPieces>1</InitialNumberOfPieces>
+        <InitialNumberOfPieces>4</InitialNumberOfPieces>
         <BoardWidth>5</BoardWidth>
         <TaskAreaLength>4</TaskAreaLength>
         <GoalAreaLength>3</GoalAreaLength>
